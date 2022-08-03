@@ -1,14 +1,16 @@
 [features]
 seeds = false
 skip-lint = false
+
 [programs.localnet]
-dao_bounty_board = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+dao_bounty_board = "H72kd3NLBGpsc1DcPk5bnjJtu7BXzwNSDFa2BeVQaTEL"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
 cluster = "localnet"
+# cluster = "devnet"
 wallet = "/home/qiao-wen/.config/solana/id.json"
 
 [scripts]
