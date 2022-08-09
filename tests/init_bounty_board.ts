@@ -38,7 +38,7 @@ describe("init bounty board", () => {
     const realmGovernance = web3.Keypair.fromSeed(REALM_PK.toBytes());
     const CONFIG = {
       lastRevised: new BN(new Date().getTime() / 1000),
-      tiers: {},
+      tiers: [],
       roles: new BN(200),
       functions: new BN(300),
     };

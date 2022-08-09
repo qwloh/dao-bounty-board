@@ -33,8 +33,8 @@ pub mod dao_bounty_board {
         // msg!("Derived PDA: {}", key);
 
         // 2. close account
-        let test_pda = &mut ctx.accounts.test_pda;
-        msg!("Account {} closed!", test_pda.key());
+        let acc_to_close = &mut ctx.accounts.acc_to_close;
+        msg!("Account {} closed!", acc_to_close.key());
 
         // 3. test nested enum
         // let enum_pda = &mut ctx.accounts.enum_pda;
@@ -119,7 +119,7 @@ pub struct TestPayload<'info> {
 
     // 2. test close account
     #[account(mut, close=user)]
-    pub test_pda: Account<'info, BountyBoard>,
+    pub acc_to_close: Account<'info, BountyBoard>,
     #[account(mut)]
     pub user: Signer<'info>,
     pub system_program: Program<'info, System>,
