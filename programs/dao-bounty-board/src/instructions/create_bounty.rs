@@ -25,7 +25,7 @@ pub fn create_bounty(ctx: Context<CreateBounty>, data: BountyVM) -> Result<()> {
 
 #[derive(Accounts)]
 pub struct CreateBounty<'info> {
-    #[account(init, seeds= [b"test9"], bump, payer = user, space = size_of::<Bounty>())]
+    #[account(init, seeds= [b"test14"], bump, payer = user, space = size_of::<Bounty>())]
     pub bounty: Account<'info, Bounty>,
 
     #[account(mut)]
