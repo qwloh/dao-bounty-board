@@ -4,9 +4,12 @@ import { TEST_REALM_PK } from "../../api/constants";
 import { DEFAULT_CONFIG, getRolesInVec } from "../../api/utils";
 import { useAnchorContext, useBountyBoard, useRealm } from "../../hooks";
 import { useBounty } from "../../hooks/useBounty";
+import { useRealms } from "../../hooks/useRealms";
 
 const QwComponent = () => {
   const { wallet } = useAnchorContext();
+
+  const { realms } = useRealms();
 
   const { realm, userRepresentationInDAO, realmTreasuries } = useRealm(
     new PublicKey(TEST_REALM_PK)
@@ -32,7 +35,12 @@ const QwComponent = () => {
         wordBreak: "break-all",
       }}
     >
-      <div>Realm</div>
+      <div>
+        <div>
+          <strong>Total realms: {realms?.length}.</strong> Displaying 1-10
+        </div>
+        <div>{realms && JSON.stringify(realms?.slice(0, 10))}</div>
+      </div>
       <div>
         <div>
           <strong>Realm Obj</strong>

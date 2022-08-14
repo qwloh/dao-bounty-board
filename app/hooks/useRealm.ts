@@ -2,6 +2,7 @@ import {
   getGovernanceAccounts,
   getNativeTreasuryAddress,
   getRealm,
+  getRealms,
   getTokenOwnerRecord,
   getTokenOwnerRecordAddress,
   Governance,
