@@ -1,18 +1,19 @@
 import {
   Program,
   web3,
-  BN,
   setProvider,
   AnchorProvider,
-  utils,
 } from "@project-serum/anchor";
-import {
-  BOUNTY_BOARD_PROGRAM_ID,
-  PROGRAM_AUTHORITY_SEED,
-  TEST_DAO_PK,
-} from "./constants";
+
 import idl from "../target/idl/dao_bounty_board.json";
 import { assert } from "chai";
+import { DaoBountyBoard } from "../target/types/dao_bounty_board";
+import { PublicKey } from "@solana/web3.js";
+import { DUMMY_MINT_PK, BOUNTY_BOARD_PROGRAM_ID } from "../app/api/constants";
+import {
+  cleanUpBountyBoard,
+  setupBountyBoard,
+} from "./setup_fixtures/bounty_board";
 
 describe("init bounty board", () => {
   // Configure the client to use the local cluster.
@@ -23,87 +24,61 @@ describe("init bounty board", () => {
   console.log("Provider wallet public key", providerWalletPublicKey.toString());
 
   const programId = new web3.PublicKey(BOUNTY_BOARD_PROGRAM_ID);
-  const program = new Program(JSON.parse(JSON.stringify(idl)), programId);
+  const program = new Program(
+    JSON.parse(JSON.stringify(idl)),
+    programId
+  ) as Program<DaoBountyBoard>;
 
+  let TEST_BOUNTY_BOARD_PDA; // accounts to close after tests
+  let TEST_BOUNTY_BOARD_VAULT_PDA;
   /**
    * TEST
    */
 
   it("should create bounty board PDA with correct data", async () => {
-    //  const mockAccount = web3.Keypair.generate();
-    const bountyBoardCreatorPublicKey = providerWalletPublicKey;
-
     // data
-    const REALM_PK = new web3.PublicKey(TEST_DAO_PK);
-    const realmGovernance = web3.Keypair.fromSeed(REALM_PK.toBytes());
-    const CONFIG = {
-      lastRevised: new BN(new Date().getTime() / 1000),
-      tiers: [],
-      roles: new BN(200),
-      functions: new BN(300),
-    };
 
-    console.log(
-      "Test realm governance public key",
-      realmGovernance.publicKey.toString()
-    ); // 25N47DNLjSt7LZS2HrvHVG1Qq1mCeLMy74YsWDAQfr4Y
-
-    const [bountyBoardPDA, bump] = await web3.PublicKey.findProgramAddress(
-      [utils.bytes.utf8.encode(PROGRAM_AUTHORITY_SEED), REALM_PK.toBytes()],
-      programId
+    const TEST_REALM_PK = new PublicKey(
+      "E1gZDYQWPJV3RVBbijC8zoMhEXppA19ShXessDHKWCNM"
     );
-    console.log("bountyBoardPDA", bountyBoardPDA.toString()); // 8B5wLgaVbGbi1WUmMceyusjVSKP24n8wZRwDNGsUHH1a
+    // Test Realm public key E1gZDYQWPJV3RVBbijC8zoMhEXppA19ShXessDHKWCNM
+    // Test realm governance public key DdDbZKSVEGbANBxudt59EX3ZYyU65SjL6yw6FTAjdM6s
+    // Bounty board PDA BsJMGpu8AMkQn9M2gKUdkquY4AM7p9GXoY2VU5LZaJdy
+    // Bounty board vault PDA 2WWuEfye4YqKvZyHkmrZuZRqgT7RDJ7o4uo3y1hywo7g
 
-    const tx = await program.methods
-      .initBountyBoard({
-        realmPk: REALM_PK,
-        config: CONFIG,
-      })
-      .accounts({
-        // list of all affected accounts
-        bountyBoard: bountyBoardPDA,
-        realmGovernance: realmGovernance.publicKey,
-        user: bountyBoardCreatorPublicKey,
-        systemProgram: web3.SystemProgram.programId,
-      })
-      .signers([realmGovernance])
-      .rpc();
+    const {
+      realmGovernancePk,
+      bountyBoardPDA,
+      bountyBoardAcc,
+      bountyBoardVaultPDA,
+      bountyBoardVaultAcc,
+    } = await setupBountyBoard(provider, program, TEST_REALM_PK);
+    TEST_BOUNTY_BOARD_PDA = bountyBoardPDA;
+    TEST_BOUNTY_BOARD_VAULT_PDA = bountyBoardVaultPDA;
 
-    console.log("Your transaction signature", tx);
-
-    const account = await program.account.bountyBoard.fetch(bountyBoardPDA);
-    console.log(account);
-
-    assert.equal(account.realm.toString(), REALM_PK.toString());
+    assert.equal(bountyBoardAcc.realm.toString(), TEST_REALM_PK.toString());
     assert.equal(
-      account.updateAuthority.toString(),
-      realmGovernance.publicKey.toString()
+      bountyBoardAcc.updateAuthority.toString(),
+      realmGovernancePk.toString()
     );
-    assert.equal(account.bountyCount.toNumber(), 0);
+    assert.equal(bountyBoardAcc.bountyCount.toNumber(), 0);
     // assert.deepEqual(account.config, CONFIG);
+
+    // assert bounty board is owner of vault
+    assert.equal(
+      bountyBoardVaultAcc.owner.toString(),
+      bountyBoardPDA.toString()
+    );
+    assert.equal(bountyBoardVaultAcc.mint.toString(), DUMMY_MINT_PK.USDC);
+  });
+
+  afterEach(async () => {
+    console.log("--- Cleanup logs ---");
+    await cleanUpBountyBoard(
+      provider,
+      program,
+      TEST_BOUNTY_BOARD_PDA,
+      TEST_BOUNTY_BOARD_VAULT_PDA
+    );
   });
 });
-
-// created tx
-// [
-//   '3U2WepHkhPtvQdL6xLTeEQjbtmT9MHSKwBguWcuzaqXx',
-//   '9QjaAPQ4kV7eeyH1YWnZVWBACmkyRboEVSUpBGrdRJRV',
-//   '11111111111111111111111111111111',
-//   'H72kd3NLBGpsc1DcPk5bnjJtu7BXzwNSDFa2BeVQaTEL'
-// ]
-// [
-//   {
-//     accounts: [ 1, 0, 2 ],
-//     data: 'Cnez6kRzjuQXwNRoixipquwSavjse71M8jUR7TDX7BeCMEiEKKfN75P',
-//     programIdIndex: 3
-//   }
-// ]
-
-// bounty board init
-// {
-//   realm: PublicKey {
-//     _bn: <BN: 69d1c7966aab0a6ad720bb5cc9a8c7d2cb09e7c01b9a8b7f9b294d07457536be>
-//   },
-//   updateAuthority: PublicKey { _bn: <BN: 0> },
-//   dummy: ''
-// }

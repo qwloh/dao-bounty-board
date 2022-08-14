@@ -3,14 +3,14 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-dao_bounty_board = "5A1DLgMJbQPUnhfFR6pCpDYVTuGn9YBjiW4aCatm41tH"
+dao_bounty_board = "8wEnvDw8rQoWQXsCvE3ALt5bEuB8FeA8A52N5Uacjayh"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
-# cluster = "devnet"
+# cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id_2.json"
 
 [scripts]
