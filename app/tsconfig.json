@@ -7,7 +7,7 @@
     "lib": ["es2015"],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": true,
+    // "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
@@ -18,7 +18,8 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "types": ["mocha", "chai"],
-    "typeRoots": ["./node_modules/@types"]
+    "types": [],
+    "typeRoots": ["./node_modules/@types"],
+    "strict": false
   }
 }
