@@ -6,7 +6,7 @@ import { Github } from './Icons/Github';
 import { Twitter } from './Icons/Twitter';
 
 export const Footer = () => (
-  <div className="py-10 flex items-center justify-center transition-all bg-slate-100 dark:bg-night-700">
+  <div className="z-10 py-10 flex items-center justify-center transition-all bg-slate-100 dark:bg-night-700">
     <div className="container max-w-screen-xl mx-auto flex flex-col gap-8 items-center justify-center">
       <div className="flex flex-row gap-10 text-slate-100 dark:text-night-600 transition-all">
         <Twitter className="rounded-full cursor-pointer transition-all hover:opacity-60 bg-black text-white dark:bg-white dark:text-black" />

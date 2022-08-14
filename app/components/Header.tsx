@@ -49,7 +49,7 @@ export function Header() {
 
   return (
     <header
-      className={`sticky top-0 backdrop-blur w-full z-40 transition-all bg-slate-100 dark:bg-night-700/50`}
+      className={`z-20 sticky top-0 backdrop-blur w-full transition-all bg-slate-100 dark:bg-night-700/50`}
     >
       <div className="max-w-screen-xl mx-auto">
         <div className="px-4 h-14 flex items-center">

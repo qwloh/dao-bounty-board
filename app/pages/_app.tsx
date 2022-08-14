@@ -14,6 +14,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { useMemo } from 'react';
 
+import { Background } from '../components/Background';
 import { Footer } from '../components/Footer';
 import { Header } from '../components/Header';
 import { Main } from '../components/Main';
@@ -57,6 +58,7 @@ const App: FC<AppProps> = ({ Component, pageProps }) => {
         <ConnectionProvider endpoint={endpoint}>
           <WalletProvider wallets={wallets} autoConnect>
             <WalletModalProvider>
+              <Background />
               <Header />
               <Main>
                 <Component {...pageProps} />
