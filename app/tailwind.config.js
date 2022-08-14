@@ -1,6 +1,16 @@
 /** @type {import('tailwindcss').Config} */
+
+// const plugin = require("tailwindcss/plugin");
+
 module.exports = {
   darkMode: "class",
+  // Not sure why couldn't make this work yet
+  // plugins: function ({ addBase, theme }) {
+  //   addBase({
+  //     h1: { fontSize: theme("fontSize.xl") },
+  //     h2: { fontSize: theme("fontSize.lg") },
+  //   });
+  // },
   content: [
     "./pages/**/*.{js,ts,jsx,tsx}",
     "./components/**/*.{js,ts,jsx,tsx}",
@@ -8,6 +18,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        input: {
+          500: "#0D1F27",
+        },
         accent: {
           500: "#1FCFF1",
           600: "#00AFFF",
@@ -19,6 +32,9 @@ module.exports = {
           400: "rgb(191 190 186 / 90%)",
           500: "rgb(255 255 255 / 50%)",
           600: "rgb(191 190 186 / 50%)",
+        },
+        tday: {
+          100: "#000000",
         },
         night: {
           600: "#121212",
