@@ -38,7 +38,7 @@ export const getActiveBountyBoardProposal = async (
   program: Program<DaoBountyBoard>,
   governancePubkeys: PublicKey[]
 ) => {
-  const provider = program.provider;
+  const provider = program.provider as AnchorProvider;
   // very inefficient, well
   const proposalsForAllGovernances: ProgramAccount<Proposal>[] = [];
   for (const governancePK of governancePubkeys) {

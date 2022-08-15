@@ -4,12 +4,14 @@ import { TEST_REALM_PK } from "../../api/constants";
 import { DEFAULT_CONFIG, getRolesInVec } from "../../api/utils";
 import { useAnchorContext, useBountyBoard, useRealm } from "../../hooks";
 import { useBounty } from "../../hooks/useBounty";
-import { useRealms } from "../../hooks/useRealms";
+import { useRealmInfo } from "../../hooks/useRealmInfo";
+import { useRealmInfos } from "../../hooks/useRealmInfos";
 
 const QwComponent = () => {
   const { wallet } = useAnchorContext();
 
-  const { realms } = useRealms();
+  const { realmInfos } = useRealmInfos();
+  const { realmInfo } = useRealmInfo(realmInfos?.[0]?.programId);
 
   const { realm, userRepresentationInDAO, realmTreasuries } = useRealm(
     new PublicKey(TEST_REALM_PK)
@@ -22,7 +24,7 @@ const QwComponent = () => {
     proposeUpdateBountyBoard,
   } = useBountyBoard(new PublicKey(TEST_REALM_PK));
 
-  const { bounties, getBounty, createBounty } = useBounty(
+  const { bounties, getBounty, createBounty, deleteBounty } = useBounty(
     new PublicKey(TEST_REALM_PK)
   );
 
@@ -37,9 +39,14 @@ const QwComponent = () => {
     >
       <div>
         <div>
-          <strong>Total realms: {realms?.length}.</strong> Displaying 1-10
+          <strong>Total realms: {realmInfos?.length}.</strong> Displaying
+          metadata for 1-10
         </div>
-        <div>{realms && JSON.stringify(realms?.slice(0, 10))}</div>
+        <div>{realmInfos && JSON.stringify(realmInfos?.slice(0, 10))}</div>
+      </div>
+      <div>
+        <strong>Realm metadata</strong>
+        <div>{JSON.stringify(realmInfo)}</div>
       </div>
       <div>
         <div>
@@ -134,6 +141,27 @@ const QwComponent = () => {
           }
         >
           Create Bounty
+        </button>
+      </div>
+      <div>
+        <div>
+          <strong>Delete Bounty</strong>
+        </div>
+        <input
+          id="delete-bounty"
+          type="text"
+          placeholder="Pubkey of bounty to delete"
+        />
+        <button
+          onClick={async () => {
+            const bountyPubkey = document.querySelector("#delete-bounty").value;
+            console.log(
+              `Sending request to delete bounty with pubkey ${bountyPubkey}`
+            );
+            deleteBounty(new PublicKey(bountyPubkey));
+          }}
+        >
+          Delete Bounty
         </button>
       </div>
     </div>

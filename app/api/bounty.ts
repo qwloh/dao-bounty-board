@@ -1,31 +1,19 @@
 import {
-  clusterApiUrl,
-  Connection,
-  Keypair,
   PublicKey,
   SystemProgram,
   SYSVAR_CLOCK_PUBKEY,
   SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
 
-import {
-  AnchorProvider,
-  BN,
-  Program,
-  ProgramAccount,
-  setProvider,
-  Wallet,
-} from "@project-serum/anchor";
-import { BOUNTY_BOARD_PROGRAM_ID, TEST_REALM_PK } from "./constants";
-import { Skill } from "../model/bounty.model";
+import { AnchorProvider, Program } from "@project-serum/anchor";
+import { DUMMY_MINT_PK } from "./constants";
+import { Bounty, Skill } from "../model/bounty.model";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
-import { bs58 } from "@project-serum/anchor/dist/cjs/utils/bytes";
 import {
   getBountyAddress,
   getBountyBoardVaultAddress,
   getBountyEscrowAddress,
 } from "./utils";
-import { program } from "@project-serum/anchor/dist/cjs/spl/token";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
@@ -49,7 +37,7 @@ export const getBountiesForBoard = (
   ]);
 };
 
-export interface CreateBountyArgs {
+interface CreateBountyArgs {
   program: Program<DaoBountyBoard>;
   bountyBoard: { publicKey: PublicKey; account: BountyBoard };
   skill: Skill;
@@ -117,6 +105,48 @@ export const createBounty = async ({
       })
       .rpc()
   );
+};
+
+interface DeleteBountyArgs {
+  program: Program<DaoBountyBoard>;
+  bounty: { publicKey: PublicKey; account: Bounty };
+  bountyBoardPubkey: PublicKey;
+}
+
+export const deleteBounty = async ({
+  program,
+  bountyBoardPubkey, // to derive bounty baord vault address
+  bounty,
+}: DeleteBountyArgs) => {
+  const provider = program.provider as AnchorProvider;
+
+  // const rewardMint = bounty.account.rewardMint;
+  console.log("Bounty board PDA", bountyBoardPubkey.toString());
+  const rewardMint = new PublicKey(DUMMY_MINT_PK.USDC);
+
+  const bountyBoardVaultPDA = await getBountyBoardVaultAddress(
+    bountyBoardPubkey,
+    rewardMint
+  );
+  console.log("Bounty board vault PDA", bountyBoardVaultPDA.toString());
+
+  const bountyEscrowPDA = await getBountyEscrowAddress(
+    bounty.publicKey,
+    rewardMint
+  );
+  console.log("Bounty escrow PDA", bountyEscrowPDA.toString());
+
+  return program.methods
+    .deleteBounty()
+    .accounts({
+      bounty: bounty.publicKey,
+      bountyBoardVault: bountyBoardVaultPDA,
+      bountyEscrow: bountyEscrowPDA,
+      user: provider.wallet.publicKey,
+      systemProgram: SystemProgram.programId,
+      tokenProgram: TOKEN_PROGRAM_ID,
+    })
+    .rpc();
 };
 
 // Test realm public key 885LdWunq8rh7oUM6kMjeGV56T6wYNMgb9o6P7BiT5yX
