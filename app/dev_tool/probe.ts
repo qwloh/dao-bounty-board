@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { AnchorProvider, setProvider, Wallet } from "@project-serum/anchor";
 import { bs58 } from "@project-serum/anchor/dist/cjs/utils/bytes";
 import {
@@ -15,6 +16,7 @@ import {
 } from "@solana/spl-token";
 import { clusterApiUrl, Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { GOVERNANCE_PROGRAM_ID, TEST_REALM_PK } from "../api/constants";
+import { readableTokenAcc } from "../api/utils";
 
 (async () => {
   const paperWalletKeypair = Keypair.fromSecretKey(
@@ -48,20 +50,26 @@ import { GOVERNANCE_PROGRAM_ID, TEST_REALM_PK } from "../api/constants";
   // );
   // console.log(add.toString());
 
-  const nativeTreasuryAddress = await getNativeTreasuryAddress(
-    new PublicKey(GOVERNANCE_PROGRAM_ID),
-    new PublicKey("63t4tEfLcBwRvhHuTX9BGVT1iHm5dJjez1Bbb5QS9XJF")
-  );
-  console.log(nativeTreasuryAddress.toString());
+  // const nativeTreasuryAddress = await getNativeTreasuryAddress(
+  //   new PublicKey(GOVERNANCE_PROGRAM_ID),
+  //   new PublicKey("63t4tEfLcBwRvhHuTX9BGVT1iHm5dJjez1Bbb5QS9XJF")
+  // );
+  // console.log(nativeTreasuryAddress.toString());
 
-  const tokenAccounts = await provider.connection.getTokenAccountsByOwner(
-    new PublicKey("9XxWeFutsxzmLNxRuUj9pwipKgQkAFwHUmGVbxE3EnxK"),
-    {
-      mint: new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"),
-    },
-    "recent"
+  // const tokenAccounts = await provider.connection.getTokenAccountsByOwner(
+  //   new PublicKey("9XxWeFutsxzmLNxRuUj9pwipKgQkAFwHUmGVbxE3EnxK"),
+  //   {
+  //     mint: new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"),
+  //   },
+  //   "recent"
+  // );
+  // console.log(tokenAccounts);
+
+  const ata = await getAccount(
+    connection,
+    new PublicKey("CVCtwsNWqvAJUcq3QvEaUAaL8dZtxDfD27UKc9fVnmP9")
   );
-  console.log(tokenAccounts);
+  console.log("ATA", readableTokenAcc(ata));
 
   // const governances = await getAllGovernances(
   //   provider.connection,

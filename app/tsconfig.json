@@ -3,8 +3,10 @@
   "exclude": ["node_modules"],
   "compilerOptions": {
     "target": "es6",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    // "lib": ["dom", "dom.iterable", "esnext"],
     // "lib": ["es2015"],
+    // "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": ["es2015", "dom", "dom.Iterable"],
     "allowJs": true,
     "skipLibCheck": true,
     // "strict": true,
