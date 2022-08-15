@@ -2,7 +2,6 @@ import {
   getGovernanceAccounts,
   getNativeTreasuryAddress,
   getRealm,
-  getRealms,
   getTokenOwnerRecord,
   getTokenOwnerRecordAddress,
   Governance,
@@ -11,11 +10,12 @@ import {
   pubkeyFilter,
   Realm,
   TokenOwnerRecord,
-} from "@solana/spl-governance";
-import { PublicKey } from "@solana/web3.js";
-import { useQuery } from "react-query";
-import { GOVERNANCE_PROGRAM_ID } from "../api/constants";
-import { useAnchorContext } from "./useAnchorContext";
+} from '@solana/spl-governance';
+import { PublicKey } from '@solana/web3.js';
+import { useQuery } from 'react-query';
+
+import { GOVERNANCE_PROGRAM_ID } from '../api/constants';
+import { useAnchorContext } from './useAnchorContext';
 
 export interface UserRepresentationInDAO {
   council: boolean;
