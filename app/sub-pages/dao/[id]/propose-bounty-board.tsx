@@ -188,7 +188,7 @@ export const ProposeBountyBoard = () => {
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     methods.handleSubmit((data) => {
-      console.log('data', data)
+      console.log('send values', data)
     })()
   }
 
