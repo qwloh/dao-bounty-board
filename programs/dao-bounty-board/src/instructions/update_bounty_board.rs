@@ -13,7 +13,7 @@ pub fn update_bounty_board(
     require!(realm_governance.is_signer, ErrorCode::AccountNotSigner);
     require_keys_eq!(
         realm_governance.key(),
-        bounty_board.update_authority.key(),
+        bounty_board.authority.key(),
         ErrorCode::AccountNotSigner
     );
 

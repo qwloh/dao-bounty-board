@@ -10,21 +10,23 @@ import {
   TorusWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
-import { QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { useMemo } from 'react';
+import { QueryClient, QueryClientProvider } from 'react-query';
 
 import { Background } from '../components/Background';
 import { Footer } from '../components/Footer';
 import { Header } from '../components/Header';
 import { Main } from '../components/Main';
-import { queryClient } from '../queryClient';
+import AnchorContextProvider from '../context/AnchorContextProvider';
 
 import type { AppProps } from 'next/app'
 import type { FC } from 'react'
 // Use require instead of import since order matters
 require('@solana/wallet-adapter-react-ui/styles.css')
 require('../styles/globals.css')
+
+const queryClient = new QueryClient()
 
 const App: FC<AppProps> = ({ Component, pageProps }) => {
   // Can be set to 'devnet', 'testnet', or 'mainnet-beta'
@@ -54,20 +56,22 @@ const App: FC<AppProps> = ({ Component, pageProps }) => {
 
   return (
     <ThemeProvider attribute="class">
-      <QueryClientProvider client={queryClient}>
-        <ConnectionProvider endpoint={endpoint}>
-          <WalletProvider wallets={wallets} autoConnect>
-            <WalletModalProvider>
-              <Background />
-              <Header />
-              <Main>
-                <Component {...pageProps} />
-              </Main>
-              <Footer />
-            </WalletModalProvider>
-          </WalletProvider>
-        </ConnectionProvider>
-      </QueryClientProvider>
+      <ConnectionProvider endpoint={endpoint}>
+        <WalletProvider wallets={wallets} autoConnect>
+          <WalletModalProvider>
+            <QueryClientProvider client={queryClient}>
+              <AnchorContextProvider>
+                <Background />
+                <Header />
+                <Main>
+                  <Component {...pageProps} />
+                </Main>
+                <Footer />
+              </AnchorContextProvider>
+            </QueryClientProvider>
+          </WalletModalProvider>
+        </WalletProvider>
+      </ConnectionProvider>
     </ThemeProvider>
   )
 }
