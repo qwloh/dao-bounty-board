@@ -1,6 +1,7 @@
+import { Account } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 
-export const readableTokenAcc = (account: any) => {
+export const readableTokenAcc = (account: Account) => {
   let readablePrint = {} as any;
   for (const [key, val] of Object.entries(account)) {
     readablePrint[key] =
