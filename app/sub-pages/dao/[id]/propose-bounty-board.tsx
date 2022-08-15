@@ -91,6 +91,11 @@ export const ProposeBountyBoard = () => {
   const [confirming, setConfirming] = useState(false)
 
   const [tags, setTags] = useState<TagType[]>(defaultTags)
+
+  const addSkills = () => {}
+
+  const addDifficulty = () => {}
+
   return (
     <div className="flex flex-col gap-6">
       <Card className="flex flex-col gap-6">
@@ -101,7 +106,7 @@ export const ProposeBountyBoard = () => {
               <Tag key={t?.text} disabled={confirming} {...t} />
             ))}
           </div>
-          {!confirming && <AddButton>Add Skills</AddButton>}
+          {!confirming && <AddButton onClick={addSkills}>Add Skills</AddButton>}
         </div>
       </Card>
       <Card className="flex flex-col gap-6">
@@ -151,6 +156,9 @@ export const ProposeBountyBoard = () => {
               ),
             )}
           </div>
+          {!confirming && (
+            <AddButton onClick={addDifficulty}>Add Difficulty</AddButton>
+          )}
         </div>
       </Card>
     </div>

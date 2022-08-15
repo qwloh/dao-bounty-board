@@ -12,21 +12,20 @@ import {
 import { clusterApiUrl } from '@solana/web3.js';
 import { ThemeProvider } from 'next-themes';
 import { useMemo } from 'react';
-import { QueryClient, QueryClientProvider } from 'react-query';
+import { QueryClientProvider } from 'react-query';
 
 import { Background } from '../components/Background';
 import { Footer } from '../components/Footer';
 import { Header } from '../components/Header';
 import { Main } from '../components/Main';
 import AnchorContextProvider from '../context/AnchorContextProvider';
+import { queryClient } from '../queryClient';
 
 import type { AppProps } from 'next/app'
 import type { FC } from 'react'
 // Use require instead of import since order matters
 require('@solana/wallet-adapter-react-ui/styles.css')
 require('../styles/globals.css')
-
-const queryClient = new QueryClient()
 
 const App: FC<AppProps> = ({ Component, pageProps }) => {
   // Can be set to 'devnet', 'testnet', or 'mainnet-beta'

@@ -1,13 +1,26 @@
+import { PublicKey } from '@solana/web3.js';
 import React, { useMemo, useState } from 'react';
 
+import { TEST_REALM_PK } from '../api/constants';
 import { DAOItem } from '../components/DAOItem';
 import { H1 } from '../components/H1';
 import { SearchField } from '../components/Searchfield';
+import { useAnchorContext, useRealm } from '../hooks';
 import { useDAOs } from '../hooks/useDAOs';
+import { useRealms } from '../hooks/useRealms';
 
 import type { NextPage } from 'next'
 const Home: NextPage = () => {
+  const { wallet } = useAnchorContext()
+
+  const { realms } = useRealms()
+
+  const { realm, userRepresentationInDAO, realmTreasuries } = useRealm(
+    new PublicKey(TEST_REALM_PK),
+  )
   const [searchText, setSearchText] = useState('')
+
+  console.log('realms,', realms)
 
   const { data: DAOs } = useDAOs()
 
