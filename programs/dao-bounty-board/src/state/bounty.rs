@@ -17,12 +17,18 @@ pub fn get_bounty_signer_seeds_ingredients<'a>(
     bounty_board: &'a Pubkey,
     bounty_index_le_bytes: &'a [u8],
 ) -> ([&'a [u8]; 4], u8) {
+    msg!(
+        "Arguments to seeds. Bounty board address: {:?}. Bounty board index: {:?}",
+        bounty_board,
+        bounty_index_le_bytes
+    );
+
     let bounty_address_seeds = get_bounty_address_seeds(bounty_board, bounty_index_le_bytes);
     let (address_from_seeds, bump_seed) =
         Pubkey::find_program_address(&bounty_address_seeds[..], &crate::ID);
 
     msg!(
-        "Generated program address: {:?}. Bump: {:?}",
+        "Generated program address: {:?}. Bump: {}",
         address_from_seeds,
         bump_seed
     );

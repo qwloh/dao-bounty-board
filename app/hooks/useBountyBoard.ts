@@ -4,10 +4,13 @@ import { useQuery } from "react-query";
 import {
   getActiveBountyBoardProposal,
   getBountyBoard,
-  proposeInitBountyBoard,
-  proposeUpdateBountyBoardConfig,
+  getBountyBoardVaults,
+  proposeInitBountyBoard as _proposeInitBountyBoard,
+  proposeUpdateBountyBoardConfig as _proposeUpdateBountyBoardConfig,
 } from "../api";
 import {
+  cleanUpBountyBoard,
+  cleanUpContributorRecord,
   getBountyBoardAddress,
   InitialContributorWithRole,
 } from "../api/utils";
@@ -31,6 +34,14 @@ export const useBountyBoard = (realmPubkey: PublicKey) => {
   const { data: bountyBoard } = useQuery(
     ["bounty-board", bountyBoardPDA],
     () => getBountyBoard(bountyBoardProgram, bountyBoardPDA),
+    {
+      enabled: !!provider,
+    }
+  );
+
+  const { data: bountyBoardVaults } = useQuery(
+    ["bounty-board", bountyBoardPDA, "vaults"],
+    () => getBountyBoardVaults(provider, bountyBoardPDA),
     {
       enabled: !!provider,
     }
@@ -78,35 +89,40 @@ export const useBountyBoard = (realmPubkey: PublicKey) => {
     }
   );
 
+  const proposeInitBountyBoard = ({
+    boardConfig,
+    fundingAmount,
+    initialContributorsWithRole,
+  }: {
+    boardConfig: BountyBoardConfig;
+    fundingAmount: number;
+    initialContributorsWithRole: InitialContributorWithRole[];
+  }) =>
+    _proposeInitBountyBoard(
+      bountyBoardProgram,
+      realmPubkey,
+      preferredRepresentation,
+      bountyBoardPDA,
+      boardConfig,
+      preferredTreasury,
+      fundingAmount,
+      initialContributorsWithRole
+    );
+
+  const proposeUpdateBountyBoard = (boardConfig: BountyBoardConfig) =>
+    _proposeUpdateBountyBoardConfig(
+      bountyBoardProgram,
+      realmPubkey,
+      preferredRepresentation,
+      bountyBoardPDA,
+      boardConfig
+    );
+
   return {
     activeBountyBoardProposals,
     bountyBoard: { publicKey: bountyBoardPDA, account: bountyBoard },
-    proposeInitBountyBoard: ({
-      boardConfig,
-      fundingAmount,
-      initialContributorsWithRole,
-    }: {
-      boardConfig: BountyBoardConfig;
-      fundingAmount: number;
-      initialContributorsWithRole: InitialContributorWithRole[];
-    }) =>
-      proposeInitBountyBoard(
-        bountyBoardProgram,
-        realmPubkey,
-        preferredRepresentation,
-        bountyBoardPDA,
-        boardConfig,
-        preferredTreasury,
-        fundingAmount,
-        initialContributorsWithRole
-      ),
-    proposeUpdateBountyBoard: (boardConfig: BountyBoardConfig) =>
-      proposeUpdateBountyBoardConfig(
-        bountyBoardProgram,
-        realmPubkey,
-        preferredRepresentation,
-        bountyBoardPDA,
-        boardConfig
-      ),
+    bountyBoardVaults,
+    proposeInitBountyBoard,
+    proposeUpdateBountyBoard,
   };
 };

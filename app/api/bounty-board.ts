@@ -1,9 +1,5 @@
-import { AnchorProvider, Program, utils } from "@project-serum/anchor";
-import {
-  PublicKey,
-  Transaction,
-  TransactionInstruction,
-} from "@solana/web3.js";
+import { AnchorProvider, Program } from "@project-serum/anchor";
+import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import {
   DUMMY_MINT_PK,
   GOVERNANCE_PROGRAM_ID,
@@ -28,11 +24,51 @@ import {
   ProposalState,
 } from "@solana/spl-governance";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 export const getBountyBoard = (
   program: Program<DaoBountyBoard>,
   bountyBoardPubkey: PublicKey
 ) => program.account.bountyBoard.fetchNullable(bountyBoardPubkey);
+
+export const getBountyBoardVaults = async (
+  provider: AnchorProvider,
+  bountyBoardPubkey: PublicKey
+) => {
+  const bountyBoardVaults =
+    await provider.connection.getParsedTokenAccountsByOwner(
+      bountyBoardPubkey,
+      {
+        programId: TOKEN_PROGRAM_ID,
+      }
+      // { dataSlice: {offset: 0, length: 0}}
+      // ^ not available because @solana/web3.js haven't caught up with JSON rpc method
+    );
+
+  console.log("Bounty board vaults found", bountyBoardVaults.value.length);
+  // return bountyBoardVaults;
+
+  // parsed it into shape compatible with spl-token
+  const normalizedBountyBoardVaults = bountyBoardVaults.value.map((v) => {
+    const data = v.account.data.parsed.info;
+    return {
+      address: v.pubkey,
+      mint: data.mint,
+      owner: data.owner,
+      amount: data.tokenAmount.amount,
+      // delegate: rawAccount.delegateOption ? rawAccount.delegate : null,
+      // delegatedAmount: rawAccount.delegatedAmount,
+      isInitialized: data.state === "initialized",
+      // isFrozen: rawAccount.state === AccountState.Frozen,
+      isNative: !!data.isNative,
+      // rentExemptReserve: rawAccount.isNativeOption ? rawAccount.isNative : null,
+      // closeAuthority: rawAccount.closeAuthorityOption
+      //   ? rawAccount.closeAuthority
+      //   : null,
+    };
+  });
+  return normalizedBountyBoardVaults;
+};
 
 export const getActiveBountyBoardProposal = async (
   program: Program<DaoBountyBoard>,

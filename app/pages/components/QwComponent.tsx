@@ -20,6 +20,7 @@ const QwComponent = () => {
   const {
     activeBountyBoardProposals, // if there is already any active ones, direct them to voting instead of letting them init new proposal
     bountyBoard,
+    bountyBoardVaults,
     proposeInitBountyBoard,
     proposeUpdateBountyBoard,
   } = useBountyBoard(new PublicKey(TEST_REALM_PK));
@@ -78,6 +79,12 @@ const QwComponent = () => {
           {bountyBoard?.publicKey && bountyBoard?.publicKey.toString()})
         </div>
         <div>{JSON.stringify(bountyBoard.account)}</div>
+      </div>
+      <div>
+        <div>
+          <strong>Bounty board Vaults</strong>
+        </div>
+        <div>{JSON.stringify(bountyBoardVaults)}</div>
       </div>
       <div>
         <div>

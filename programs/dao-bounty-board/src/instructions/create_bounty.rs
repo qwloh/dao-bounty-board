@@ -21,6 +21,8 @@ pub fn create_bounty(ctx: Context<CreateBounty>, data: BountyVM) -> Result<()> {
     // TODO: validate bounty.contributor_record has sufficient role
     // transfer funds from bounty board vault to bounty escrow
 
+    bounty.bounty_index = bounty_board.bounty_count;
+
     // better way to write this?
     bounty.title = data.title;
     bounty.description = data.description;

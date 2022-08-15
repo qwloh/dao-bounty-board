@@ -47,7 +47,7 @@ pub fn delete_bounty(ctx: Context<DeleteBounty>) -> Result<()> {
 
     close_account(cpi_ctx)?;
 
-    msg!("Bounty board vault account {} closed!", bounty_escrow.key());
+    msg!("Bounty escrow account {} closed!", bounty_escrow.key());
     msg!("Bounty account {} closed!", bounty.key());
     Ok(())
 }
