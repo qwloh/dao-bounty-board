@@ -1,11 +1,16 @@
 import { AnchorProvider, BN, Program } from "@project-serum/anchor";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-governance";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, getAccount } from "@solana/spl-token";
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  createTransferInstruction,
+  getAccount,
+} from "@solana/spl-token";
 import {
   Keypair,
   PublicKey,
   SystemProgram,
   SYSVAR_RENT_PUBKEY,
+  Transaction,
 } from "@solana/web3.js";
 import { DUMMY_MINT_PK } from "../../app/api/constants";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
@@ -25,6 +30,49 @@ export enum Permission {
   RejectSubmission = "rejectSubmission",
 }
 
+const getTiersInVec = (PAYOUT_MINT: PublicKey) => [
+  {
+    tierName: "Entry",
+    difficultyLevel: "First contribution",
+    minRequiredReputation: new BN(0),
+    minRequiredSkillsPt: new BN(0),
+    reputationReward: new BN(10),
+    skillsPtReward: new BN(10),
+    payoutReward: new BN(50),
+    payoutMint: PAYOUT_MINT,
+  },
+  {
+    tierName: "A",
+    difficultyLevel: "Easy",
+    minRequiredReputation: new BN(50),
+    minRequiredSkillsPt: new BN(50),
+    reputationReward: new BN(20),
+    skillsPtReward: new BN(20),
+    payoutReward: new BN(200),
+    payoutMint: PAYOUT_MINT,
+  },
+  {
+    tierName: "AA",
+    difficultyLevel: "Moderate",
+    minRequiredReputation: new BN(100),
+    minRequiredSkillsPt: new BN(100),
+    reputationReward: new BN(50),
+    skillsPtReward: new BN(50),
+    payoutReward: new BN(500),
+    payoutMint: PAYOUT_MINT,
+  },
+  {
+    tierName: "S",
+    difficultyLevel: "Complex",
+    minRequiredReputation: new BN(500),
+    minRequiredSkillsPt: new BN(500),
+    reputationReward: new BN(100),
+    skillsPtReward: new BN(100),
+    payoutReward: new BN(2000),
+    payoutMint: PAYOUT_MINT,
+  },
+];
+
 export const getRolesInVec = () => [
   {
     roleName: "Core",
@@ -36,7 +84,7 @@ export const getRolesInVec = () => [
 
 const DEFAULT_CONFIG = {
   lastRevised: new BN(new Date().getTime() / 1000),
-  tiers: [],
+  tiers: getTiersInVec(new PublicKey(DUMMY_MINT_PK.USDC)),
   roles: getRolesInVec(),
 };
 
@@ -48,6 +96,7 @@ export const setupBountyBoard = async (
   realmPubkey: PublicKey,
   config: BountyBoardConfig = DEFAULT_CONFIG
 ) => {
+  console.log("Bounty board config", config);
   const TEST_REALM_PK = realmPubkey;
   const TEST_REALM_GOVERNANCE = Keypair.fromSeed(TEST_REALM_PK.toBytes());
   const TEST_REALM_GOVERNANCE_PK = TEST_REALM_GOVERNANCE.publicKey;
@@ -133,11 +182,37 @@ export const setupBountyBoard = async (
   };
 };
 
+export const seedBountyBoardVault = async (
+  provider: AnchorProvider,
+  bountyBoardVaultPubkey: PublicKey,
+  fundingAddress: PublicKey,
+  fundingAddressOwner: PublicKey
+  // signer: PublicKey,
+) => {
+  const ix = createTransferInstruction(
+    fundingAddress,
+    bountyBoardVaultPubkey,
+    fundingAddressOwner,
+    100 * Math.pow(10, 6)
+  );
+
+  const unsignedTx = new Transaction().add(ix);
+  await provider.sendAndConfirm(unsignedTx);
+
+  // check bounty board vault is properly seeded
+  const bountyBoardVaultAcc = await getAccount(
+    provider.connection,
+    bountyBoardVaultPubkey
+  );
+  console.log("New amount in bounty board vault", bountyBoardVaultAcc.amount);
+};
+
 export const cleanUpBountyBoard = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
   bountyBoardPDA: PublicKey,
-  bountyBoardVaultPDA: PublicKey
+  bountyBoardVaultPDA: PublicKey,
+  realmTreasuryAta: PublicKey
 ) => {
   // close bounty board vault account first
   try {
@@ -148,6 +223,7 @@ export const cleanUpBountyBoard = async (
         bountyBoardVault: bountyBoardVaultPDA,
         // FFeqLD5am9P3kPJAdXDUcymJirvkAe6GvbkZcva1RtRj
         // GZywBMtMyZTR5MnFJsnBkDrJHPWovHoc2P6sENFEzyZy
+        realmTreasuryAta,
         user: provider.wallet.publicKey,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,

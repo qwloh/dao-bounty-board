@@ -14,7 +14,7 @@ pub fn init_bounty_board(ctx: Context<InitBountyBoard>, data: InitBountyBoardVM)
 
     bounty_board.realm = data.realm_pk;
     bounty_board.config = data.config;
-    bounty_board.bounty_count = 0; // initialize bounty count to zero
+    bounty_board.bounty_index = 0; // initialize bounty count to zero
     bounty_board.authority = *realm_governance.key;
 
     Ok(())

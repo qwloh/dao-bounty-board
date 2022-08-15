@@ -5,6 +5,6 @@ pub enum BountyBoardError {
     BountyAlreadyAssigned,
     BountyApplicationExpired,
     MinWaitTimeNotReached,
-    // and others...
     NoDefaultRoleConfigured,
+    NotAuthorizedToCreateBounty,
 }

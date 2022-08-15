@@ -36,33 +36,33 @@ pub struct BountyBoard {
     pub authority: Pubkey,
     pub dummy: String,
     pub config: BountyBoardConfig,
-    pub bounty_count: u64,
+    pub bounty_index: u64,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub struct BountyBoardConfig {
     pub tiers: Vec<BountyTier>,
     pub roles: Vec<RoleSetting>,
     pub last_revised: u64,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Default)]
 pub struct BountyTier {
     pub tier_name: String,
     pub difficulty_level: String,
 
-    pub min_required_reputation: u32,
-    pub min_required_skills_pt: u32,
+    pub min_required_reputation: u64, // same size as defined in Bounty
+    pub min_required_skills_pt: u64,
 
-    pub reputation_reward: u32,
-    pub skills_pt_reward: u32,
-    pub payout_reward: u32,
+    pub reputation_reward: u64,
+    pub skills_pt_reward: u64,
+    pub payout_reward: u64,
     pub payout_mint: Pubkey,
 }
 
 // a bit of an overkill
 // just to show how flexible it could be in the future ba
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub enum Permission {
     CreateBounty,
     UpdateBounty,
@@ -73,7 +73,7 @@ pub enum Permission {
     RejectSubmission,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Default)]
 pub struct RoleSetting {
     pub role_name: String,
     pub permissions: Vec<Permission>,

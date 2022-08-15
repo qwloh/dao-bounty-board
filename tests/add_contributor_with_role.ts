@@ -31,6 +31,9 @@ describe("add contributor with role", () => {
     "7HvUepoKUmWLtTc2ihCRUG7MEdp45V7rCyBDeBgRGFjj"
   );
   let TEST_REALM_GOVERNANCE = Keypair.fromSeed(TEST_REALM_PK.toBytes());
+  const TEST_REALM_TREASURY_USDC_ATA = new PublicKey(
+    "EoCo8zx6fZiAmwNxG1xqLKHYtsQapNx39wWTJvGZaZwq"
+  ); // my own ATA for the mint
   let TEST_BOUNTY_BOARD_PK;
   let TEST_BOUNTY_BOARD_VAULT_PK;
   let TEST_CONTRIBUTOR_RECORD_PDA;
@@ -67,6 +70,7 @@ describe("add contributor with role", () => {
       );
     TEST_CONTRIBUTOR_RECORD_PDA = contributorRecordPDA;
 
+    assert.isTrue(contributorRecordAcc.initialized);
     assert.equal(
       contributorRecordAcc.bountyBoard.toString(),
       TEST_BOUNTY_BOARD_PK.toString()
@@ -80,10 +84,11 @@ describe("add contributor with role", () => {
       TEST_ASSOCIATED_WALLET.toString()
     );
     assert.equal(contributorRecordAcc.role, TEST_ROLE_NAME);
-    // reputation
-    // skillsPt
-    // bountyCompleted
-    // recentRepChange
+
+    assert.equal(contributorRecordAcc.reputation.toNumber(), 0);
+    assert.isEmpty(contributorRecordAcc.skillsPt);
+    assert.equal(contributorRecordAcc.bountyCompleted, 0);
+    assert.equal(contributorRecordAcc.recentRepChange, 0);
   });
 
   afterEach(async () => {
@@ -100,7 +105,8 @@ describe("add contributor with role", () => {
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK
+      TEST_BOUNTY_BOARD_VAULT_PK,
+      TEST_REALM_TREASURY_USDC_ATA
     );
   });
 });

@@ -1,5 +1,6 @@
 import { AnchorProvider, Program } from "@project-serum/anchor";
 import {
+  Account,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getAccount,
   TOKEN_PROGRAM_ID,
@@ -25,20 +26,30 @@ export enum Skill {
   Operations = "operations",
 }
 
+export const DEFAULT_BOUNTY_DETAILS = {
+  title: "My First Bounty",
+  description: "", // to be replaced with ipfs impl
+  tier: "Entry",
+  skill: { development: {} },
+};
+
 export const setupBounty = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
   bountyBoardPubkey: PublicKey,
-  bountyBoardVaultPubkey: PublicKey
+  bountyBoardVaultPubkey: PublicKey,
+  contributorRecordPubkey: PublicKey,
+  bountyDetails: {
+    title: string;
+    description: string;
+    tier: string;
+    skill: Partial<Record<Skill, {}>>;
+  } = DEFAULT_BOUNTY_DETAILS
 ) => {
-  const TITLE = "My First Bounty";
-  const DESCRIPTION =
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet.";
   const BOUNTY_BOARD_PK = bountyBoardPubkey;
-  const TIER = "Entry";
-  const SKILL = Skill.Development;
-
   const BOUNTY_BOARD_VAULT_PK = bountyBoardVaultPubkey;
+  const CONTRIBUTOR_RECORD_PK = contributorRecordPubkey;
+
   const BOUNTY_INDEX = 0;
   const REWARD_MINT_PK = new PublicKey(DUMMY_MINT_PK.USDC);
   const [BOUNTY_PDA] = await getBountyAddress(BOUNTY_BOARD_PK, BOUNTY_INDEX);
@@ -51,15 +62,15 @@ export const setupBounty = async (
   console.log("Bounty Escrow PDA", BOUNTY_ESCROW_PDA.toString());
 
   try {
+    const { title, description, tier, skill } = bountyDetails;
     const createBountyTx = await program.methods
       //@ts-ignore
       .createBounty({
-        title: TITLE,
-        description: "", // to be replaced with ipfs impl
-        // description: DESCRIPTION,
+        title,
+        description,
         bountyBoard: BOUNTY_BOARD_PK,
-        tier: TIER,
-        skill: { [SKILL]: {} },
+        tier,
+        skill,
       })
       .accounts({
         bountyBoard: BOUNTY_BOARD_PK,
@@ -67,6 +78,7 @@ export const setupBounty = async (
         bounty: BOUNTY_PDA,
         bountyEscrow: BOUNTY_ESCROW_PDA,
         rewardMint: REWARD_MINT_PK,
+        contributorRecord: CONTRIBUTOR_RECORD_PK,
         user: provider.wallet.publicKey,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
@@ -74,6 +86,7 @@ export const setupBounty = async (
         rent: SYSVAR_RENT_PUBKEY,
         clock: SYSVAR_CLOCK_PUBKEY,
       })
+      // .simulate();
       .rpc();
     console.log("Your transaction signature", createBountyTx);
   } catch (err) {
@@ -81,7 +94,7 @@ export const setupBounty = async (
   }
 
   let bountyAcc;
-  let bountyEscrowAcc;
+  let bountyEscrowAcc: Account;
   console.log("--- Bounty Acc ---");
   try {
     bountyAcc = await program.account.bounty.fetch(BOUNTY_PDA);
@@ -175,7 +188,8 @@ export const cleanUpBounty = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
   bountyPDA: PublicKey,
-  bountyEscrowPDA: PublicKey
+  bountyEscrowPDA: PublicKey,
+  bountyBoardVaultPDA: PublicKey
 ) => {
   // close bounty escrow account first
   try {
@@ -184,12 +198,13 @@ export const cleanUpBounty = async (
       .accounts({
         bounty: bountyPDA,
         bountyEscrow: bountyEscrowPDA,
+        bountyBoardVault: bountyBoardVaultPDA,
         user: provider.wallet.publicKey,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
       .rpc();
-    console.log(`Bounty board escrow acc ${bountyEscrowPDA.toString()} closed`);
+    console.log(`Bounty escrow acc ${bountyEscrowPDA.toString()} closed`);
   } catch (err) {
     console.log(
       `Error clearing bounty escrow acc ${bountyEscrowPDA.toString()}`,

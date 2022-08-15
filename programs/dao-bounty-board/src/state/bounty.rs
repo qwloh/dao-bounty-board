@@ -1,5 +1,6 @@
 use crate::PROGRAM_AUTHORITY_SEED;
 use anchor_lang::prelude::*;
+use get_size::GetSize;
 
 fn get_bounty_address_seeds<'a>(
     bounty_board: &'a Pubkey,
@@ -36,7 +37,7 @@ pub fn get_bounty_signer_seeds_ingredients<'a>(
     (bounty_address_seeds, bump_seed)
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+#[derive(GetSize, AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub enum BountyState {
     Open,
     Assigned,
@@ -45,7 +46,7 @@ pub enum BountyState {
 }
 
 // hard coded skills type for ALL DAOs
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+#[derive(GetSize, AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub enum Skill {
     Development,
     Design,
@@ -55,28 +56,34 @@ pub enum Skill {
 
 /// seeds: PROGRAM_AUTHORITY_SEED, bounty_board_pk, "bounty", bounty_index
 #[account]
+#[derive(GetSize)]
 pub struct Bounty {
     // seeds related info
     // move to top for easy filter
-    pub bounty_board: Pubkey,
-    pub bounty_index: u64, // same type as bounty_board.bounty_count
+    #[get_size(ignore)]
+    pub bounty_board: Pubkey, // 32
+    pub bounty_index: u64, // 8, same type as bounty_board.bounty_count
 
-    pub state: BountyState,
-    pub creator: Pubkey, // contributor record
-    pub created_at: i64, // UnixTimestamp ni seconds
+    pub state: BountyState, // 1
 
-    pub reward_payout: u64,
-    pub reward_mint: Pubkey,
-    pub skill: Skill, // correlate to enum
-    pub reward_skill_pt: u64,
-    pub reward_reputation: u64,
-    pub tier: String,
+    #[get_size(ignore)]
+    pub creator: Pubkey, // 32, contributor record
+    pub created_at: i64, // 8, UnixTimestamp ni seconds
 
-    pub title: String,
-    pub description: String, // ipfs cid
+    #[get_size(ignore)]
+    pub reward_mint: Pubkey, // 32
+    pub reward_payout: u64,     // 8
+    pub skill: Skill,           // 1
+    pub reward_skill_pt: u64,   // 8
+    pub reward_reputation: u64, // 8
+    pub tier: String,           // unknown
 
-    pub assignee: Option<Pubkey>, // contributor record
-    pub assigned_at: Option<i64>,
+    pub title: String,       // unknown
+    pub description: String, // unknown, ipfs cid
 
-    pub completed_at: Option<i64>,
+    #[get_size(ignore)]
+    pub assignee: Option<Pubkey>, // 32, contributor record
+    pub assigned_at: Option<i64>, // 8
+
+    pub completed_at: Option<i64>, // 8
 }
