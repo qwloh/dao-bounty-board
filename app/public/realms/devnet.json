@@ -187,5 +187,11 @@
     "website": "https://yellowman.vercel.app/",
     "keywords": "YELLOW MAN",
     "ogImage": "/realms/YMDAO/img/ymdaologo.png"
+  },
+  {
+    "symbol": "SelfDAO",
+    "displayName": "Self DAO",
+    "programId": "GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw",
+    "realmId": "885LdWunq8rh7oUM6kMjeGV56T6wYNMgb9o6P7BiT5yX"
   }
 ]

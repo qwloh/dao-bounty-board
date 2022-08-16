@@ -1,11 +1,15 @@
 use crate::errors::BountyBoardError;
 pub use crate::state::bounty::*;
+pub use crate::state::contributor_record::*;
+use crate::PROGRAM_AUTHORITY_SEED;
 use anchor_lang::prelude::*;
-use anchor_spl::token::{close_account, CloseAccount, Token, TokenAccount};
+use anchor_spl::token::{close_account, transfer, CloseAccount, Token, TokenAccount, Transfer};
 
 pub fn delete_bounty(ctx: Context<DeleteBounty>) -> Result<()> {
     let bounty = &ctx.accounts.bounty;
     let bounty_escrow = &ctx.accounts.bounty_escrow;
+    let bounty_board_vault = &ctx.accounts.bounty_board_vault;
+    let contributor_record = &ctx.accounts.contributor_record;
     let user = &ctx.accounts.user;
     let token_program = &ctx.accounts.token_program;
 
@@ -13,6 +17,8 @@ pub fn delete_bounty(ctx: Context<DeleteBounty>) -> Result<()> {
         bounty.assignee == Option::None,
         BountyBoardError::BountyAlreadyAssigned
     );
+    // in the future do permission based check to allow non creator delete bounty as well
+    require_keys_eq!(contributor_record.key(), bounty.creator);
 
     // handle bounty escrow
 
@@ -28,8 +34,25 @@ pub fn delete_bounty(ctx: Context<DeleteBounty>) -> Result<()> {
     // transfer funds from bounty escrow back to bounty vault
     let token_amt = bounty_escrow.amount;
     if token_amt != 0 {
-        // let transfer_instruction =
-        // invoke_signed(instruction, account_infos, signers_seeds)
+        let transfer_instruction = Transfer {
+            from: bounty_escrow.to_account_info(),
+            to: bounty_board_vault.to_account_info(),
+            authority: bounty.to_account_info(),
+        };
+
+        let cpi_ctx_trf = CpiContext::new_with_signer(
+            token_program.to_account_info(),
+            transfer_instruction,
+            &signers_seeds[..],
+        );
+
+        transfer(cpi_ctx_trf, token_amt)?;
+
+        msg!(
+            "Bounty escrow balance {} transferred to {}!",
+            token_amt,
+            bounty_board_vault.key()
+        );
     }
 
     // close bounty escrow
@@ -47,7 +70,7 @@ pub fn delete_bounty(ctx: Context<DeleteBounty>) -> Result<()> {
 
     close_account(cpi_ctx)?;
 
-    msg!("Bounty board vault account {} closed!", bounty_escrow.key());
+    msg!("Bounty escrow account {} closed!", bounty_escrow.key());
     msg!("Bounty account {} closed!", bounty.key());
     Ok(())
 }
@@ -67,8 +90,12 @@ pub struct DeleteBounty<'info> {
     #[account(mut)]
     pub bounty_escrow: Account<'info, TokenAccount>,
 
+    #[account(seeds=[PROGRAM_AUTHORITY_SEED, &bounty.bounty_board.as_ref(), b"contributor_record", &user.key().as_ref()], bump)]
+    pub contributor_record: Account<'info, ContributorRecord>,
+
     #[account(mut)]
     pub user: Signer<'info>,
+
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
 }

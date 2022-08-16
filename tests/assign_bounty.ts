@@ -19,7 +19,7 @@ import {
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
 
-describe("assign bounty", () => {
+describe.skip("assign bounty", () => {
   // Configure the client to use the local cluster.
   const provider = AnchorProvider.env();
   setProvider(provider);

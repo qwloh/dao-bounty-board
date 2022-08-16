@@ -23,6 +23,13 @@ pub mod dao_bounty_board {
         instructions::init_bounty_board(ctx, data)
     }
 
+    pub fn add_bounty_board_tier_config(
+        ctx: Context<AddBountyBoardTierConfig>,
+        data: AddBountyBoardTierConfigVM,
+    ) -> Result<()> {
+        instructions::add_bounty_board_tier_config(ctx, data)
+    }
+
     pub fn update_bounty_board(
         ctx: Context<UpdateBountyBoard>,
         data: UpdateBountyBoardVM,

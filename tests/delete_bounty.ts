@@ -5,7 +5,7 @@ import {
   web3,
 } from "@project-serum/anchor";
 import { getAccount, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { PublicKey, SystemProgram } from "@solana/web3.js";
+import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { assert } from "chai";
 import { BOUNTY_BOARD_PROGRAM_ID } from "../app/api/constants";
 import idl from "../target/idl/dao_bounty_board.json";
@@ -20,12 +20,18 @@ import {
   setupBountyApplication,
 } from "./setup_fixtures/bounty_application";
 import {
+  addBountyBoardTierConfig,
   cleanUpBountyBoard,
+  seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
+import {
+  cleanUpContributorRecord,
+  setupContributorRecord,
+} from "./setup_fixtures/contributor_record";
 import { assertFulfilled, assertReject } from "./utils/assert-promise-utils";
 
-describe("delete bounty", () => {
+describe.only("delete bounty", () => {
   // Configure the client to use the local cluster.
   const provider = AnchorProvider.env();
   setProvider(provider);
@@ -47,6 +53,10 @@ describe("delete bounty", () => {
   const TEST_REALM_PK = new PublicKey(
     "EY3MSW2j1nmsd1qxvLPqHFuxk1CpyWb9MXxJru5VDpWh"
   );
+  const TEST_REALM_GOVERNANCE = Keypair.fromSeed(TEST_REALM_PK.toBytes());
+  const TEST_REALM_TREASURY_USDC_ATA = new PublicKey(
+    "EoCo8zx6fZiAmwNxG1xqLKHYtsQapNx39wWTJvGZaZwq"
+  ); // my own ATA for the mint
   let TEST_BOUNTY_BOARD_PK;
   let TEST_BOUNTY_BOARD_VAULT_PK;
   let TEST_BOUNTY_PK;
@@ -72,12 +82,40 @@ describe("delete bounty", () => {
     TEST_BOUNTY_BOARD_PK = bountyBoardPDA;
     TEST_BOUNTY_BOARD_VAULT_PK = bountyBoardVaultPDA;
 
+    // add bounty tier config
+    await addBountyBoardTierConfig(
+      provider,
+      program,
+      TEST_BOUNTY_BOARD_PK,
+      TEST_REALM_GOVERNANCE
+    );
+
+    // seed bounty board vault
+    await seedBountyBoardVault(
+      provider,
+      bountyBoardVaultPDA,
+      TEST_REALM_TREASURY_USDC_ATA,
+      provider.wallet.publicKey
+    );
+
+    // set up contributor record
+    const { contributorRecordPDA } = await setupContributorRecord(
+      provider,
+      program,
+      bountyBoardPDA,
+      provider.wallet.publicKey,
+      TEST_REALM_GOVERNANCE,
+      "Core"
+    );
+    TEST_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
+
     // set up bounty
     const { bountyPDA, bountyEscrowPDA } = await setupBounty(
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK
+      TEST_BOUNTY_BOARD_VAULT_PK,
+      TEST_CONTRIBUTOR_RECORD_PK
     );
     TEST_BOUNTY_PK = bountyPDA;
     TEST_BOUNTY_ESCROW_PK = bountyEscrowPDA;
@@ -91,6 +129,7 @@ describe("delete bounty", () => {
           bounty: TEST_BOUNTY_PK,
           bountyBoardVault: TEST_BOUNTY_BOARD_VAULT_PK,
           bountyEscrow: TEST_BOUNTY_ESCROW_PK,
+          contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
           user: provider.wallet.publicKey,
           systemProgram: SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
@@ -153,6 +192,7 @@ describe("delete bounty", () => {
             bounty: TEST_BOUNTY_PK,
             bountyBoardVault: TEST_BOUNTY_BOARD_VAULT_PK,
             bountyEscrow: TEST_BOUNTY_ESCROW_PK,
+            contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
             user: provider.wallet.publicKey,
             systemProgram: SystemProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
@@ -187,7 +227,7 @@ describe("delete bounty", () => {
       provider,
       program,
       TEST_BOUNTY_APPLICATION_PK,
-      TEST_CONTRIBUTOR_RECORD_PK
+      TEST_CONTRIBUTOR_RECORD_PK // bounty applicant
     );
 
     // clean up bounty related accounts
@@ -195,7 +235,15 @@ describe("delete bounty", () => {
       provider,
       program,
       TEST_BOUNTY_PK,
-      TEST_BOUNTY_ESCROW_PK
+      TEST_BOUNTY_ESCROW_PK,
+      TEST_BOUNTY_BOARD_VAULT_PK
+    );
+
+    // clean up contributor records
+    await cleanUpContributorRecord(
+      provider,
+      program,
+      TEST_CONTRIBUTOR_RECORD_PK // bounty creator
     );
 
     // close bounty board related accounts
@@ -203,7 +251,8 @@ describe("delete bounty", () => {
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK
+      TEST_BOUNTY_BOARD_VAULT_PK,
+      TEST_REALM_TREASURY_USDC_ATA
     );
   });
 });

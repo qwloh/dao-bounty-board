@@ -1,4 +1,5 @@
 pub use accept_submission::*;
+pub use add_bounty_board_tier_config::*;
 pub use add_contributor_with_role::*;
 pub use apply_to_bounty::*;
 pub use assign_bounty::*;
@@ -25,6 +26,7 @@ pub use close_contributor_record::*;
 pub use close_payout_record::*;
 
 pub mod accept_submission;
+pub mod add_bounty_board_tier_config;
 pub mod add_contributor_with_role;
 pub mod apply_to_bounty;
 pub mod assign_bounty;

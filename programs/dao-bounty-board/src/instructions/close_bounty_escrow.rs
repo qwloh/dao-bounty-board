@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{close_account, CloseAccount, Token, TokenAccount};
+use anchor_spl::token::{close_account, transfer, CloseAccount, Token, TokenAccount, Transfer};
 
 use crate::state::bounty::*;
 
@@ -7,6 +7,7 @@ pub fn close_bounty_escrow(ctx: Context<CloseBountyEscrow>) -> Result<()> {
     let user = &mut ctx.accounts.user;
     let bounty = &ctx.accounts.bounty;
     let bounty_escrow = &mut ctx.accounts.bounty_escrow;
+    let bounty_board_vault = &ctx.accounts.bounty_board_vault;
     let token_program = &ctx.accounts.token_program;
 
     // generate signer seeds
@@ -21,8 +22,25 @@ pub fn close_bounty_escrow(ctx: Context<CloseBountyEscrow>) -> Result<()> {
     // transfer out token
     let token_amt = bounty_escrow.amount;
     if token_amt != 0 {
-        // let transfer_instruction =
-        // invoke_signed(instruction, account_infos, signers_seeds)
+        let transfer_instruction = Transfer {
+            from: bounty_escrow.to_account_info(),
+            to: bounty_board_vault.to_account_info(),
+            authority: bounty.to_account_info(),
+        };
+
+        let cpi_ctx_trf = CpiContext::new_with_signer(
+            token_program.to_account_info(),
+            transfer_instruction,
+            &signers_seeds[..],
+        );
+
+        transfer(cpi_ctx_trf, token_amt)?;
+
+        msg!(
+            "Bounty escrow balance {} transferred to {}!",
+            token_amt,
+            bounty_board_vault.key()
+        );
     }
 
     // close acc
@@ -50,6 +68,9 @@ pub struct CloseBountyEscrow<'info> {
 
     #[account(mut)]
     pub bounty_escrow: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub bounty_board_vault: Account<'info, TokenAccount>,
 
     pub user: Signer<'info>,
     // typical stuff

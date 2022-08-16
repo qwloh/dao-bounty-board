@@ -1,91 +1,94 @@
-import React, { useMemo, useState } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import { PublicKey } from "@solana/web3.js";
+import React, { useMemo, useState } from "react";
+import { FormProvider, useForm } from "react-hook-form";
+import { DEV_WALLET_2 } from "../../../api/constants";
 
-import { DEFAULT_CONFIG } from '../../../api/utils/test-assist/bounty_board';
-import { AddButton } from '../../../components/AddButton';
-import { Card } from '../../../components/Card';
-import { H2 } from '../../../components/H2';
-import { Badge } from '../../../components/Icons/Badge';
-import { Close } from '../../../components/Icons/Close';
-import { Suitcase } from '../../../components/Icons/Suitcase';
-import { Input } from '../../../components/Input';
-import { PrimaryButton } from '../../../components/PrimaryButton';
-import { Select } from '../../../components/Select';
-import { Tag, TagColors } from '../../../components/Tag';
-import { useRealmInfoBySymbol } from '../../../hooks/useRealmInfoBySymbol';
-import { useRouter } from '../../../hooks/useRouter';
-import { BountyTier, RoleSetting } from '../../../model/bounty-board.model';
+import { DEFAULT_CONFIG } from "../../../api/utils/test-assist/bounty_board";
+import { AddButton } from "../../../components/AddButton";
+import { Card } from "../../../components/Card";
+import { H2 } from "../../../components/H2";
+import { Badge } from "../../../components/Icons/Badge";
+import { Close } from "../../../components/Icons/Close";
+import { Suitcase } from "../../../components/Icons/Suitcase";
+import { Input } from "../../../components/Input";
+import { PrimaryButton } from "../../../components/PrimaryButton";
+import { Select } from "../../../components/Select";
+import { Tag, TagColors } from "../../../components/Tag";
+import { useBountyBoard } from "../../../hooks";
+import { useRealmInfoBySymbol } from "../../../hooks/useRealmInfoBySymbol";
+import { useRouter } from "../../../hooks/useRouter";
+import { BountyTier, RoleSetting } from "../../../model/bounty-board.model";
 
 type TagType = {
-  color: TagColors
-  text: string
-}
+  color: TagColors;
+  text: string;
+};
 
 const defaultTags: TagType[] = [
   {
-    color: 'blue',
-    text: 'Development',
+    color: "blue",
+    text: "Development",
   },
   {
-    color: 'purple',
-    text: 'Marketing',
+    color: "purple",
+    text: "Marketing",
   },
   {
-    color: 'yellow',
-    text: 'Sale',
+    color: "yellow",
+    text: "Sale",
   },
   {
-    color: 'pink',
-    text: 'Design',
+    color: "pink",
+    text: "Design",
   },
-]
+];
 
-const assets = ['usdc', 'sol', 'mngo']
+const assets = ["usdc", "sol", "mngo"];
 
 const compensationStructure = [
   {
-    tier: '',
-    difficulty: 'complex',
+    tier: "",
+    difficulty: "complex",
     awards: 2000,
-    asset: 'usdc',
+    asset: "usdc",
     skillPoints: 50,
     reputation: 50,
     minSkillPoints: 0,
     minReputation: 0,
   },
   {
-    tier: 'aa',
-    difficulty: 'moderate',
+    tier: "aa",
+    difficulty: "moderate",
     awards: 50,
-    asset: 'usdc',
+    asset: "usdc",
     skillPoints: 50,
     reputation: 50,
     minSkillPoints: 0,
     minReputation: 0,
   },
   {
-    tier: 'a',
-    difficulty: 'easy',
+    tier: "a",
+    difficulty: "easy",
     awards: 50,
-    asset: 'usdc',
+    asset: "usdc",
     skillPoints: 50,
     reputation: 50,
     minSkillPoints: 0,
     minReputation: 0,
   },
   {
-    tier: 'entry',
-    difficulty: 'first contributor',
+    tier: "entry",
+    difficulty: "first contributor",
     awards: 50,
-    asset: 'usdc',
+    asset: "usdc",
     skillPoints: 50,
     reputation: 50,
     minSkillPoints: 0,
     minReputation: 0,
   },
-]
+];
 
-const defaultTiers = DEFAULT_CONFIG.tiers as BountyTier[]
+const defaultTiers = DEFAULT_CONFIG.tiers as BountyTier[];
 
 const FieldWrapper = ({
   className,
@@ -93,14 +96,14 @@ const FieldWrapper = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={`w-[9.25rem] rounded flex items-center justify-center ${
-      className || ''
+      className || ""
     }`}
     {...rest}
   />
-)
+);
 
 interface ICheckbox extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string
+  label: string;
 }
 
 const Checkbox = ({ name, label, ...rest }: ICheckbox) => (
@@ -110,38 +113,38 @@ const Checkbox = ({ name, label, ...rest }: ICheckbox) => (
       {label}
     </label>
   </span>
-)
+);
 
 const labels = [
-  'Task Tier',
-  'Difficulty',
-  'Awards',
-  '',
-  '',
-  'Min. Requirements',
-  '',
-]
+  "Task Tier",
+  "Difficulty",
+  "Awards",
+  "",
+  "",
+  "Min. Requirements",
+  "",
+];
 
 const dummyAddresses = [
-  '2uqNsjTDsHWDMUHGPBH2dpGpUb6aUzQd6RuAddhP7PDz',
-  '2uqNsjTDsHWDMUHGPBH2dpGpUb6aUzQd6RuAddhP7PDzsd',
-  'asda2uqNsjTDsHWDMUHGPBH2dpGpUb6aUzQd6RuAddhP7PDz',
-]
+  "2uqNsjTDsHWDMUHGPBH2dpGpUb6aUzQd6RuAddhP7PDz",
+  "2uqNsjTDsHWDMUHGPBH2dpGpUb6aUzQd6RuAddhP7PDzsd",
+  "asda2uqNsjTDsHWDMUHGPBH2dpGpUb6aUzQd6RuAddhP7PDz",
+];
 
-const roleLabels = ['Role', 'Permission', '', 'Members']
+const roleLabels = ["Role", "Permission", "", "Members"];
 
 type FormValue = {
-  tiers: BountyTier[]
-  roles: RoleSetting[]
-}
+  tiers: BountyTier[];
+  roles: RoleSetting[];
+};
 
 const defaultFormValues = {
   tiers: DEFAULT_CONFIG.tiers,
   roles: DEFAULT_CONFIG.roles,
-}
+};
 
 const getDefaultValues = () => {
-  const val = {}
+  const val = {};
 
   defaultFormValues.tiers.forEach(
     ({
@@ -154,69 +157,86 @@ const getDefaultValues = () => {
       payoutMint,
       payoutReward,
     }) => {
-      val[`tier-${tierName}-difficultyLevel`] = difficultyLevel
-      val[`tier-${tierName}-minRequiredReputation`] = minRequiredReputation
-      val[`tier-${tierName}-minRequiredSkillsPt`] = minRequiredSkillsPt
-      val[`tier-${tierName}-reputationReward`] = reputationReward
-      val[`tier-${tierName}-skillsPtReward`] = skillsPtReward
+      val[`tier-${tierName}-difficultyLevel`] = difficultyLevel;
+      val[`tier-${tierName}-minRequiredReputation`] = minRequiredReputation;
+      val[`tier-${tierName}-minRequiredSkillsPt`] = minRequiredSkillsPt;
+      val[`tier-${tierName}-reputationReward`] = reputationReward;
+      val[`tier-${tierName}-skillsPtReward`] = skillsPtReward;
       // defaultValues[`${tierName}-payoutMint`] = payoutMint
-      val[`tier-${tierName}-payoutReward`] = payoutReward
-    },
-  )
+      val[`tier-${tierName}-payoutReward`] = payoutReward;
+    }
+  );
 
-  return val
-}
+  return val;
+};
 
 const recordExist = (records: any, search: string) =>
-  (Object.keys(records) as Array<any>).find((key) => records[key] === search)
+  (Object.keys(records) as Array<any>).find((key) => records[key] === search);
 
 export const ProposeBountyBoard = () => {
-  const { symbol } = useRouter()
-  const { realmInfo } = useRealmInfoBySymbol(symbol)
-  const [tiers, setTiers] = useState<BountyTier[]>(defaultFormValues.tiers)
+  const { symbol } = useRouter();
+  const { realmInfo } = useRealmInfoBySymbol(symbol);
+
+  const { proposeInitBountyBoard, bountyBoard } = useBountyBoard(
+    realmInfo?.realmId
+  );
+
+  const [tiers, setTiers] = useState<BountyTier[]>(defaultFormValues.tiers);
   // const [confirming, setConfirming] = useState(false)
-  const [confirmedValues, setConfirmedValues] = useState<any>(undefined)
-  const confirming = Boolean(confirmedValues)
+  const [confirmedValues, setConfirmedValues] = useState<any>(undefined);
+  const confirming = Boolean(confirmedValues);
 
-  const [tags, setTags] = useState<TagType[]>(defaultTags)
+  const [tags, setTags] = useState<TagType[]>(defaultTags);
 
-  const defaultValues = getDefaultValues()
+  const defaultValues = getDefaultValues();
   const methods = useForm<any>({
     defaultValues: defaultValues,
-  })
+  });
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+    e.preventDefault();
     methods.handleSubmit((data) => {
-      console.log('send values', data)
-    })()
+      // console.log("send values", data);
+      proposeInitBountyBoard({
+        // @ts-ignore
+        boardConfig: DEFAULT_CONFIG,
+        fundingAmount: 10000000, // 10 USDC
+        // make ourselves core contributor so we are authorized to createBounty
+        initialContributorsWithRole: [
+          {
+            roleName: "Core",
+            contributorWallet: new PublicKey(DEV_WALLET_2),
+          },
+        ],
+      });
+    })();
   }
 
   // console.log(watch('EntrypayoutReward'))
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault()
+    e.preventDefault();
     // console.log('name,', e.currentTarget.name)
-    methods.setValue(e.currentTarget.name, Number(e.currentTarget.value))
-  }
+    methods.setValue(e.currentTarget.name, Number(e.currentTarget.value));
+  };
 
   const onSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    methods.setValue(e.currentTarget.name, e.currentTarget.checked)
-  }
+    methods.setValue(e.currentTarget.name, e.currentTarget.checked);
+  };
 
   const confirm = () => {
     methods.handleSubmit((data) => {
       const tierKeys = Object.keys(data).filter(
-        (key) => key.split('-')?.[0] === 'tier',
-      )
-      console.log('tierKeys', tierKeys)
-      setConfirmedValues(data)
-    })()
-  }
+        (key) => key.split("-")?.[0] === "tier"
+      );
+      console.log("tierKeys", tierKeys);
+      setConfirmedValues(data);
+    })();
+  };
 
-  const addSkills = () => {}
+  const addSkills = () => {};
 
-  const addDifficulty = () => {}
+  const addDifficulty = () => {};
 
   return (
     <FormProvider
@@ -299,7 +319,7 @@ export const ProposeBountyBoard = () => {
                             disabled={confirming}
                           />
 
-                          {'Skill pts.'}
+                          {"Skill pts."}
                         </FieldWrapper>
                       </div>
                       <div className="flex items-center">
@@ -313,7 +333,7 @@ export const ProposeBountyBoard = () => {
                             disabled={confirming}
                           />
 
-                          {'Reputation'}
+                          {"Reputation"}
                         </FieldWrapper>
                       </div>
                       <div className="flex items-center">
@@ -327,7 +347,7 @@ export const ProposeBountyBoard = () => {
                               disabled={confirming}
                             />
 
-                            {'Skill pts'}
+                            {"Skill pts"}
                           </FieldWrapper>
                         </div>
                       </div>
@@ -341,11 +361,11 @@ export const ProposeBountyBoard = () => {
                             disabled={confirming}
                           />
 
-                          {'Reputation'}
+                          {"Reputation"}
                         </FieldWrapper>
                       </div>
                     </React.Fragment>
-                  ),
+                  )
                 )}
               </div>
             </div>
@@ -366,7 +386,7 @@ export const ProposeBountyBoard = () => {
                 ))}
                 {defaultFormValues.roles.map(
                   ({ roleName, permissions }, index) => {
-                    console.log('permissions', permissions)
+                    console.log("permissions", permissions);
                     return (
                       <React.Fragment key={roleName}>
                         <div className="text-base flex font-medium text-tnight-200">
@@ -380,21 +400,21 @@ export const ProposeBountyBoard = () => {
                             disabled={confirming}
                             name={`role-${roleName}-createBounty`}
                             label="Create Bounty"
-                            checked={recordExist(permissions, 'createBounty')}
+                            checked={recordExist(permissions, "createBounty")}
                             onChange={onSelect}
                           />
                           <Checkbox
                             disabled={confirming}
                             name={`role-${roleName}-deleteBounty`}
                             label="Delete Bounty"
-                            checked={recordExist(permissions, 'deleteBounty')}
+                            checked={recordExist(permissions, "deleteBounty")}
                             onChange={onSelect}
                           />
                           <Checkbox
                             disabled={confirming}
                             name={`role-${roleName}-assignBounty`}
                             label="Assign Bounty"
-                            checked={recordExist(permissions, 'assignBounty')}
+                            checked={recordExist(permissions, "assignBounty")}
                             onChange={onSelect}
                           />
                         </div>
@@ -408,7 +428,7 @@ export const ProposeBountyBoard = () => {
                             label="Accept"
                             checked={recordExist(
                               permissions,
-                              'acceptSubmission',
+                              "acceptSubmission"
                             )}
                             onChange={onSelect}
                           />
@@ -418,7 +438,7 @@ export const ProposeBountyBoard = () => {
                             label="Reject"
                             checked={recordExist(
                               permissions,
-                              'rejectSubmission',
+                              "rejectSubmission"
                             )}
                             onChange={onSelect}
                           />
@@ -428,7 +448,7 @@ export const ProposeBountyBoard = () => {
                             label="Request Changes"
                             checked={recordExist(
                               permissions,
-                              'requestChangeToSubmission',
+                              "requestChangeToSubmission"
                             )}
                             onChange={onSelect}
                           />
@@ -447,10 +467,10 @@ export const ProposeBountyBoard = () => {
                               </div>
                             ))}
                           </div>
-                          {roleName === 'Core' && !confirming && (
+                          {roleName === "Core" && !confirming && (
                             <AddButton>Add Core Team Members</AddButton>
                           )}
-                          {roleName === 'Contributor' && !confirming && (
+                          {roleName === "Contributor" && !confirming && (
                             <AddButton>Add Contributors</AddButton>
                           )}
                         </div>
@@ -459,8 +479,8 @@ export const ProposeBountyBoard = () => {
                           <span className="col-span-4 h-px w-full bg-text-secondary" />
                         )}
                       </React.Fragment>
-                    )
-                  },
+                    );
+                  }
                 )}
               </div>
             </div>
@@ -486,5 +506,5 @@ export const ProposeBountyBoard = () => {
         </div>
       </form>
     </FormProvider>
-  )
-}
+  );
+};

@@ -7,13 +7,24 @@ import {
 import idl from "../target/idl/dao_bounty_board.json";
 import { assert } from "chai";
 import { DaoBountyBoard } from "../target/types/dao_bounty_board";
-import { PublicKey } from "@solana/web3.js";
-import { BOUNTY_BOARD_PROGRAM_ID } from "../app/api/constants";
+import { Keypair, PublicKey } from "@solana/web3.js";
+import { BOUNTY_BOARD_PROGRAM_ID, DUMMY_MINT_PK } from "../app/api/constants";
 import {
+  addBountyBoardTierConfig,
   cleanUpBountyBoard,
+  seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
-import { cleanUpBounty, setupBounty } from "./setup_fixtures/bounty";
+import {
+  cleanUpBounty,
+  DEFAULT_BOUNTY_DETAILS,
+  setupBounty,
+} from "./setup_fixtures/bounty";
+import {
+  cleanUpContributorRecord,
+  setupContributorRecord,
+} from "./setup_fixtures/contributor_record";
+import { getTiersInVec } from "../app/api/utils";
 
 describe("create bounty", () => {
   // Configure the client to use the local cluster.
@@ -33,12 +44,17 @@ describe("create bounty", () => {
    * TEST
    */
 
-  // accounts to cleanup
   const TEST_REALM_PK = new PublicKey(
     "9MEf1ogzSCr4YCneQ53WuFcqaiF4f95JxGLrt3rnSjDL"
   );
+  const TEST_REALM_GOVERNANCE = Keypair.fromSeed(TEST_REALM_PK.toBytes());
+  const TEST_REALM_TREASURY_USDC_ATA = new PublicKey(
+    "EoCo8zx6fZiAmwNxG1xqLKHYtsQapNx39wWTJvGZaZwq"
+  ); // my own ATA for the mint
+  // accounts to cleanup
   let TEST_BOUNTY_BOARD_PK;
   let TEST_BOUNTY_BOARD_VAULT_PK;
+  let TEST_CONTRIBUTOR_RECORD_PK;
   let TEST_BOUNTY_PDA;
   let TEST_BOUNTY_ESCROW_PDA;
 
@@ -58,6 +74,33 @@ describe("create bounty", () => {
     );
     TEST_BOUNTY_BOARD_PK = bountyBoardPDA;
     TEST_BOUNTY_BOARD_VAULT_PK = bountyBoardVaultPDA;
+
+    // add tiers config
+    await addBountyBoardTierConfig(
+      provider,
+      program,
+      TEST_BOUNTY_BOARD_PK,
+      TEST_REALM_GOVERNANCE
+    );
+
+    // seed bounty board vault
+    await seedBountyBoardVault(
+      provider,
+      bountyBoardVaultPDA,
+      TEST_REALM_TREASURY_USDC_ATA,
+      provider.wallet.publicKey
+    );
+
+    // set up contributor record
+    const { contributorRecordPDA } = await setupContributorRecord(
+      provider,
+      program,
+      bountyBoardPDA,
+      provider.wallet.publicKey,
+      TEST_REALM_GOVERNANCE,
+      "Core"
+    );
+    TEST_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
   });
 
   it("should create bounty PDA with correct data", async () => {
@@ -66,26 +109,62 @@ describe("create bounty", () => {
         provider,
         program,
         TEST_BOUNTY_BOARD_PK,
-        TEST_BOUNTY_BOARD_VAULT_PK
+        TEST_BOUNTY_BOARD_VAULT_PK,
+        TEST_CONTRIBUTOR_RECORD_PK,
+        DEFAULT_BOUNTY_DETAILS
       );
     TEST_BOUNTY_PDA = bountyPDA;
     TEST_BOUNTY_ESCROW_PDA = bountyEscrowPDA;
 
-    // test bounty acc create correctly
+    // test bounty acc create correctly, with creator, tier reward properly populated
     assert.equal(
       bountyAcc.bountyBoard.toString(),
       TEST_BOUNTY_BOARD_PK.toString()
     );
+    assert.deepEqual(bountyAcc.state, { open: {} });
+    assert.deepEqual(bountyAcc.skill, DEFAULT_BOUNTY_DETAILS.skill);
+    assert.equal(
+      bountyAcc.creator.toString(),
+      TEST_CONTRIBUTOR_RECORD_PK.toString()
+    );
+    assert.equal(bountyAcc.tier, DEFAULT_BOUNTY_DETAILS.tier);
+    assert.equal(bountyAcc.title, DEFAULT_BOUNTY_DETAILS.title);
+    assert.equal(bountyAcc.description, DEFAULT_BOUNTY_DETAILS.description);
+
+    const defaultTiers = getTiersInVec(new PublicKey(DUMMY_MINT_PK.USDC));
+    const rewardTier = defaultTiers.find(
+      (t) => t.tierName === DEFAULT_BOUNTY_DETAILS.tier
+    );
+    assert.equal(
+      bountyAcc.rewardMint.toString(),
+      rewardTier.payoutMint.toString()
+    );
+    assert.equal(
+      bountyAcc.rewardPayout.toNumber(),
+      rewardTier.payoutReward.toNumber()
+    );
+    assert.equal(
+      bountyAcc.rewardReputation.toNumber(),
+      rewardTier.reputationReward.toNumber()
+    );
+    assert.equal(
+      bountyAcc.rewardSkillPt.toNumber(),
+      rewardTier.skillsPtReward.toNumber()
+    );
 
     // test bounty escrow acc created and funded
     assert.equal(bountyEscrowAcc.owner.toString(), TEST_BOUNTY_PDA.toString());
+    assert.equal(
+      Number(bountyEscrowAcc.amount),
+      rewardTier.payoutReward.toNumber()
+    );
 
     // test bounty board account bounty_count updated
     const bountyBoardAcc = await program.account.bountyBoard.fetch(
       TEST_BOUNTY_BOARD_PK
     );
     console.log("--- Bounty Board Acc ---");
-    assert.equal(bountyBoardAcc.bountyCount.toNumber(), 1);
+    assert.equal(bountyBoardAcc.bountyIndex.toNumber(), 1);
   });
 
   afterEach(async () => {
@@ -94,13 +173,20 @@ describe("create bounty", () => {
       provider,
       program,
       TEST_BOUNTY_PDA,
-      TEST_BOUNTY_ESCROW_PDA
+      TEST_BOUNTY_ESCROW_PDA,
+      TEST_BOUNTY_BOARD_VAULT_PK
+    );
+    await cleanUpContributorRecord(
+      provider,
+      program,
+      TEST_CONTRIBUTOR_RECORD_PK
     );
     await cleanUpBountyBoard(
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK
+      TEST_BOUNTY_BOARD_VAULT_PK,
+      TEST_REALM_TREASURY_USDC_ATA
     );
   });
 });

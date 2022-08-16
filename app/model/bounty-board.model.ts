@@ -5,7 +5,7 @@ export interface BountyBoard {
   realm: PublicKey;
   authority: PublicKey; // to be the council/community mint governance
   config: BountyBoardConfig;
-  bountyCount: BN;
+  bountyIndex: BN;
 }
 
 export interface BountyBoardConfig {
@@ -26,18 +26,18 @@ export type Permission =
 export interface RoleSetting {
   roleName: string;
   default: boolean;
-  permissions: Record<Permission, {}>[];
+  permissions: Partial<Record<Permission, {}>>[];
 }
 
 export interface BountyTier {
   tierName: string;
   difficultyLevel: string;
 
-  minRequiredReputation: number;
-  minRequiredSkillsPt: number;
+  minRequiredReputation: BN;
+  minRequiredSkillsPt: BN;
 
-  reputationReward: number;
-  skillsPtReward: number;
-  payoutReward: number;
+  reputationReward: BN;
+  skillsPtReward: BN;
+  payoutReward: BN;
   payoutMint: PublicKey;
 }

@@ -29,6 +29,12 @@ describe("init bounty board", () => {
     programId
   ) as Program<DaoBountyBoard>;
 
+  const TEST_REALM_PK = new PublicKey(
+    "E1gZDYQWPJV3RVBbijC8zoMhEXppA19ShXessDHKWCNM"
+  );
+  const TEST_REALM_TREASURY_USDC_ATA = new PublicKey(
+    "EoCo8zx6fZiAmwNxG1xqLKHYtsQapNx39wWTJvGZaZwq"
+  ); // my own ATA for the mint
   let TEST_BOUNTY_BOARD_PDA; // accounts to close after tests
   let TEST_BOUNTY_BOARD_VAULT_PDA;
   /**
@@ -38,9 +44,6 @@ describe("init bounty board", () => {
   it("should create bounty board PDA with correct data", async () => {
     // data
 
-    const TEST_REALM_PK = new PublicKey(
-      "E1gZDYQWPJV3RVBbijC8zoMhEXppA19ShXessDHKWCNM"
-    );
     // Test Realm public key E1gZDYQWPJV3RVBbijC8zoMhEXppA19ShXessDHKWCNM
     // Test realm governance public key DdDbZKSVEGbANBxudt59EX3ZYyU65SjL6yw6FTAjdM6s
     // Bounty board PDA BsJMGpu8AMkQn9M2gKUdkquY4AM7p9GXoY2VU5LZaJdy
@@ -58,10 +61,10 @@ describe("init bounty board", () => {
 
     assert.equal(bountyBoardAcc.realm.toString(), TEST_REALM_PK.toString());
     assert.equal(
-      bountyBoardAcc.updateAuthority.toString(),
+      bountyBoardAcc.authority.toString(),
       realmGovernancePk.toString()
     );
-    assert.equal(bountyBoardAcc.bountyCount.toNumber(), 0);
+    assert.equal(bountyBoardAcc.bountyIndex.toNumber(), 0);
     // assert.deepEqual(account.config, CONFIG);
 
     // assert bounty board is owner of vault
@@ -78,7 +81,8 @@ describe("init bounty board", () => {
       provider,
       program,
       TEST_BOUNTY_BOARD_PDA,
-      TEST_BOUNTY_BOARD_VAULT_PDA
+      TEST_BOUNTY_BOARD_VAULT_PDA,
+      TEST_REALM_TREASURY_USDC_ATA
     );
   });
 });

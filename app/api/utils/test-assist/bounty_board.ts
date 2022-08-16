@@ -8,6 +8,10 @@ import {
   SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
 import { DaoBountyBoard } from "../../../../target/types/dao_bounty_board";
+import {
+  BountyBoardConfig,
+  RoleSetting,
+} from "../../../model/bounty-board.model";
 import { DUMMY_MINT_PK } from "../../constants";
 import {
   getBountyBoardAddress,
@@ -29,41 +33,41 @@ export const getTiersInVec = (PAYOUT_MINT: PublicKey) => [
   {
     tierName: "Entry",
     difficultyLevel: "First contribution",
-    minRequiredReputation: 0,
-    minRequiredSkillsPt: 0,
-    reputationReward: 10,
-    skillsPtReward: 10,
-    payoutReward: 50,
+    minRequiredReputation: new BN(0),
+    minRequiredSkillsPt: new BN(0),
+    reputationReward: new BN(10),
+    skillsPtReward: new BN(10),
+    payoutReward: new BN(50),
     payoutMint: PAYOUT_MINT,
   },
   {
     tierName: "A",
     difficultyLevel: "Easy",
-    minRequiredReputation: 50,
-    minRequiredSkillsPt: 50,
-    reputationReward: 20,
-    skillsPtReward: 20,
-    payoutReward: 200,
+    minRequiredReputation: new BN(50),
+    minRequiredSkillsPt: new BN(50),
+    reputationReward: new BN(20),
+    skillsPtReward: new BN(20),
+    payoutReward: new BN(200),
     payoutMint: PAYOUT_MINT,
   },
   {
     tierName: "AA",
     difficultyLevel: "Moderate",
-    minRequiredReputation: 100,
-    minRequiredSkillsPt: 100,
-    reputationReward: 50,
-    skillsPtReward: 50,
-    payoutReward: 500,
+    minRequiredReputation: new BN(100),
+    minRequiredSkillsPt: new BN(100),
+    reputationReward: new BN(50),
+    skillsPtReward: new BN(50),
+    payoutReward: new BN(500),
     payoutMint: PAYOUT_MINT,
   },
   {
     tierName: "S",
     difficultyLevel: "Complex",
-    minRequiredReputation: 500,
-    minRequiredSkillsPt: 500,
-    reputationReward: 100,
-    skillsPtReward: 100,
-    payoutReward: 2000,
+    minRequiredReputation: new BN(500),
+    minRequiredSkillsPt: new BN(500),
+    reputationReward: new BN(100),
+    skillsPtReward: new BN(100),
+    payoutReward: new BN(2000),
     payoutMint: PAYOUT_MINT,
   },
 ];
@@ -77,13 +81,11 @@ export const getRolesInVec = () => [
   { roleName: "Contributor", permissions: [], default: true },
 ];
 
-export const DEFAULT_CONFIG = {
+export const DEFAULT_CONFIG: BountyBoardConfig = {
   lastRevised: new BN(new Date().getTime() / 1000),
   tiers: getTiersInVec(new PublicKey(DUMMY_MINT_PK.USDC)),
   roles: getRolesInVec(),
 };
-
-export type BountyBoardConfig = typeof DEFAULT_CONFIG;
 
 export const setupBountyBoard = async (
   provider: AnchorProvider,

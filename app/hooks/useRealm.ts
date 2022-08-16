@@ -10,12 +10,12 @@ import {
   pubkeyFilter,
   Realm,
   TokenOwnerRecord,
-} from '@solana/spl-governance';
-import { PublicKey } from '@solana/web3.js';
-import { useQuery } from 'react-query';
+} from "@solana/spl-governance";
+import { PublicKey } from "@solana/web3.js";
+import { useQuery } from "react-query";
 
-import { GOVERNANCE_PROGRAM_ID } from '../api/constants';
-import { useAnchorContext } from './useAnchorContext';
+import { GOVERNANCE_PROGRAM_ID } from "../api/constants";
+import { useAnchorContext } from "./useAnchorContext";
 
 export interface UserRepresentationInDAO {
   council: boolean;
@@ -38,25 +38,36 @@ export const useRealm = (
   realmTreasuries: RealmTreasury[];
 } => {
   const { provider } = useAnchorContext();
+  console.log("[QW log] Provider ", provider, "Realm pubkey", realmPubkey);
+
   const { data: realm } = useQuery(
-    ["realm", realmPubkey.toString()],
-    () => getRealm(provider?.connection, realmPubkey),
+    ["realm", realmPubkey + ""],
+    () => {
+      console.log("[QW log] Get realm fired");
+      return getRealm(provider?.connection, realmPubkey);
+    },
     {
-      enabled: !!provider,
+      enabled: !!provider && !!realmPubkey,
     }
+  );
+  console.log("[QW log] Realm", realm);
+  console.log(
+    "[QW log] Enable condition",
+    !!provider && !!realmPubkey && !!realm
   );
 
   const governanceProgramId = new PublicKey(GOVERNANCE_PROGRAM_ID);
 
   const { data: processedData } = useQuery(
-    ["realm", realmPubkey.toString(), "user_rep_and_realm_treasuries"],
+    ["realm", realmPubkey + "", "user_rep_and_realm_treasuries"],
     async () => {
       const userRepresentationInDAO: UserRepresentationInDAO[] = [];
       const realmTreasuries: RealmTreasury[] = [];
 
+      console.log("[QW log] Get user rep fired");
       const councilMintPubkey = realm.account.config.councilMint;
       if (councilMintPubkey) {
-        console.log(`Realm has council mint ${councilMintPubkey}`);
+        console.log(`[QW log] Realm has council mint ${councilMintPubkey}`);
         // get council mint governance
         const councilMintGovernance = await getGovernanceAccounts(
           provider.connection,
@@ -65,7 +76,7 @@ export const useRealm = (
           [pubkeyFilter(33, councilMintPubkey)!] // governed account to be mint
         );
         console.log(
-          "Expected council governance account type: MintGovernanceV2. Obtained: ",
+          "[QW log] Expected council governance account type: MintGovernanceV2. Obtained: ",
           GovernanceAccountType[councilMintGovernance[0].account.accountType]
         );
 
@@ -75,7 +86,7 @@ export const useRealm = (
           councilMintGovernance[0].pubkey
         );
         console.log(
-          `Treasury associated with council mint ${councilMintGovernance[0].pubkey.toString()}: ${treasuryPDA_council.toString()}`
+          `[QW log] Treasury associated with council mint ${councilMintGovernance[0].pubkey.toString()}: ${treasuryPDA_council.toString()}`
         );
         realmTreasuries.push({
           council: true,
@@ -91,7 +102,7 @@ export const useRealm = (
           provider.wallet.publicKey
         );
         console.log(
-          `Derived TokenOwnerRecord address for council mint: ${tokenOwnerRecordPubkey_council.toString()}`
+          `[QW log] Derived TokenOwnerRecord address for council mint: ${tokenOwnerRecordPubkey_council.toString()}`
         );
 
         try {
@@ -109,7 +120,7 @@ export const useRealm = (
         } catch (err) {
           // user does not have TokenOwnerRecord for council mint
           console.log(
-            `User does not have TokenOwnerRecord for council mint ${councilMintPubkey.toString()}`,
+            `[QW log] User does not have TokenOwnerRecord for council mint ${councilMintPubkey.toString()}`,
             err
           );
         }
@@ -130,7 +141,7 @@ export const useRealm = (
         communityMintGovernancePubkey
       );
       console.log(
-        `Treasury associated with community mint ${communityMintGovernancePubkey.toString()}: ${treasuryPDA_community.toString()}`
+        `[QW log] Treasury associated with community mint ${communityMintGovernancePubkey.toString()}: ${treasuryPDA_community.toString()}`
       );
       realmTreasuries.push({
         council: false,
@@ -158,18 +169,19 @@ export const useRealm = (
         });
       } catch (err) {
         console.log(
-          `Token owner record (Mint: ${communityMintPubkey.toString()}) not found.`,
+          `[QW log] Token owner record (Mint: ${communityMintPubkey.toString()}) not found.`,
           err
         );
       }
-
+      console.log("[QW log] Found user reps in DAO", userRepresentationInDAO);
+      console.log("[QW log] Found realm treasuries", realmTreasuries);
       return {
         userRepresentationInDAO,
         realmTreasuries,
       };
     },
     {
-      enabled: !!provider,
+      enabled: !!provider && !!realmPubkey && !!realm,
     }
   );
 

@@ -70,6 +70,8 @@ import { readableTokenAcc } from "../api/utils";
     new PublicKey("CVCtwsNWqvAJUcq3QvEaUAaL8dZtxDfD27UKc9fVnmP9")
   );
   console.log("ATA", readableTokenAcc(ata));
+  console.log("ATA owner", ata.owner.toString());
+  console.log("ATA mint", ata.mint.toString());
 
   // const governances = await getAllGovernances(
   //   provider.connection,

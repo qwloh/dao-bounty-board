@@ -9,7 +9,7 @@ import {
   setupBountySubmission,
 } from "./setup_fixtures/bounty_submission";
 
-describe("submit to bounty", () => {
+describe.skip("submit to bounty", () => {
   // Configure the client to use the local cluster.
   const provider = AnchorProvider.env();
   setProvider(provider);

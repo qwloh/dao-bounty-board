@@ -1,6 +1,11 @@
 import { PublicKey } from "@solana/web3.js";
 import React from "react";
-import { TEST_REALM_PK } from "../../api/constants";
+import {
+  DEV_WALLET_1,
+  DEV_WALLET_2,
+  DEV_WALLET_3,
+  TEST_REALM_PK,
+} from "../../api/constants";
 import { DEFAULT_CONFIG, getRolesInVec } from "../../api/utils";
 import { useAnchorContext, useBountyBoard, useRealm } from "../../hooks";
 import { useBounty } from "../../hooks/useBounty";
@@ -20,8 +25,9 @@ const QwComponent = () => {
   const {
     activeBountyBoardProposals, // if there is already any active ones, direct them to voting instead of letting them init new proposal
     bountyBoard,
+    bountyBoardVaults,
     proposeInitBountyBoard,
-    proposeUpdateBountyBoard,
+    // proposeUpdateBountyBoard, // disabling this for now due to potential complication
   } = useBountyBoard(new PublicKey(TEST_REALM_PK));
 
   const { bounties, getBounty, createBounty, deleteBounty } = useBounty(
@@ -81,6 +87,12 @@ const QwComponent = () => {
       </div>
       <div>
         <div>
+          <strong>Bounty board Vaults</strong>
+        </div>
+        <div>{JSON.stringify(bountyBoardVaults)}</div>
+      </div>
+      <div>
+        <div>
           <strong>Propose Setup Bounty Board</strong>
         </div>
         <button
@@ -89,11 +101,20 @@ const QwComponent = () => {
               // @ts-ignore
               boardConfig: DEFAULT_CONFIG,
               fundingAmount: 10000000, // 10 USDC
+              // make ourselves core contributor so we are authorized to createBounty
               initialContributorsWithRole: [
                 {
                   roleName: "Core",
-                  contributorWallet: wallet.publicKey,
+                  contributorWallet: new PublicKey(DEV_WALLET_2),
                 },
+                // {
+                //   roleName: "Core",
+                //   contributorWallet: new PublicKey(DEV_WALLET_1),
+                // },
+                // {
+                //   roleName: "Core",
+                //   contributorWallet: new PublicKey(DEV_WALLET_3),
+                // },
               ],
             })
           }
@@ -101,7 +122,7 @@ const QwComponent = () => {
           Propose Init Bounty Board
         </button>
       </div>
-      <div>
+      {/* <div>
         <div>
           <strong>Propose Update Board Config</strong>
         </div>
@@ -119,7 +140,7 @@ const QwComponent = () => {
         >
           Propose Update Bounty Board
         </button>
-      </div>
+      </div> */}
       <div>
         <div>
           <strong>Bounties</strong>

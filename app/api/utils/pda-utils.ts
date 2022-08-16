@@ -17,14 +17,17 @@ export const getBountyBoardAddress = (realmPubkey: PublicKey) =>
 export const getBountyBoardVaultAddress = (
   bountyBoardPubkey: PublicKey,
   mintPubkey: PublicKey
-) =>
-  getAssociatedTokenAddress(
+) => {
+  console.log("[QW log] First vault mint in pda_utils", mintPubkey);
+  console.log("[QW log] Bounty board pubkey in pda_utils", bountyBoardPubkey);
+  return getAssociatedTokenAddress(
     mintPubkey,
     bountyBoardPubkey,
     true,
     TOKEN_PROGRAM_ID,
     ASSOCIATED_TOKEN_PROGRAM_ID
   );
+};
 
 export const getBountyAddress = (
   bountyBoardPubkey: PublicKey,

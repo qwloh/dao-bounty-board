@@ -5,9 +5,18 @@ import {
   getAssociatedTokenAddress,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
+import {
+  PublicKey,
+  SystemProgram,
+  SYSVAR_CLOCK_PUBKEY,
+  SYSVAR_RENT_PUBKEY,
+} from "@solana/web3.js";
 import { DaoBountyBoard } from "../../../target/types/dao_bounty_board";
-import { BountyBoardConfig } from "../../model/bounty-board.model";
+import {
+  BountyBoardConfig,
+  BountyTier,
+  RoleSetting,
+} from "../../model/bounty-board.model";
 import {
   getBountyBoardVaultAddress,
   getContributorRecordAddress,
@@ -19,7 +28,7 @@ export const _getInitBountyBoardInstruction = async (
   realmGovernance: PublicKey,
   bountyBoardPDA: PublicKey,
   firstVaultMint: PublicKey,
-  boardConfig: BountyBoardConfig
+  roles: RoleSetting[]
 ) => {
   const provider = program.provider as AnchorProvider; // anchor provider is stored in program obj after being init
 
@@ -36,7 +45,7 @@ export const _getInitBountyBoardInstruction = async (
     // @ts-ignore
     .initBountyBoard({
       realmPk: realmPubkey,
-      config: boardConfig,
+      roles,
     })
     .accounts({
       // list of all affected accounts
@@ -49,10 +58,40 @@ export const _getInitBountyBoardInstruction = async (
       tokenProgram: TOKEN_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       rent: SYSVAR_RENT_PUBKEY,
+      clock: SYSVAR_CLOCK_PUBKEY,
     })
     .instruction();
 
   console.log("Init Bounty Board ix", {
+    ...ix,
+    keys: ix.keys.map((k) => ({ ...k, pubkey: k.pubkey.toString() })),
+  });
+
+  return ix;
+};
+
+export const _getAddBountyBoardTierConfigInstruction = async (
+  program: Program<DaoBountyBoard>,
+  bountyBoardPubkey: PublicKey,
+  realmGovernancePubkey: PublicKey,
+  tiers: BountyTier[]
+) => {
+  console.log("Tiers to add", tiers);
+  const TEST_BOUNTY_BOARD_PK = bountyBoardPubkey;
+  const TEST_REALM_GOVERNANCE_PK = realmGovernancePubkey;
+
+  const ix = await program.methods
+    //@ts-ignore
+    .addBountyBoardTierConfig({
+      tiers,
+    })
+    .accounts({
+      bountyBoard: TEST_BOUNTY_BOARD_PK,
+      realmGovernance: TEST_REALM_GOVERNANCE_PK,
+    })
+    .instruction();
+
+  console.log("Add Bounty Board Tiers Config ix", {
     ...ix,
     keys: ix.keys.map((k) => ({ ...k, pubkey: k.pubkey.toString() })),
   });
