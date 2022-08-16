@@ -177,12 +177,11 @@ export const _createProposal = async (
   try {
     const createProposalTxns = await sendLargeTx(provider, chunkedIxns);
     console.log("Transaction Signature", createProposalTxns);
+    console.log("Proposal pubkey", proposalAddress.toString());
+    return proposalAddress;
   } catch (err) {
     console.log("Send large tx fail. Error", err);
   }
-
-  console.log("Proposal pubkey", proposalAddress.toString());
-  return proposalAddress;
 };
 
 // console.log(`Creating proposal`);

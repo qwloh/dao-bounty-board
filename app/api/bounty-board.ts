@@ -50,7 +50,10 @@ export const getBountyBoardVaults = async (
       // ^ not available because @solana/web3.js haven't caught up with JSON rpc method
     );
 
-  console.log("Bounty board vaults found", bountyBoardVaults.value.length);
+  console.log(
+    "[QW log] Bounty board vaults found",
+    bountyBoardVaults.value.length
+  );
   // return bountyBoardVaults;
 
   // parsed it into shape compatible with spl-token
@@ -83,7 +86,9 @@ export const getActiveBountyBoardProposal = async (
   // very inefficient, well
   const proposalsForAllGovernances: ProgramAccount<Proposal>[] = [];
   for (const governancePK of governancePubkeys) {
-    console.log(`Get active bounty board proposal for ${governancePK}`);
+    console.log(
+      `[QW log] Get active bounty board proposal for ${governancePK}`
+    );
     const proposals = await getProposalsByGovernance(
       provider.connection,
       new PublicKey(GOVERNANCE_PROGRAM_ID),
@@ -92,7 +97,7 @@ export const getActiveBountyBoardProposal = async (
     proposalsForAllGovernances.push(...proposals);
   }
   console.log(
-    `Proposals found ${proposalsForAllGovernances.length}`,
+    `[QW log] Proposals found ${proposalsForAllGovernances.length}`,
     proposalsForAllGovernances
   );
 
