@@ -11,9 +11,14 @@ use anchor_spl::{
 pub fn init_bounty_board(ctx: Context<InitBountyBoard>, data: InitBountyBoardVM) -> Result<()> {
     let bounty_board = &mut ctx.accounts.bounty_board;
     let realm_governance = &mut ctx.accounts.realm_governance;
+    let clock = &ctx.accounts.clock;
 
     bounty_board.realm = data.realm_pk;
-    bounty_board.config = data.config;
+    bounty_board.config = BountyBoardConfig {
+        roles: data.roles,
+        tiers: Vec::new(),
+        last_revised: clock.unix_timestamp,
+    };
     bounty_board.bounty_index = 0; // initialize bounty count to zero
     bounty_board.authority = *realm_governance.key;
 
@@ -48,6 +53,7 @@ pub struct InitBountyBoard<'info> {
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub rent: Sysvar<'info, Rent>,
+    pub clock: Sysvar<'info, Clock>,
 }
 
 // instructions component: data buffer
@@ -56,5 +62,5 @@ pub struct InitBountyBoard<'info> {
 pub struct InitBountyBoardVM {
     /// DAO the bounty board belongs to
     pub realm_pk: Pubkey,
-    pub config: BountyBoardConfig,
+    pub roles: Vec<RoleSetting>,
 }

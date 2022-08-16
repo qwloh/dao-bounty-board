@@ -10,6 +10,7 @@ import { DaoBountyBoard } from "../target/types/dao_bounty_board";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { BOUNTY_BOARD_PROGRAM_ID, DUMMY_MINT_PK } from "../app/api/constants";
 import {
+  addBountyBoardTierConfig,
   cleanUpBountyBoard,
   seedBountyBoardVault,
   setupBountyBoard,
@@ -73,6 +74,14 @@ describe("create bounty", () => {
     );
     TEST_BOUNTY_BOARD_PK = bountyBoardPDA;
     TEST_BOUNTY_BOARD_VAULT_PK = bountyBoardVaultPDA;
+
+    // add tiers config
+    await addBountyBoardTierConfig(
+      provider,
+      program,
+      TEST_BOUNTY_BOARD_PK,
+      TEST_REALM_GOVERNANCE
+    );
 
     // seed bounty board vault
     await seedBountyBoardVault(

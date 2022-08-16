@@ -6,11 +6,9 @@ import {
   getBountyBoard,
   getBountyBoardVaults,
   proposeInitBountyBoard as _proposeInitBountyBoard,
-  proposeUpdateBountyBoardConfig as _proposeUpdateBountyBoardConfig,
+  // proposeUpdateBountyBoardConfig as _proposeUpdateBountyBoardConfig,
 } from "../api";
 import {
-  cleanUpBountyBoard,
-  cleanUpContributorRecord,
   getBountyBoardAddress,
   InitialContributorWithRole,
 } from "../api/utils";
@@ -71,7 +69,7 @@ export const useBountyBoard = (realmPubkey: PublicKey) => {
       }
       setPreferredTreasury(preferredTreasury);
     })();
-  }, [userRepresentationInDAO?.[0], realmTreasuries?.[0]]);
+  }, [provider, userRepresentationInDAO?.[0], realmTreasuries?.[0]]);
 
   const { data: activeBountyBoardProposals } = useQuery(
     ["bounty-board-proposal", bountyBoardPDA],
@@ -109,20 +107,21 @@ export const useBountyBoard = (realmPubkey: PublicKey) => {
       initialContributorsWithRole
     );
 
-  const proposeUpdateBountyBoard = (boardConfig: BountyBoardConfig) =>
-    _proposeUpdateBountyBoardConfig(
-      bountyBoardProgram,
-      realmPubkey,
-      preferredRepresentation,
-      bountyBoardPDA,
-      boardConfig
-    );
+  // disabling for now due to potential complication
+  // const proposeUpdateBountyBoard = (boardConfig: BountyBoardConfig) =>
+  //   _proposeUpdateBountyBoardConfig(
+  //     bountyBoardProgram,
+  //     realmPubkey,
+  //     preferredRepresentation,
+  //     bountyBoardPDA,
+  //     boardConfig
+  //   );
 
   return {
     activeBountyBoardProposals,
     bountyBoard: { publicKey: bountyBoardPDA, account: bountyBoard },
     bountyBoardVaults,
     proposeInitBountyBoard,
-    proposeUpdateBountyBoard,
+    // proposeUpdateBountyBoard,
   };
 };

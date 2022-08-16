@@ -7,6 +7,7 @@ export const assertReject = async (
   try {
     await fn();
   } catch (err) {
+    console.log("Err caught", JSON.stringify(err));
     assert.match(JSON.stringify(err), errorMatcher);
     return;
   }

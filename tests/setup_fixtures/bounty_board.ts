@@ -9,10 +9,12 @@ import {
   Keypair,
   PublicKey,
   SystemProgram,
+  SYSVAR_CLOCK_PUBKEY,
   SYSVAR_RENT_PUBKEY,
   Transaction,
 } from "@solana/web3.js";
 import { DUMMY_MINT_PK } from "../../app/api/constants";
+import { BountyTier, RoleSetting } from "../../app/model/bounty-board.model";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
 import { readableTokenAcc } from "../utils/common";
 import {
@@ -73,6 +75,10 @@ const getTiersInVec = (PAYOUT_MINT: PublicKey) => [
   },
 ];
 
+export const DEFAULT_TIERS: BountyTier[] = getTiersInVec(
+  new PublicKey(DUMMY_MINT_PK.USDC)
+);
+
 export const getRolesInVec = () => [
   {
     roleName: "Core",
@@ -82,21 +88,21 @@ export const getRolesInVec = () => [
   { roleName: "Contributor", permissions: [], default: true },
 ];
 
-const DEFAULT_CONFIG = {
-  lastRevised: new BN(new Date().getTime() / 1000),
-  tiers: getTiersInVec(new PublicKey(DUMMY_MINT_PK.USDC)),
-  roles: getRolesInVec(),
-};
+export const DEFAULT_ROLES: RoleSetting[] = getRolesInVec();
 
-type BountyBoardConfig = typeof DEFAULT_CONFIG;
+export interface BountyBoardConfig {
+  roles: RoleSetting[];
+  tiers: BountyTier[];
+  lastRevised: BN;
+}
 
 export const setupBountyBoard = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
   realmPubkey: PublicKey,
-  config: BountyBoardConfig = DEFAULT_CONFIG
+  roles: RoleSetting[] = DEFAULT_ROLES
 ) => {
-  console.log("Bounty board config", config);
+  console.log("Bounty board roles", roles);
   const TEST_REALM_PK = realmPubkey;
   const TEST_REALM_GOVERNANCE = Keypair.fromSeed(TEST_REALM_PK.toBytes());
   const TEST_REALM_GOVERNANCE_PK = TEST_REALM_GOVERNANCE.publicKey;
@@ -120,7 +126,7 @@ export const setupBountyBoard = async (
       //@ts-ignore
       .initBountyBoard({
         realmPk: TEST_REALM_PK,
-        config,
+        roles,
       })
       .accounts({
         bountyBoard: TEST_BOUNTY_BOARD_PDA,
@@ -132,6 +138,7 @@ export const setupBountyBoard = async (
         tokenProgram: TOKEN_PROGRAM_ID,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         rent: SYSVAR_RENT_PUBKEY,
+        clock: SYSVAR_CLOCK_PUBKEY,
       })
       .signers([TEST_REALM_GOVERNANCE])
       // .instruction();
@@ -180,6 +187,46 @@ export const setupBountyBoard = async (
     bountyBoardVaultPDA: TEST_BOUNTY_BOARD_VAULT_PDA,
     bountyBoardVaultAcc,
   };
+};
+
+export const addBountyBoardTierConfig = async (
+  provider: AnchorProvider,
+  program: Program<DaoBountyBoard>,
+  bountyBoardPubkey: PublicKey,
+  realmGovernance: Keypair,
+  tiers: BountyTier[] = DEFAULT_TIERS
+) => {
+  console.log("Tiers to add", tiers);
+  const TEST_BOUNTY_BOARD_PK = bountyBoardPubkey;
+  const TEST_REALM_GOVERNANCE = realmGovernance;
+
+  try {
+    const addTierConfigTx = await program.methods
+      //@ts-ignore
+      .addBountyBoardTierConfig({
+        tiers,
+      })
+      .accounts({
+        bountyBoard: TEST_BOUNTY_BOARD_PK,
+        realmGovernance: TEST_REALM_GOVERNANCE.publicKey,
+      })
+      .signers([TEST_REALM_GOVERNANCE])
+      // .instruction();
+      .rpc();
+    console.log("Your transaction signature", addTierConfigTx);
+    console.log("Tiers config added successfully.");
+  } catch (err) {
+    console.log(
+      "[AddBountyBoardTiersConfig] Transaction / Simulation fail.",
+      err
+    );
+  }
+
+  const updatedBountyBoardAcc = await program.account.bountyBoard.fetch(
+    TEST_BOUNTY_BOARD_PK
+  );
+  console.log("Updated tiers", updatedBountyBoardAcc.config.tiers);
+  return { updatedBountyBoardAcc };
 };
 
 export const seedBountyBoardVault = async (

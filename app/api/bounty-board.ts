@@ -1,5 +1,9 @@
 import { AnchorProvider, Program } from "@project-serum/anchor";
-import { PublicKey, TransactionInstruction } from "@solana/web3.js";
+import {
+  PublicKey,
+  Transaction,
+  TransactionInstruction,
+} from "@solana/web3.js";
 import {
   DUMMY_MINT_PK,
   GOVERNANCE_PROGRAM_ID,
@@ -15,6 +19,7 @@ import {
   _getFundBountyBoardVaultInstruction,
   _getAddContributorWithRoleInstruction,
   _getUpdateBountyBoardInstruction,
+  _getAddBountyBoardTierConfigInstruction,
 } from "./utils";
 import { RealmTreasury, UserRepresentationInDAO } from "../hooks";
 import {
@@ -148,7 +153,15 @@ export const proposeInitBountyBoard = async (
       realmGovernancePubkey,
       bountyBoardPubkey,
       new PublicKey(DUMMY_MINT_PK.USDC),
-      boardConfig
+      boardConfig.roles
+    );
+
+  const addBountyBoardTiersConfigInstruction: TransactionInstruction =
+    await _getAddBountyBoardTierConfigInstruction(
+      program,
+      bountyBoardPubkey,
+      realmGovernancePubkey,
+      boardConfig.tiers
     );
 
   const fundBountyBoardVaultInstruction: TransactionInstruction =
@@ -183,6 +196,7 @@ export const proposeInitBountyBoard = async (
     "", // or a link to our app to show config
     [
       initBountyBoardInstruction,
+      addBountyBoardTiersConfigInstruction,
       fundBountyBoardVaultInstruction,
       ...addContributorWithRoleInstructions,
     ]
@@ -194,56 +208,57 @@ export const proposeInitBountyBoard = async (
   return proposalUrl; // return url to view proposal
 };
 
-export const proposeUpdateBountyBoardConfig = async (
-  program: Program<DaoBountyBoard>,
-  realmPubkey: PublicKey,
-  userRepresentationInDAO: UserRepresentationInDAO,
-  bountyBoardPubkey: PublicKey,
-  boardConfig: BountyBoardConfig
-) => {
-  const provider = program.provider as AnchorProvider;
-  // determine if proposal is to be created on council mint or community mint, and get user's representation acc in DAO
-  const {
-    governance: realmGovernancePubkey,
-    governingTokenMint: governingTokenMintPubkey,
-    tokenOwnerRecord,
-  } = userRepresentationInDAO;
-  console.log(
-    "Chosen identity",
-    `Council token owner record? ${userRepresentationInDAO.council}`,
-    {
-      realmGovernancePubkey: realmGovernancePubkey.toString(),
-      governingTokenMintPubkey: governingTokenMintPubkey.toString(),
-      tokenOwnerRecordPubkey: tokenOwnerRecord.pubkey.toString(),
-    }
-  );
-  // create instruction objects
-  console.log("Board config", boardConfig);
-  const updateBountyBoardInstruction: TransactionInstruction =
-    await _getUpdateBountyBoardInstruction(
-      program,
-      realmGovernancePubkey,
-      bountyBoardPubkey,
-      boardConfig
-    );
+// temporarily disabling due to potential complications
+// export const proposeUpdateBountyBoardConfig = async (
+//   program: Program<DaoBountyBoard>,
+//   realmPubkey: PublicKey,
+//   userRepresentationInDAO: UserRepresentationInDAO,
+//   bountyBoardPubkey: PublicKey,
+//   boardConfig: BountyBoardConfig
+// ) => {
+//   const provider = program.provider as AnchorProvider;
+//   // determine if proposal is to be created on council mint or community mint, and get user's representation acc in DAO
+//   const {
+//     governance: realmGovernancePubkey,
+//     governingTokenMint: governingTokenMintPubkey,
+//     tokenOwnerRecord,
+//   } = userRepresentationInDAO;
+//   console.log(
+//     "Chosen identity",
+//     `Council token owner record? ${userRepresentationInDAO.council}`,
+//     {
+//       realmGovernancePubkey: realmGovernancePubkey.toString(),
+//       governingTokenMintPubkey: governingTokenMintPubkey.toString(),
+//       tokenOwnerRecordPubkey: tokenOwnerRecord.pubkey.toString(),
+//     }
+//   );
+//   // create instruction objects
+//   console.log("Board config", boardConfig);
+//   const updateBountyBoardInstruction: TransactionInstruction =
+//     await _getUpdateBountyBoardInstruction(
+//       program,
+//       realmGovernancePubkey,
+//       bountyBoardPubkey,
+//       boardConfig
+//     );
 
-  // submit proposal
-  const proposalAddress = await _createProposal(
-    provider,
-    realmPubkey,
-    realmGovernancePubkey,
-    governingTokenMintPubkey,
-    tokenOwnerRecord.pubkey,
-    UPDATE_BOUNTY_BOARD_PROPOSAL_NAME,
-    "", // or a link to our app to show config
-    [updateBountyBoardInstruction]
-  );
+//   // submit proposal
+//   const proposalAddress = await _createProposal(
+//     provider,
+//     realmPubkey,
+//     realmGovernancePubkey,
+//     governingTokenMintPubkey,
+//     tokenOwnerRecord.pubkey,
+//     UPDATE_BOUNTY_BOARD_PROPOSAL_NAME,
+//     "", // or a link to our app to show config
+//     [updateBountyBoardInstruction]
+//   );
 
-  const proposalUrl = `https://app.realms.today/dao/${realmPubkey}/proposal/${proposalAddress}?cluster=devnet`;
-  console.log("Proposal url", proposalUrl);
+//   const proposalUrl = `https://app.realms.today/dao/${realmPubkey}/proposal/${proposalAddress}?cluster=devnet`;
+//   console.log("Proposal url", proposalUrl);
 
-  return proposalUrl; // return url to view proposal
-};
+//   return proposalUrl; // return url to view proposal
+// };
 
 // test script
 // getBountyBoard(new PublicKey("8B5wLgaVbGbi1WUmMceyusjVSKP24n8wZRwDNGsUHH1a"));

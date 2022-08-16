@@ -43,7 +43,7 @@ pub struct BountyBoard {
 pub struct BountyBoardConfig {
     pub tiers: Vec<BountyTier>,
     pub roles: Vec<RoleSetting>,
-    pub last_revised: u64,
+    pub last_revised: i64,
 }
 
 #[derive(Debug, AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Default)]

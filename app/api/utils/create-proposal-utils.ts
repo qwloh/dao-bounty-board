@@ -19,6 +19,17 @@ import {
 } from "@solana/web3.js";
 import { sendLargeTx } from "./send-large-tx-utils";
 
+const chunkBy = 2;
+
+export function chunks<T>(array: T[], size: number): T[][] {
+  const result: Array<T[]> = [];
+  let i, j;
+  for (i = 0, j = array.length; i < j; i += size) {
+    result.push(array.slice(i, i + size));
+  }
+  return result;
+}
+
 export const _createProposal = async (
   provider: AnchorProvider,
   realmPubkey: PublicKey, // DAO public key
@@ -156,12 +167,19 @@ export const _createProposal = async (
       ? [
           [instructions[0], instructions[1]],
           [instructions[2]], // make init ix standalone as it's huge
-          [instructions[3], instructions[4]],
-          [instructions[5]],
+          [instructions[3]], // make tier config ix standalone as it's huge too
+          ...chunks(instructions.slice(4), chunkBy),
         ]
       : [instructions];
-  const createProposalTxns = await sendLargeTx(provider, chunkedIxns);
-  console.log("Transaction Signature", createProposalTxns);
+
+  console.log("All instructions", instructions);
+  console.log("Chunked", instructions.slice(4));
+  try {
+    const createProposalTxns = await sendLargeTx(provider, chunkedIxns);
+    console.log("Transaction Signature", createProposalTxns);
+  } catch (err) {
+    console.log("Send large tx fail. Error", err);
+  }
 
   console.log("Proposal pubkey", proposalAddress.toString());
   return proposalAddress;

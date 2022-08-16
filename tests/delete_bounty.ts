@@ -20,6 +20,7 @@ import {
   setupBountyApplication,
 } from "./setup_fixtures/bounty_application";
 import {
+  addBountyBoardTierConfig,
   cleanUpBountyBoard,
   seedBountyBoardVault,
   setupBountyBoard,
@@ -30,7 +31,7 @@ import {
 } from "./setup_fixtures/contributor_record";
 import { assertFulfilled, assertReject } from "./utils/assert-promise-utils";
 
-describe("delete bounty", () => {
+describe.only("delete bounty", () => {
   // Configure the client to use the local cluster.
   const provider = AnchorProvider.env();
   setProvider(provider);
@@ -80,6 +81,14 @@ describe("delete bounty", () => {
     );
     TEST_BOUNTY_BOARD_PK = bountyBoardPDA;
     TEST_BOUNTY_BOARD_VAULT_PK = bountyBoardVaultPDA;
+
+    // add bounty tier config
+    await addBountyBoardTierConfig(
+      provider,
+      program,
+      TEST_BOUNTY_BOARD_PK,
+      TEST_REALM_GOVERNANCE
+    );
 
     // seed bounty board vault
     await seedBountyBoardVault(

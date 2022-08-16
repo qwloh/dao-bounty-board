@@ -13,6 +13,7 @@ import {
   getBountyAddress,
   getBountyBoardVaultAddress,
   getBountyEscrowAddress,
+  getContributorRecordAddress,
 } from "./utils";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -63,7 +64,7 @@ export const createBounty = async ({
     throw Error("Tier does not exist in bounty board config");
   }
   const rewardMint = rewardConfigForTier.payoutMint;
-  const bountyIndex = bountyBoard.account.bountyCount;
+  const bountyIndex = bountyBoard.account.bountyIndex;
   console.log("Bounty index", bountyIndex.toNumber());
 
   const bountyBoardVault = await getBountyBoardVaultAddress(
@@ -79,6 +80,12 @@ export const createBounty = async ({
 
   const bountyEscrowPDA = await getBountyEscrowAddress(bountyPDA, rewardMint);
   console.log("Bounty Escrow PDA", bountyEscrowPDA.toString());
+
+  const [contributorRecordPDA] = await getContributorRecordAddress(
+    bountyBoard.publicKey,
+    provider.wallet.publicKey
+  );
+  console.log("Contributor Record PDA", contributorRecordPDA.toString());
 
   return (
     program.methods
@@ -96,6 +103,7 @@ export const createBounty = async ({
         bounty: bountyPDA,
         bountyEscrow: bountyEscrowPDA,
         rewardMint,
+        contributorRecord: contributorRecordPDA,
         user: provider.wallet.publicKey,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
@@ -136,12 +144,19 @@ export const deleteBounty = async ({
   );
   console.log("Bounty escrow PDA", bountyEscrowPDA.toString());
 
+  const [contributorRecordPDA] = await getContributorRecordAddress(
+    bountyBoardPubkey,
+    provider.wallet.publicKey
+  );
+  console.log("Contributor Record PDA", contributorRecordPDA.toString());
+
   return program.methods
     .deleteBounty()
     .accounts({
       bounty: bounty.publicKey,
       bountyBoardVault: bountyBoardVaultPDA,
       bountyEscrow: bountyEscrowPDA,
+      contributorRecord: contributorRecordPDA,
       user: provider.wallet.publicKey,
       systemProgram: SystemProgram.programId,
       tokenProgram: TOKEN_PROGRAM_ID,
