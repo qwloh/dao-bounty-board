@@ -1,5 +1,10 @@
 import { AnchorProvider, BN, Program } from "@project-serum/anchor";
-import { PublicKey, SystemProgram, SYSVAR_CLOCK_PUBKEY } from "@solana/web3.js";
+import {
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  SYSVAR_CLOCK_PUBKEY,
+} from "@solana/web3.js";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
 import {
   getBountyApplicationAddress,
@@ -11,12 +16,32 @@ export const setupBountyApplication = async (
   program: Program<DaoBountyBoard>,
   testBountyBoardPubkey: PublicKey,
   testBountyPubkey: PublicKey,
-  testApplicantPubkey: PublicKey
+  testApplicantWallet: Keypair,
+  validity: number // time in seconds
 ) => {
   const TEST_BOUNTY_BOARD_PK = testBountyBoardPubkey;
   const TEST_BOUNTY_PK = testBountyPubkey;
-  const TEST_APPLICANT_PK = testApplicantPubkey;
-  const VALIDITY = new BN(7 * 24 * 3600); // 1 wk
+  const TEST_APPLICANT_WALLET = testApplicantWallet;
+  const TEST_APPLICANT_PK = testApplicantWallet.publicKey;
+  const VALIDITY = new BN(validity);
+
+  // airdrop applicant wallet some sol
+  try {
+    const airdropTx = await provider.connection.requestAirdrop(
+      TEST_APPLICANT_PK,
+      1e9
+    );
+    console.log("Airdrop test applicant tx", airdropTx);
+    const testApplicantWalletBalance = await provider.connection.getBalance(
+      TEST_APPLICANT_PK
+    );
+    console.log(
+      "Test applicant wallet lamport balance",
+      testApplicantWalletBalance
+    );
+  } catch (err) {
+    console.error(`Error to airdrop ${TEST_APPLICANT_PK} sol`);
+  }
 
   const [TEST_CONTRIBUTOR_RECORD_PDA] = await getContributorRecordAddress(
     TEST_BOUNTY_BOARD_PK,
@@ -44,6 +69,7 @@ export const setupBountyApplication = async (
         systemProgram: SystemProgram.programId,
         clock: SYSVAR_CLOCK_PUBKEY,
       })
+      .signers([TEST_APPLICANT_WALLET])
       // .simulate();
       .rpc();
     console.log("Your transaction signature", tx);
@@ -85,7 +111,7 @@ export const cleanUpBountyApplication = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
   bountyApplicationPDA: PublicKey,
-  contributorRecordPDA: PublicKey
+  applicantContributorRecordPDA: PublicKey
 ) => {
   // clean up bounty application
   try {
@@ -109,15 +135,17 @@ export const cleanUpBountyApplication = async (
     await program.methods
       .closeContributorRecord()
       .accounts({
-        contributorRecord: contributorRecordPDA,
+        contributorRecord: applicantContributorRecordPDA,
         user: provider.wallet.publicKey,
         systemProgram: SystemProgram.programId,
       })
       .rpc();
-    console.log(`Contributor record acc ${contributorRecordPDA} closed`);
+    console.log(
+      `Contributor record acc ${applicantContributorRecordPDA} closed`
+    );
   } catch (err) {
     console.log(
-      `Error clearing contributor record acc ${contributorRecordPDA}`,
+      `Error clearing contributor record acc ${applicantContributorRecordPDA}`,
       err.message
     );
   }

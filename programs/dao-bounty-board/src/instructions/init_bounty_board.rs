@@ -10,7 +10,7 @@ use anchor_spl::{
 
 pub fn init_bounty_board(ctx: Context<InitBountyBoard>, data: InitBountyBoardVM) -> Result<()> {
     let bounty_board = &mut ctx.accounts.bounty_board;
-    let realm_governance = &mut ctx.accounts.realm_governance;
+    let realm_governance = &ctx.accounts.realm_governance;
     let clock = &ctx.accounts.clock;
 
     bounty_board.realm = data.realm_pk;
@@ -57,7 +57,6 @@ pub struct InitBountyBoard<'info> {
 }
 
 // instructions component: data buffer
-
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub struct InitBountyBoardVM {
     /// DAO the bounty board belongs to

@@ -31,7 +31,7 @@ import {
 } from "./setup_fixtures/contributor_record";
 import { assertFulfilled, assertReject } from "./utils/assert-promise-utils";
 
-describe.only("delete bounty", () => {
+describe("delete bounty", () => {
   // Configure the client to use the local cluster.
   const provider = AnchorProvider.env();
   setProvider(provider);

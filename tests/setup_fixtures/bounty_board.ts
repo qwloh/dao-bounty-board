@@ -196,7 +196,7 @@ export const addBountyBoardTierConfig = async (
   realmGovernance: Keypair,
   tiers: BountyTier[] = DEFAULT_TIERS
 ) => {
-  console.log("Tiers to add", tiers);
+  // console.log("Tiers to add", tiers);
   const TEST_BOUNTY_BOARD_PK = bountyBoardPubkey;
   const TEST_REALM_GOVERNANCE = realmGovernance;
 
@@ -225,7 +225,8 @@ export const addBountyBoardTierConfig = async (
   const updatedBountyBoardAcc = await program.account.bountyBoard.fetch(
     TEST_BOUNTY_BOARD_PK
   );
-  console.log("Updated tiers", updatedBountyBoardAcc.config.tiers);
+  const tierConfig = updatedBountyBoardAcc.config.tiers as BountyTier[];
+  console.log("Updated tiers count", tierConfig.length);
   return { updatedBountyBoardAcc };
 };
 
