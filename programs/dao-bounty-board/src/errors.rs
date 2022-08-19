@@ -2,12 +2,20 @@ use anchor_lang::error_code;
 
 #[error_code]
 pub enum BountyBoardError {
-    BountyAlreadyAssigned,
-    BountyApplicationExpired,
-    NotAssignee,
+    // add tier config
     #[msg("Attempt to reinitialize tiers")]
     TiersAlreadyConfigured,
-    MinWaitTimeNotReached,
-    NoDefaultRoleConfigured,
+    // create bounty
     NotAuthorizedToCreateBounty,
+    // apply to bounty
+    NoDefaultRoleConfigured,
+    // assign bounty
+    BountyApplicationExpired,
+    // assign or delete bounty
+    BountyAlreadyAssigned,
+    // submit to bounty
+    NotAssignee,
+    // request change to submission
+    NotAuthorizedToReviewSubmission,
+    MinWaitTimeNotReached,
 }

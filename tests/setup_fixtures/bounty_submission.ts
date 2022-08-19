@@ -67,6 +67,64 @@ export const setupBountySubmission = async (
   };
 };
 
+export const requestChangesToSubmission = async (
+  provider: AnchorProvider,
+  program: Program<DaoBountyBoard>,
+  bountySubmissionPubkey: PublicKey,
+  bountyPubkey: PublicKey,
+  contributorRecordPubkey: PublicKey,
+  contributorWallet: Keypair = undefined,
+  comment: string = ""
+) => {
+  const TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPubkey;
+  const TEST_BOUNTY_PK = bountyPubkey;
+  const TEST_CONTRIBUTOR_RECORD_PK = contributorRecordPubkey;
+  const TEST_CONTRIBUTOR_WALLET = contributorWallet || provider.wallet;
+
+  const SIGNERS = contributorWallet ? [contributorWallet] : [];
+
+  try {
+    const tx = await program.methods
+      .requestChangesToSubmission({
+        comment,
+      })
+      .accounts({
+        bounty: TEST_BOUNTY_PK,
+        bountySubmission: TEST_BOUNTY_SUBMISSION_PK,
+        contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
+        contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
+        clock: SYSVAR_CLOCK_PUBKEY,
+      })
+      .signers(SIGNERS)
+      .rpc();
+
+    console.log("Request change to submission successfully.");
+    console.log("Your transaction signature", tx);
+  } catch (err) {
+    console.log(
+      "[RequestChangesToSubmission] Transaction / Simulation fail.",
+      err
+    );
+    throw err;
+  }
+
+  console.log("--- Updated Bounty Submission Acc ---");
+  let updatedBountySubmissionAcc;
+  try {
+    updatedBountySubmissionAcc = await program.account.bountySubmission.fetch(
+      TEST_BOUNTY_SUBMISSION_PK
+    );
+    console.log("Found", updatedBountySubmissionAcc);
+  } catch (err) {
+    console.log("Not found. Error", err.message, err);
+    return;
+  }
+
+  return {
+    updatedBountySubmissionAcc,
+  };
+};
+
 export const cleanUpBountySubmission = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
