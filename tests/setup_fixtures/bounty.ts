@@ -152,6 +152,7 @@ export const assignBounty = async (
     console.log("[AssignBounty] Your transaction signature", tx);
   } catch (err) {
     console.log("Transaction / Simulation fail.", err);
+    throw err;
   }
 
   // get updated bounty acc

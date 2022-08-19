@@ -113,7 +113,7 @@ describe("add bounty board tier config", () => {
       TEST_REALM_GOVERNANCE
     );
 
-    assertReject(
+    await assertReject(
       () =>
         addBountyBoardTierConfig(
           provider,

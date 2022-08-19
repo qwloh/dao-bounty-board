@@ -4,6 +4,7 @@ import {
   setProvider,
   web3,
 } from "@project-serum/anchor";
+import { bs58 } from "@project-serum/anchor/dist/cjs/utils/bytes";
 import { getAccount, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { assert } from "chai";
@@ -59,17 +60,27 @@ describe("delete bounty", () => {
   ); // my own ATA for the mint
   let TEST_BOUNTY_BOARD_PK;
   let TEST_BOUNTY_BOARD_VAULT_PK;
+  let TEST_CREATOR_CONTRIBUTOR_RECORD_PK;
   let TEST_BOUNTY_PK;
   let TEST_BOUNTY_ESCROW_PK;
+  let TEST_APPLICANT_WALLET = Keypair.fromSecretKey(
+    bs58.decode(
+      "3vWafyZ5oDFqhbTanp8zoF5QjsZsEzMrEVfQcZms7CeV8ZbUuQAcbpE7VioCvue82ZF9R423VtJZudCjTVG2amgt"
+    )
+  );
   let TEST_BOUNTY_APPLICATION_PK;
-  let TEST_CONTRIBUTOR_RECORD_PK;
+  let TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
 
   // Test realm public key EY3MSW2j1nmsd1qxvLPqHFuxk1CpyWb9MXxJru5VDpWh
   // Test realm governance public key BaVJnCpBpGBYndrJUakA9yaVixLUmE1dMcGS5K3o4ndo
-  // Bounty board PDA 4nXW7fuNcaEGA2TdVqX9atZzVuSJSuu34AZSFEAa7uiS
-  // Bounty board vault PDA 53Dfs6Pgc6NFFCD6BNQkv42PdbX6hbDPQhPV6Umsech6
-  // Bounty PDA 6CmM9Xw4KU2JufxUSfE73vqDghYmJqMY9Mcu7UrLdj9Q
-  // Bounty Escrow PDA DxAqMun3NQ65JjCJ5PFrGxWpfccc7WVWKNkyBfWkqFMa
+  // Bounty board PDA G5EjHh79mYNxL3gFB2XUEGAtYMPG9dkv819muWMoWrou
+  // Bounty board vault PDA BYkyhNoLSeM4aLbEUcbF8ema1DzawwzfyeGKmcXknxU
+  // Bounty PDA CWvDuCnD1ACDmT9o8o6MzYx2gw6sjMEpb7WdyaZwmmsU
+  // Bounty Escrow PDA EURAUp95H4Rba7ry5CNLC2n24jrPFFUnHMQyvmXkMtS1
+  // Test creator contributor record PDA ABELpuiAe8FUHkZfzQRfT6Lod76bkaNAScWXF5pPBWMq
+  // Test applicant public key A8h4vFxZmQYUdrkhqdRodttfN5eaUH5e2xw6Bumonw92
+  // Applicant contributor record PDA E6QHvisXKB6fJSUEGK2ypeB7pKVX9fnGVXuxfj3MfZre
+  // Bounty application PDA EjkrboE5d3iduhBfoPV9aWXTkhhCfrKngrmqhoHg4NqD
 
   beforeEach(async () => {
     console.log("Test realm public key", TEST_REALM_PK.toString());
@@ -107,7 +118,7 @@ describe("delete bounty", () => {
       TEST_REALM_GOVERNANCE,
       "Core"
     );
-    TEST_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
+    TEST_CREATOR_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
 
     // set up bounty
     const { bountyPDA, bountyEscrowPDA } = await setupBounty(
@@ -115,7 +126,7 @@ describe("delete bounty", () => {
       program,
       TEST_BOUNTY_BOARD_PK,
       TEST_BOUNTY_BOARD_VAULT_PK,
-      TEST_CONTRIBUTOR_RECORD_PK
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK
     );
     TEST_BOUNTY_PK = bountyPDA;
     TEST_BOUNTY_ESCROW_PK = bountyEscrowPDA;
@@ -129,7 +140,7 @@ describe("delete bounty", () => {
           bounty: TEST_BOUNTY_PK,
           bountyBoardVault: TEST_BOUNTY_BOARD_VAULT_PK,
           bountyEscrow: TEST_BOUNTY_ESCROW_PK,
-          contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
+          contributorRecord: TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
           user: provider.wallet.publicKey,
           systemProgram: SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
@@ -163,18 +174,29 @@ describe("delete bounty", () => {
   });
 
   it("should throw if bounty has been assigned", async () => {
+    console.log(
+      "Test applicant public key",
+      TEST_APPLICANT_WALLET.publicKey.toString()
+    );
+    console.log(
+      "Test applicant secret key",
+      bs58.encode(TEST_APPLICANT_WALLET.secretKey)
+    );
+
     // assign bounty first
-    const TEST_APPLICANT_PK = provider.wallet.publicKey;
-    const { bountyApplicationPDA, contributorRecordPDA } =
-      await setupBountyApplication(
-        provider,
-        program,
-        TEST_BOUNTY_BOARD_PK,
-        TEST_BOUNTY_PK,
-        TEST_APPLICANT_PK
-      );
+    const {
+      bountyApplicationPDA,
+      applicantContributorRecordPDA: contributorRecordPDA,
+    } = await setupBountyApplication(
+      provider,
+      program,
+      TEST_BOUNTY_BOARD_PK,
+      TEST_BOUNTY_PK,
+      TEST_APPLICANT_WALLET,
+      7 * 24 * 3600 // 1 wk
+    );
     TEST_BOUNTY_APPLICATION_PK = bountyApplicationPDA;
-    TEST_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
+    TEST_APPLICANT_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
     await assignBounty(
       provider,
       program,
@@ -192,7 +214,7 @@ describe("delete bounty", () => {
             bounty: TEST_BOUNTY_PK,
             bountyBoardVault: TEST_BOUNTY_BOARD_VAULT_PK,
             bountyEscrow: TEST_BOUNTY_ESCROW_PK,
-            contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
+            contributorRecord: TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
             user: provider.wallet.publicKey,
             systemProgram: SystemProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
@@ -218,18 +240,19 @@ describe("delete bounty", () => {
         TOKEN_PROGRAM_ID
       )
     );
-  });
 
-  afterEach(async () => {
-    console.log("--- Cleanup logs ---");
+    console.log("Cleaning up bounty application related accounts");
     // clean up application related accounts
     await cleanUpBountyApplication(
       provider,
       program,
       TEST_BOUNTY_APPLICATION_PK,
-      TEST_CONTRIBUTOR_RECORD_PK // bounty applicant
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK // bounty applicant
     );
+  });
 
+  afterEach(async () => {
+    console.log("--- Cleanup logs ---");
     // clean up bounty related accounts
     await cleanUpBounty(
       provider,
@@ -243,7 +266,7 @@ describe("delete bounty", () => {
     await cleanUpContributorRecord(
       provider,
       program,
-      TEST_CONTRIBUTOR_RECORD_PK // bounty creator
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK // bounty creator
     );
 
     // close bounty board related accounts

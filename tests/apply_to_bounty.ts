@@ -21,7 +21,7 @@ import {
 } from "./setup_fixtures/bounty_board";
 import { cleanUpContributorRecord } from "./setup_fixtures/contributor_record";
 
-describe.only("apply to bounty", () => {
+describe("apply to bounty", () => {
   // Configure the client to use the local cluster.
   const provider = AnchorProvider.env();
   setProvider(provider);
@@ -130,8 +130,8 @@ describe.only("apply to bounty", () => {
     const {
       bountyApplicationPDA,
       bountyApplicationAcc,
-      contributorRecordPDA,
-      contributorRecordAcc,
+      applicantContributorRecordPDA,
+      applicantContributorRecordAcc,
     } = await setupBountyApplication(
       provider,
       program,
@@ -141,7 +141,7 @@ describe.only("apply to bounty", () => {
       7 * 24 * 3600 // 1 wk
     );
     TEST_BOUNTY_APPLICATION_PDA = bountyApplicationPDA;
-    TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA = contributorRecordPDA;
+    TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA = applicantContributorRecordPDA;
 
     // assert bounty application is okay
     assert.equal(
@@ -164,26 +164,26 @@ describe.only("apply to bounty", () => {
     assert.deepEqual(bountyApplicationAcc.status, { notAssigned: {} });
 
     // assert contributorRecordAcc is created
-    assert.isTrue(contributorRecordAcc.initialized);
+    assert.isTrue(applicantContributorRecordAcc.initialized);
     assert.equal(
-      contributorRecordAcc.bountyBoard.toString(),
+      applicantContributorRecordAcc.bountyBoard.toString(),
       TEST_BOUNTY_BOARD_PK.toString()
     );
     assert.equal(
-      contributorRecordAcc.realm.toString(),
+      applicantContributorRecordAcc.realm.toString(),
       TEST_REALM_PK.toString()
     );
     assert.equal(
-      contributorRecordAcc.associatedWallet.toString(),
+      applicantContributorRecordAcc.associatedWallet.toString(),
       TEST_APPLICANT_WALLET.publicKey.toString()
     );
     const defaultRole = getRolesInVec().find((r) => r.default);
-    assert.equal(contributorRecordAcc.role, defaultRole.roleName);
+    assert.equal(applicantContributorRecordAcc.role, defaultRole.roleName);
 
-    assert.equal(contributorRecordAcc.reputation.toNumber(), 0);
-    assert.isEmpty(contributorRecordAcc.skillsPt);
-    assert.equal(contributorRecordAcc.bountyCompleted, 0);
-    assert.equal(contributorRecordAcc.recentRepChange, 0);
+    assert.equal(applicantContributorRecordAcc.reputation.toNumber(), 0);
+    assert.isEmpty(applicantContributorRecordAcc.skillsPt);
+    assert.equal(applicantContributorRecordAcc.bountyCompleted, 0);
+    assert.equal(applicantContributorRecordAcc.recentRepChange, 0);
   });
 
   afterEach(async () => {

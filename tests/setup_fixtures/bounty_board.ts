@@ -220,6 +220,7 @@ export const addBountyBoardTierConfig = async (
       "[AddBountyBoardTiersConfig] Transaction / Simulation fail.",
       err
     );
+    throw err;
   }
 
   const updatedBountyBoardAcc = await program.account.bountyBoard.fetch(
