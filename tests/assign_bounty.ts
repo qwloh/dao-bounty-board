@@ -20,7 +20,10 @@ import {
   seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
-import { setupContributorRecord } from "./setup_fixtures/contributor_record";
+import {
+  cleanUpContributorRecord,
+  setupContributorRecord,
+} from "./setup_fixtures/contributor_record";
 import { assertReject } from "./utils/assert-promise-utils";
 import { sleep } from "./utils/common";
 
@@ -288,6 +291,12 @@ describe("assign bounty", () => {
       TEST_BOUNTY_PK,
       TEST_BOUNTY_ESCROW_PK,
       TEST_BOUNTY_BOARD_VAULT_PK
+    );
+    // clean up creator contributor record
+    await cleanUpContributorRecord(
+      provider,
+      program,
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK
     );
     // clean up bounty board-related accounts
     await cleanUpBountyBoard(

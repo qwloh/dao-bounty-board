@@ -1,30 +1,25 @@
 import { AnchorProvider, Program } from "@project-serum/anchor";
-import { PublicKey, SystemProgram, SYSVAR_CLOCK_PUBKEY } from "@solana/web3.js";
-import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
 import {
-  getBountySubmissionAddress,
-  getContributorRecordAddress,
-} from "../utils/get_addresses";
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  SYSVAR_CLOCK_PUBKEY,
+} from "@solana/web3.js";
+import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
+import { getBountySubmissionAddress } from "../utils/get_addresses";
 
 export const setupBountySubmission = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
-  bountyBoardPubkey: PublicKey,
   bountyPubkey: PublicKey,
-  contributorWalletPubkey: PublicKey
+  contributorRecordPubkey: PublicKey,
+  contributorWallet: Keypair,
+  linkToSubmission: string = ""
 ) => {
-  const TEST_BOUNTY_BOARD_PK = bountyBoardPubkey;
   const TEST_BOUNTY_PK = bountyPubkey;
-  const TEST_CONTRIBUTOR_WALLET_PK = contributorWalletPubkey;
-
-  const [TEST_CONTRIBUTOR_RECORD_PK] = await getContributorRecordAddress(
-    TEST_BOUNTY_BOARD_PK,
-    TEST_CONTRIBUTOR_WALLET_PK
-  );
-  console.log(
-    "Test contributor record public key",
-    TEST_CONTRIBUTOR_RECORD_PK.toString()
-  );
+  const TEST_CONTRIBUTOR_RECORD_PK = contributorRecordPubkey;
+  const TEST_CONTRIBUTOR_WALLET = contributorWallet;
+  const LINK_TO_SUBMISSION = linkToSubmission;
 
   const [bountySubmissionPDA] = await getBountySubmissionAddress(
     TEST_BOUNTY_PK,
@@ -32,27 +27,26 @@ export const setupBountySubmission = async (
   );
   console.log("Bounty submission PDA", bountySubmissionPDA.toString());
 
-  const LINK_TO_SUBMISSION =
-    "https://assets.reedpopcdn.com/shiny-bulbasaur-evolution-perfect-iv-stats-walrein-best-moveset-pokemon-go-9004-1642763882514.jpg/BROK/resize/690%3E/format/jpg/quality/75/shiny-bulbasaur-evolution-perfect-iv-stats-walrein-best-moveset-pokemon-go-9004-1642763882514.jpg";
-
   try {
     const tx = await program.methods
       .submitToBounty({
-        bountyPk: TEST_BOUNTY_PK,
         linkToSubmission: LINK_TO_SUBMISSION,
-        contributorRecordPk: TEST_CONTRIBUTOR_RECORD_PK,
       })
       .accounts({
         bountySubmission: bountySubmissionPDA,
-        contributorWallet: TEST_CONTRIBUTOR_WALLET_PK,
+        bounty: TEST_BOUNTY_PK,
+        contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
+        contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
         systemProgram: SystemProgram.programId,
         clock: SYSVAR_CLOCK_PUBKEY,
       })
+      .signers([TEST_CONTRIBUTOR_WALLET])
       .rpc();
 
     console.log("Your transaction signature", tx);
   } catch (err) {
     console.log("Transaction / Simulation fail.", err);
+    throw err;
   }
 
   console.log("--- Bounty Submission Acc ---");
@@ -68,7 +62,6 @@ export const setupBountySubmission = async (
   }
 
   return {
-    contributorRecordPubkey: TEST_CONTRIBUTOR_RECORD_PK,
     bountySubmissionPDA,
     bountySubmissionAcc,
   };
