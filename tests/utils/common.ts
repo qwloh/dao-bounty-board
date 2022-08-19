@@ -1,5 +1,3 @@
-import { PublicKey } from "@solana/web3.js";
-
 // print util
 export const readableTokenAcc = (account: any) => {
   let readablePrint = {} as any;
@@ -10,3 +8,6 @@ export const readableTokenAcc = (account: any) => {
   }
   return readablePrint;
 };
+
+// sleep util
+export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

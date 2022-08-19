@@ -1,6 +1,6 @@
 import { AnchorProvider, Program, setProvider } from "@project-serum/anchor";
+import { bs58 } from "@project-serum/anchor/dist/cjs/utils/bytes";
 import { Keypair, PublicKey } from "@solana/web3.js";
-import { BN } from "bn.js";
 import { assert } from "chai";
 import { BOUNTY_BOARD_PROGRAM_ID } from "../app/api/constants";
 import idl from "../target/idl/dao_bounty_board.json";
@@ -15,11 +15,19 @@ import {
   setupBountyApplication,
 } from "./setup_fixtures/bounty_application";
 import {
+  addBountyBoardTierConfig,
   cleanUpBountyBoard,
+  seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
+import {
+  cleanUpContributorRecord,
+  setupContributorRecord,
+} from "./setup_fixtures/contributor_record";
+import { assertReject } from "./utils/assert-promise-utils";
+import { sleep } from "./utils/common";
 
-describe.skip("assign bounty", () => {
+describe("assign bounty", () => {
   // Configure the client to use the local cluster.
   const provider = AnchorProvider.env();
   setProvider(provider);
@@ -33,17 +41,46 @@ describe.skip("assign bounty", () => {
     programId
   ) as Program<DaoBountyBoard>;
 
-  let TEST_REALM_PK = Keypair.generate().publicKey;
-  let TEST_REALM_GOVERNANCE_PK = Keypair.fromSeed(
-    TEST_REALM_PK.toBytes()
-  ).publicKey;
+  let TEST_REALM_PK = new PublicKey(
+    "E2aMhD53dVQXeLeahVeA6gPq4RwfdtCdRQNVBTgb3bLZ"
+  );
+  let TEST_REALM_GOVERNANCE = Keypair.fromSeed(TEST_REALM_PK.toBytes());
+  const TEST_REALM_TREASURY_USDC_ATA = new PublicKey(
+    "EoCo8zx6fZiAmwNxG1xqLKHYtsQapNx39wWTJvGZaZwq"
+  ); // my own ATA for the mint
   let TEST_BOUNTY_BOARD_PK;
   let TEST_BOUNTY_BOARD_VAULT_PK;
   let TEST_BOUNTY_PK;
   let TEST_BOUNTY_ESCROW_PK;
-  let TEST_APPLICANT_PK = provider.wallet.publicKey;
-  let TEST_CONTRIBUTOR_RECORD_PK;
+  let TEST_CREATOR_CONTRIBUTOR_RECORD_PK;
+  let TEST_APPLICANT_WALLET = Keypair.fromSecretKey(
+    bs58.decode(
+      "2rbbsGD3LUDn6fmD8NU9o1YA9dyvvj1uBTZiJ32WqkxZs9pfParg3JZuSHZHfAPr3hy4e9dxsacuhdcd8vS3HfuC"
+    )
+  );
+  let TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
   let TEST_BOUNTY_APPLICATION_PK;
+  let TEST_2ND_APPLICANT_WALLET = Keypair.fromSecretKey(
+    bs58.decode(
+      "46M2VLp1a2gTqWA66YwdJWyJA7eqMA8nE2FY2yn7jT4RAt5JaUTuxKgEHDyMk4qABD5L3egHa1tnRX1bRXQderJE"
+    )
+  );
+  let TEST_2ND_APPLICANT_CONTRIBUTOR_RECORD_PK;
+  let TEST_2ND_BOUNTY_APPLICATION_PK;
+
+  // test realm public key E2aMhD53dVQXeLeahVeA6gPq4RwfdtCdRQNVBTgb3bLZ
+  // Test realm governance public key CWtEZrgWftwmhFUWtmXoEGJCsB4y3ivdmv49Mde5ueqX
+  // Bounty board PDA Fv4QRqNpSUkLZTwDZrsKF6qbvy5iFBVU4S1CPA4kNCTG
+  // Bounty board vault PDA 5LPFgP1FcEdM7TpBKkFwczUzKhR7k1zexgt8cQKMN8XA
+  // Creator contributor record public key 7oqEVQDqGLu8FpZJFhj38pGUBmmhTNGcCkNTYRFLfayX
+  // Bounty PDA G8UupxD78jyWUSaNxcNs4deg4WSi95nkmcEWp5DTdFJg
+  // Bounty Escrow PDA 6J68dVEsUk5Sh3CQaix5LcXSEJkegpn4zvmuS5GPLWGY
+  // Test applicant public key 5yiacWPEQMiXfZvU4h7saeo4wWb2GbBC3zRoJ5UzY6Mg
+  // Test applicant contributor record PDA HV9VcYCz5PDkvp6ces2Tf8wiABqVDt6LExGphNgPXxrx
+  // Bounty application PDA 7JcN4MhWqHJN6Pb2Vwyb51B8Sb6vLnT4VxMTcTTHY2FE
+  // Test 2nd applicant public key 5v9WTC8HfW7TQydoYL4X2zjLVKBoUkc5q5mvFgWe1dR4
+  // Test 2nd Applicant contributor record PDA GEfwnE6ssXcwoF12j64HEF63gGxuRwfbV2xx9iSZ8tXp
+  // 2nd Bounty application PDA FbvtDf9eXqLEw9fbynNDpgLHcVi74LSXU3p7AEjpoEsT
 
   beforeEach(async () => {
     console.log("Test realm public key", TEST_REALM_PK.toString());
@@ -56,26 +93,62 @@ describe.skip("assign bounty", () => {
     TEST_BOUNTY_BOARD_PK = bountyBoardPDA;
     TEST_BOUNTY_BOARD_VAULT_PK = bountyBoardVaultPDA;
 
+    // add tiers config
+    await addBountyBoardTierConfig(
+      provider,
+      program,
+      TEST_BOUNTY_BOARD_PK,
+      TEST_REALM_GOVERNANCE
+    );
+
+    // seed bounty board vault
+    await seedBountyBoardVault(
+      provider,
+      bountyBoardVaultPDA,
+      TEST_REALM_TREASURY_USDC_ATA,
+      provider.wallet.publicKey
+    );
+
+    // set up contributor record
+    const { contributorRecordPDA } = await setupContributorRecord(
+      provider,
+      program,
+      bountyBoardPDA,
+      provider.wallet.publicKey,
+      TEST_REALM_GOVERNANCE,
+      "Core"
+    );
+    TEST_CREATOR_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
+
     // set up bounty
     const { bountyPDA, bountyEscrowPDA } = await setupBounty(
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK
+      TEST_BOUNTY_BOARD_VAULT_PK,
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK
     );
     TEST_BOUNTY_PK = bountyPDA;
     TEST_BOUNTY_ESCROW_PK = bountyEscrowPDA;
 
-    console.log("Test applicant public key", TEST_APPLICANT_PK.toString());
-    const { contributorRecordPDA, bountyApplicationPDA } =
+    console.log(
+      "Test applicant public key",
+      TEST_APPLICANT_WALLET.publicKey.toString()
+    );
+    console.log(
+      "Test applicant secret key",
+      bs58.encode(TEST_APPLICANT_WALLET.secretKey)
+    );
+    const { applicantContributorRecordPDA, bountyApplicationPDA } =
       await setupBountyApplication(
         provider,
         program,
         TEST_BOUNTY_BOARD_PK,
         TEST_BOUNTY_PK,
-        TEST_APPLICANT_PK
+        TEST_APPLICANT_WALLET,
+        7 * 24 * 3600 // 1wk
       );
-    TEST_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
+    TEST_APPLICANT_CONTRIBUTOR_RECORD_PK = applicantContributorRecordPDA;
     TEST_BOUNTY_APPLICATION_PK = bountyApplicationPDA;
   });
 
@@ -91,7 +164,7 @@ describe.skip("assign bounty", () => {
     assert.deepEqual(updatedBountyAcc.state, { assigned: {} });
     assert.equal(
       updatedBountyAcc.assignee.toString(),
-      TEST_CONTRIBUTOR_RECORD_PK.toString()
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK.toString()
     );
     assert.closeTo(
       updatedBountyAcc.assignedAt.toNumber(),
@@ -102,6 +175,106 @@ describe.skip("assign bounty", () => {
     assert.deepEqual(updatedBountyApplicationAcc.status, { assigned: {} });
   });
 
+  it("fails if attempt to assign for an assigned bounty", async () => {
+    // assign first
+    await assignBounty(
+      provider,
+      program,
+      TEST_BOUNTY_PK,
+      TEST_BOUNTY_APPLICATION_PK
+    );
+
+    // set up a second application
+    console.log(
+      "Test 2nd applicant public key",
+      TEST_2ND_APPLICANT_WALLET.publicKey.toString()
+    );
+    console.log(
+      "Test 2nd applicant secret key",
+      bs58.encode(TEST_2ND_APPLICANT_WALLET.secretKey)
+    );
+    const { applicantContributorRecordPDA, bountyApplicationPDA } =
+      await setupBountyApplication(
+        provider,
+        program,
+        TEST_BOUNTY_BOARD_PK,
+        TEST_BOUNTY_PK,
+        TEST_2ND_APPLICANT_WALLET,
+        7 * 24 * 3600 // 1 wk
+      );
+    TEST_2ND_APPLICANT_CONTRIBUTOR_RECORD_PK = applicantContributorRecordPDA;
+    TEST_2ND_BOUNTY_APPLICATION_PK = bountyApplicationPDA;
+
+    // attempt to re-assign to 2nd applicant
+    await assertReject(
+      () =>
+        assignBounty(
+          provider,
+          program,
+          TEST_BOUNTY_PK,
+          TEST_2ND_BOUNTY_APPLICATION_PK
+        ),
+      /BountyAlreadyAssigned/
+    );
+
+    // clean up 2nd bounty application
+    console.log("Cleaning up 2nd bounty application");
+    await cleanUpBountyApplication(
+      provider,
+      program,
+      TEST_2ND_BOUNTY_APPLICATION_PK,
+      TEST_2ND_APPLICANT_CONTRIBUTOR_RECORD_PK
+    );
+  });
+
+  it("fails if attempt to assign to an expired application", async () => {
+    // set up a second application with short validity
+    console.log(
+      "Test 2nd applicant public key",
+      TEST_2ND_APPLICANT_WALLET.publicKey.toString()
+    );
+    console.log(
+      "Test 2nd applicant secret key",
+      bs58.encode(TEST_2ND_APPLICANT_WALLET.secretKey)
+    );
+    const { applicantContributorRecordPDA, bountyApplicationPDA } =
+      await setupBountyApplication(
+        provider,
+        program,
+        TEST_BOUNTY_BOARD_PK,
+        TEST_BOUNTY_PK,
+        TEST_2ND_APPLICANT_WALLET,
+        1 // 1 s
+      );
+    TEST_2ND_APPLICANT_CONTRIBUTOR_RECORD_PK = applicantContributorRecordPDA;
+    TEST_2ND_BOUNTY_APPLICATION_PK = bountyApplicationPDA;
+
+    console.log("Enter sleep");
+    await sleep(2000); // sleep 2s to ensure application has expired
+    console.log("Exit sleep");
+
+    // attempt to re-assign to 2nd applicant
+    await assertReject(
+      () =>
+        assignBounty(
+          provider,
+          program,
+          TEST_BOUNTY_PK,
+          TEST_2ND_BOUNTY_APPLICATION_PK
+        ),
+      /BountyApplicationExpired/
+    );
+
+    // clean up 2nd bounty application
+    console.log("Cleaning up 2nd bounty application");
+    await cleanUpBountyApplication(
+      provider,
+      program,
+      TEST_2ND_BOUNTY_APPLICATION_PK,
+      TEST_2ND_APPLICANT_CONTRIBUTOR_RECORD_PK
+    );
+  });
+
   afterEach(async () => {
     console.log("--- Cleanup logs ---");
     // clean up bounty application created
@@ -109,21 +282,29 @@ describe.skip("assign bounty", () => {
       provider,
       program,
       TEST_BOUNTY_APPLICATION_PK,
-      TEST_CONTRIBUTOR_RECORD_PK
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK
     );
     // clean up bounty-related accounts
     await cleanUpBounty(
       provider,
       program,
       TEST_BOUNTY_PK,
-      TEST_BOUNTY_ESCROW_PK
+      TEST_BOUNTY_ESCROW_PK,
+      TEST_BOUNTY_BOARD_VAULT_PK
+    );
+    // clean up creator contributor record
+    await cleanUpContributorRecord(
+      provider,
+      program,
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK
     );
     // clean up bounty board-related accounts
     await cleanUpBountyBoard(
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK
+      TEST_BOUNTY_BOARD_VAULT_PK,
+      TEST_REALM_TREASURY_USDC_ATA
     );
   });
 });

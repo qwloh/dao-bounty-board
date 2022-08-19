@@ -26,32 +26,34 @@ export const setupBountyApplication = async (
   const VALIDITY = new BN(validity);
 
   // airdrop applicant wallet some sol
-  try {
-    const airdropTx = await provider.connection.requestAirdrop(
-      TEST_APPLICANT_PK,
-      1e9
-    );
-    console.log("Airdrop test applicant tx", airdropTx);
-    const testApplicantWalletBalance = await provider.connection.getBalance(
-      TEST_APPLICANT_PK
-    );
-    console.log(
-      "Test applicant wallet lamport balance",
-      testApplicantWalletBalance
-    );
-  } catch (err) {
-    console.error(`Error to airdrop ${TEST_APPLICANT_PK} sol`);
-  }
+  // uncomment as required
+  // try {
+  //   const airdropTx = await provider.connection.requestAirdrop(
+  //     TEST_APPLICANT_PK,
+  //     1e9
+  //   );
+  //   console.log("Airdrop test applicant tx", airdropTx);
+  //   const testApplicantWalletBalance = await provider.connection.getBalance(
+  //     TEST_APPLICANT_PK
+  //   );
+  //   console.log(
+  //     "Test applicant wallet lamport balance",
+  //     testApplicantWalletBalance
+  //   );
+  // } catch (err) {
+  //   console.error(`Error to airdrop ${TEST_APPLICANT_PK} sol`);
+  // }
 
-  const [TEST_CONTRIBUTOR_RECORD_PDA] = await getContributorRecordAddress(
-    TEST_BOUNTY_BOARD_PK,
-    TEST_APPLICANT_PK
+  const [TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA] =
+    await getContributorRecordAddress(TEST_BOUNTY_BOARD_PK, TEST_APPLICANT_PK);
+  console.log(
+    "Applicant contributor record PDA",
+    TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA.toString()
   );
-  console.log("Contributor record PDA", TEST_CONTRIBUTOR_RECORD_PDA.toString());
 
   const [TEST_BOUNTY_APPLICATION_PDA] = await getBountyApplicationAddress(
     TEST_BOUNTY_PK,
-    TEST_CONTRIBUTOR_RECORD_PDA
+    TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA
   );
   console.log("Bounty application PDA", TEST_BOUNTY_APPLICATION_PDA.toString());
 
@@ -64,7 +66,7 @@ export const setupBountyApplication = async (
         bountyBoard: TEST_BOUNTY_BOARD_PK,
         bounty: TEST_BOUNTY_PK,
         bountyApplication: TEST_BOUNTY_APPLICATION_PDA,
-        contributorRecord: TEST_CONTRIBUTOR_RECORD_PDA,
+        contributorRecord: TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA,
         applicant: TEST_APPLICANT_PK,
         systemProgram: SystemProgram.programId,
         clock: SYSVAR_CLOCK_PUBKEY,
@@ -88,13 +90,17 @@ export const setupBountyApplication = async (
     console.log("Not found. Error", err.message);
   }
 
-  let contributorRecordAcc;
+  let applicantContributorRecordAcc;
   console.log("--- Contributor Record Acc ---");
   try {
-    contributorRecordAcc = await program.account.contributorRecord.fetch(
-      TEST_CONTRIBUTOR_RECORD_PDA
+    applicantContributorRecordAcc =
+      await program.account.contributorRecord.fetch(
+        TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA
+      );
+    console.log(
+      "Found",
+      JSON.parse(JSON.stringify(applicantContributorRecordAcc))
     );
-    console.log("Found", JSON.parse(JSON.stringify(contributorRecordAcc)));
   } catch (err) {
     console.log("Not found. Error", err.message);
   }
@@ -102,8 +108,8 @@ export const setupBountyApplication = async (
   return {
     bountyApplicationPDA: TEST_BOUNTY_APPLICATION_PDA,
     bountyApplicationAcc,
-    contributorRecordPDA: TEST_CONTRIBUTOR_RECORD_PDA,
-    contributorRecordAcc,
+    applicantContributorRecordPDA: TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA,
+    applicantContributorRecordAcc,
   };
 };
 
@@ -149,4 +155,6 @@ export const cleanUpBountyApplication = async (
       err.message
     );
   }
+
+  // clean up sol in applicant contributor account
 };

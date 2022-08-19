@@ -15,6 +15,11 @@ pub fn assign_bounty(ctx: Context<AssignBounty>) -> Result<()> {
     );
 
     // check application validity
+    let valid_until = bounty_application.applied_at + bounty_application.validity as i64;
+    require!(
+        valid_until > clock.unix_timestamp,
+        BountyBoardError::BountyApplicationExpired
+    );
 
     bounty.state = BountyState::Assigned;
     bounty.assignee = Some(bounty_application.contributor_record);

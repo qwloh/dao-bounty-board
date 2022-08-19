@@ -1,3 +1,4 @@
+use crate::errors::BountyBoardError;
 use crate::state::{bounty::*, bounty_submission::*, contributor_record::*};
 use crate::PROGRAM_AUTHORITY_SEED;
 use anchor_lang::prelude::*;
@@ -12,7 +13,11 @@ pub fn request_changes_to_submission(
     let clock = &ctx.accounts.clock;
 
     // contributor_record must be bounty creator
-    require_keys_eq!(bounty.creator, contributor_record.key());
+    require_keys_eq!(
+        bounty.creator,
+        contributor_record.key(),
+        BountyBoardError::NotAuthorizedToReviewSubmission
+    );
 
     bounty_submission.state = BountySubmissionState::ChangeRequested;
     bounty_submission.change_requested_at = Some(clock.unix_timestamp);
@@ -26,8 +31,10 @@ pub fn request_changes_to_submission(
 #[derive(Accounts)]
 pub struct RequestChangesToSubmission<'info> {
     pub bounty: Account<'info, Bounty>,
+
     #[account(mut)]
     pub bounty_submission: Account<'info, BountySubmission>,
+
     #[account(seeds=[PROGRAM_AUTHORITY_SEED, &bounty.bounty_board.as_ref(), b"contributor_record", &contributor_wallet.key.as_ref()], bump)]
     pub contributor_record: Account<'info, ContributorRecord>,
     pub contributor_wallet: Signer<'info>,
