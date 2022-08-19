@@ -22,8 +22,8 @@ import {
 } from "./setup_fixtures/bounty_board";
 import {
   cleanUpBountySubmission,
-  requestChangesToSubmission,
   setupBountySubmission,
+  updateSubmission,
 } from "./setup_fixtures/bounty_submission";
 import {
   cleanUpContributorRecord,
@@ -31,7 +31,7 @@ import {
 } from "./setup_fixtures/contributor_record";
 import { assertReject } from "./utils/assert-promise-utils";
 
-describe("request changes to submission", () => {
+describe("update submission", () => {
   // Configure the client to use the local cluster.
   const provider = AnchorProvider.env();
   setProvider(provider);
@@ -46,7 +46,7 @@ describe("request changes to submission", () => {
   ) as Program<DaoBountyBoard>;
 
   let TEST_REALM_PK = new PublicKey(
-    "3YRjL7fVXahX8zS7cKmtb5ZTARdCzXtsaFmtxKwdAWDP"
+    "DPbetRnHerQ2KHjv62V1EZ3CsyZFAcmrNwvbvLvUimou"
   );
   let TEST_REALM_GOVERNANCE = Keypair.fromSeed(TEST_REALM_PK.toBytes());
   const TEST_REALM_TREASURY_USDC_ATA = new PublicKey(
@@ -59,24 +59,24 @@ describe("request changes to submission", () => {
   let TEST_CREATOR_CONTRIBUTOR_RECORD_PK;
   let TEST_APPLICANT_WALLET = Keypair.fromSecretKey(
     bs58.decode(
-      "3GGasDpSXoKLWG8FRBgQ8Sc55MgAyqdeqbcmzkmTqUwfXrDaf4JXrMQWDcACsysiUFBhwijddoEZCMYBta4zG8Kv"
+      "36okAqBf6emniQMeE1k6ypGcfZXoiNzbJGf5Ms9CtSRxg9GK6dfcVGgsyA42UjdURJnx6pgWhnbEvH9rgo2679u3"
     )
   );
   let TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
   let TEST_BOUNTY_APPLICATION_PK;
   let TEST_BOUNTY_SUBMISSION_PK;
 
-  // Test realm public key 3YRjL7fVXahX8zS7cKmtb5ZTARdCzXtsaFmtxKwdAWDP
-  // Test realm governance public key DdzNtH4aXz1ZdMGnuj9UEbMuoszoq5EQeEFyF4tG1EXm
-  // Bounty board PDA FZkX7TDas96pjR5wm2QnTeAWzcs6fYL8mx8QMmGva27u
-  // Bounty board vault PDA 3mpoknTM2RNNZeUQ5MKYmUeGEeUaQjj8zLHE1h4PXmBU
-  // Test creator Contributor record PDA cCCdru2CAHSaseA4VWyFFV9ejzcZ3r7MhnvVM1XD4MA
-  // Bounty PDA 2FEhaFo4YtZeXdvy3B6mfmTMidbG1CUCzJQNEdde1wAS
-  // Bounty Escrow PDA D4CzsFk3qBZYZnetsZLbmYS4fDMdrsvudx7UixeUXTNR
-  // Test applicant public key 28M8zp37GSxmdQWEUyeuFHXEgB6YuosaehXKHFr1BuSc
-  // Test applicant contributor record PDA DBLtdjCPPCA449xfsAo9fgnr37NguQURHMdM9PADAaGf
-  // Bounty application PDA 7TiA6bxCzfqzKDK4pFx8f9qFnMDvW1EEGfy8jA4ai5k2
-  // Bounty submission PDA H5NdebuyN8vCtmpqup2eYksz8N3dX1YGumCN2aieaf6t
+  // Test realm public key DPbetRnHerQ2KHjv62V1EZ3CsyZFAcmrNwvbvLvUimou
+  // Test realm governance public key mHdsrki8HHfGcpryeHA8VdZwNnsjXFuuc5zXoS3Qn4K
+  // Bounty board PDA AyFHmU8Rt3tHtfdZpofEYEM5CnGVEkpfD3yJoaur6Xhk
+  // Bounty board vault PDA 3tWMKF8QEbCTHdMfNiePByenn71ya3CsYejU2vtXC2e9
+  // Test creator contributor record PDA 6S7eN5ZSB1Af2CpvGLaKwpKPJtAanRWvw6r5jMF4fWY
+  // Bounty PDA BoGC5Y4F7gALzgufMxtMXepGz5sBozW54SJR1ste8wQ2
+  // Bounty Escrow PDA 9f3Zh6GaCqaMd3vACiwQBqt2yVoayawWdf15pUPwUJkS
+  // Test applicant public key BMLYHno2MR6RtyAiuMDyo8LgxhzmvdTijE3FG2jDu8uf
+  // Test applicant contributor record PDA 9SWZGTZLw2iEP5UrJmJqjaomeRz4R2sksfbHJjaGMm9V
+  // Bounty application PDA 8RFSufYsLXVARfos4GTgvC2twTTHVF2Uswb9S2n89eks
+  // Bounty submission PDA GumW8PB1Toae4s3McnfdC3MADrqgV5TzMzhrCxxQ4Y5r
 
   beforeEach(async () => {
     console.log("Test realm public key", TEST_REALM_PK.toString());
@@ -167,44 +167,50 @@ describe("request changes to submission", () => {
     TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPDA;
   });
 
-  it("update state of bounty submission acc correctly", async () => {
-    const COMMENT = "Please redo.";
+  it("update bounty submission acc correctly", async () => {
+    const NEW_LINK_TO_SUBMISSION =
+      "https://64.media.tumblr.com/172a6e167359e6b6832116ffac691e87/tumblr_inline_p7ja2uo4ZQ1qhvvv4_500.png";
 
-    const { updatedBountySubmissionAcc } = await requestChangesToSubmission(
+    const { updatedBountySubmissionAcc } = await updateSubmission(
       provider,
       program,
       TEST_BOUNTY_SUBMISSION_PK,
       TEST_BOUNTY_PK,
-      TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
-      undefined, // use provider's wallet to sign
-      COMMENT
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+      TEST_APPLICANT_WALLET,
+      NEW_LINK_TO_SUBMISSION
     );
 
-    assert.deepEqual(updatedBountySubmissionAcc.state, { changeRequested: {} });
+    assert.equal(
+      updatedBountySubmissionAcc.linkToSubmission,
+      NEW_LINK_TO_SUBMISSION
+    );
+    assert.deepEqual(updatedBountySubmissionAcc.state, { pendingReview: {} });
     assert.closeTo(
-      updatedBountySubmissionAcc.changeRequestedAt.toNumber(),
+      updatedBountySubmissionAcc.updatedAt.toNumber(),
       new Date().getTime() / 1000,
       5000
     );
-    assert.equal(updatedBountySubmissionAcc.requestChangeCount, 1);
 
     // assert bounty activity
   });
 
-  it("should not let non-creator request changes", async () => {
+  it("should not let non-original submitter update submission", async () => {
     await assertReject(
       () =>
-        requestChangesToSubmission(
+        updateSubmission(
           provider,
           program,
           TEST_BOUNTY_SUBMISSION_PK,
           TEST_BOUNTY_PK,
-          TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
-          TEST_APPLICANT_WALLET
+          TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
+          undefined
         ),
-      /NotAuthorizedToReviewSubmission/
+      /AnchorError caused by account: bounty_submission. Error Code: ConstraintSeeds/
     );
   });
+
+  // TODO: Test case on when submission state is not pendingReview nor changeRequested
 
   afterEach(async () => {
     console.log("--- Cleanup logs ---");

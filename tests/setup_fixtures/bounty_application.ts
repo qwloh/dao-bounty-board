@@ -25,25 +25,6 @@ export const setupBountyApplication = async (
   const TEST_APPLICANT_PK = testApplicantWallet.publicKey;
   const VALIDITY = new BN(validity);
 
-  // airdrop applicant wallet some sol
-  // uncomment as required
-  // try {
-  //   const airdropTx = await provider.connection.requestAirdrop(
-  //     TEST_APPLICANT_PK,
-  //     1e9
-  //   );
-  //   console.log("Airdrop test applicant tx", airdropTx);
-  //   const testApplicantWalletBalance = await provider.connection.getBalance(
-  //     TEST_APPLICANT_PK
-  //   );
-  //   console.log(
-  //     "Test applicant wallet lamport balance",
-  //     testApplicantWalletBalance
-  //   );
-  // } catch (err) {
-  //   console.error(`Error to airdrop ${TEST_APPLICANT_PK} sol`);
-  // }
-
   const [TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA] =
     await getContributorRecordAddress(TEST_BOUNTY_BOARD_PK, TEST_APPLICANT_PK);
   console.log(

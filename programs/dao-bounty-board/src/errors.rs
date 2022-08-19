@@ -17,5 +17,8 @@ pub enum BountyBoardError {
     NotAssignee,
     // request change to submission
     NotAuthorizedToReviewSubmission,
+    // update submission
+    SubmissionAlreadyConcluded,
+    // reject submission
     MinWaitTimeNotReached,
 }
