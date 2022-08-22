@@ -26,6 +26,7 @@ import {
   seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
+import { cleanUpBountySubmission } from "./setup_fixtures/bounty_submission";
 import {
   cleanUpContributorRecord,
   setupContributorRecord,
@@ -82,6 +83,9 @@ describe("delete bounty", () => {
   // Applicant contributor record PDA E6QHvisXKB6fJSUEGK2ypeB7pKVX9fnGVXuxfj3MfZre
   // Bounty application PDA EjkrboE5d3iduhBfoPV9aWXTkhhCfrKngrmqhoHg4NqD
 
+  // data
+  let TEST_BOUNTY_ASSIGN_COUNT;
+
   beforeEach(async () => {
     console.log("Test realm public key", TEST_REALM_PK.toString());
     // set up bounty board
@@ -121,7 +125,7 @@ describe("delete bounty", () => {
     TEST_CREATOR_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
 
     // set up bounty
-    const { bountyPDA, bountyEscrowPDA } = await setupBounty(
+    const { bountyPDA, bountyEscrowPDA, bountyAcc } = await setupBounty(
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
@@ -130,6 +134,7 @@ describe("delete bounty", () => {
     );
     TEST_BOUNTY_PK = bountyPDA;
     TEST_BOUNTY_ESCROW_PK = bountyEscrowPDA;
+    TEST_BOUNTY_ASSIGN_COUNT = bountyAcc.assignCount;
   });
 
   it("should close bounty and bounty escrow account if bounty has not been assigned", async () => {
@@ -197,10 +202,11 @@ describe("delete bounty", () => {
     );
     TEST_BOUNTY_APPLICATION_PK = bountyApplicationPDA;
     TEST_APPLICANT_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
-    await assignBounty(
+    const { bountySubmissionPDA } = await assignBounty(
       provider,
       program,
       TEST_BOUNTY_PK,
+      TEST_BOUNTY_ASSIGN_COUNT,
       TEST_BOUNTY_APPLICATION_PK
     );
     // then do the exact same operation as above
@@ -241,7 +247,11 @@ describe("delete bounty", () => {
       )
     );
 
-    console.log("Cleaning up bounty application related accounts");
+    console.log(
+      "Cleaning up bounty submission & bounty application related accounts"
+    );
+    // clean up bounty submission created  from assign
+    await cleanUpBountySubmission(provider, program, bountySubmissionPDA);
     // clean up application related accounts
     await cleanUpBountyApplication(
       provider,
