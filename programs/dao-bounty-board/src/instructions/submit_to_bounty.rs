@@ -12,19 +12,25 @@ pub fn submit_to_bounty(ctx: Context<SubmitToBounty>, data: SubmitToBountyVM) ->
     let clock = &ctx.accounts.clock;
 
     // validate caller is assignee
-    // require_keys_eq!(
-    //     bounty.assignee.unwrap(),
-    //     contributor_record.key(),
-    //     BountyBoardError::NotAssignee
-    // );
+    require_keys_eq!(
+        bounty_submission.assignee,
+        contributor_record.key(),
+        BountyBoardError::NotAssignee
+    );
+
+    // validate no prev submission has been made
+    require!(
+        matches!(
+            bounty_submission.state,
+            BountySubmissionState::PendingSubmission
+        ),
+        BountyBoardError::NonBlankSubmission
+    );
 
     // populate fields for submission obj
-    bounty_submission.bounty = bounty.key();
-    bounty_submission.link_to_submission = data.link_to_submission;
-    // bounty_submission.contributor_record = contributor_record.key();
     bounty_submission.state = BountySubmissionState::PendingReview;
-    bounty_submission.request_change_count = 0;
-    bounty_submission.first_submitted_at = clock.unix_timestamp;
+    bounty_submission.link_to_submission = data.link_to_submission;
+    bounty_submission.first_submitted_at = Some(clock.unix_timestamp);
 
     // update bounty state
     bounty.state = BountyState::SubmissionUnderReview;
@@ -33,22 +39,18 @@ pub fn submit_to_bounty(ctx: Context<SubmitToBounty>, data: SubmitToBountyVM) ->
 }
 
 #[derive(Accounts)]
-#[instruction(data: SubmitToBountyVM)]
 pub struct SubmitToBounty<'info> {
     // seed check?
     #[account(mut)]
     pub bounty: Account<'info, Bounty>,
 
-    #[account(init, seeds = [PROGRAM_AUTHORITY_SEED, &bounty.key().as_ref(), b"bounty_submission", &bounty.assign_count.to_le_bytes()], bump, payer = contributor_wallet, space = 2500 )]
+    #[account(mut, seeds = [PROGRAM_AUTHORITY_SEED, &bounty.key().as_ref(), b"bounty_submission", &(bounty.assign_count - 1).to_le_bytes()], bump)]
     pub bounty_submission: Account<'info, BountySubmission>,
 
     #[account(seeds=[PROGRAM_AUTHORITY_SEED, &bounty.bounty_board.as_ref(), b"contributor_record", &contributor_wallet.key().as_ref()], bump)]
     pub contributor_record: Account<'info, ContributorRecord>,
 
-    #[account(mut)]
     pub contributor_wallet: Signer<'info>,
-
-    pub system_program: Program<'info, System>,
     pub clock: Sysvar<'info, Clock>,
 }
 

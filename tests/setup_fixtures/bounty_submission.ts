@@ -6,26 +6,21 @@ import {
   SYSVAR_CLOCK_PUBKEY,
 } from "@solana/web3.js";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
-import { getBountySubmissionAddress } from "../utils/get_addresses";
 
-export const setupBountySubmission = async (
+export const submitToBlankSubmission = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
   bountyPubkey: PublicKey,
+  bountySubmissionPubkey: PublicKey,
   contributorRecordPubkey: PublicKey,
   contributorWallet: Keypair,
   linkToSubmission: string = ""
 ) => {
   const TEST_BOUNTY_PK = bountyPubkey;
+  const TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPubkey;
   const TEST_CONTRIBUTOR_RECORD_PK = contributorRecordPubkey;
   const TEST_CONTRIBUTOR_WALLET = contributorWallet;
   const LINK_TO_SUBMISSION = linkToSubmission;
-
-  const [bountySubmissionPDA] = await getBountySubmissionAddress(
-    TEST_BOUNTY_PK,
-    TEST_CONTRIBUTOR_RECORD_PK
-  );
-  console.log("Bounty submission PDA", bountySubmissionPDA.toString());
 
   try {
     const tx = await program.methods
@@ -33,11 +28,10 @@ export const setupBountySubmission = async (
         linkToSubmission: LINK_TO_SUBMISSION,
       })
       .accounts({
-        bountySubmission: bountySubmissionPDA,
         bounty: TEST_BOUNTY_PK,
+        bountySubmission: TEST_BOUNTY_SUBMISSION_PK,
         contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
         contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
-        systemProgram: SystemProgram.programId,
         clock: SYSVAR_CLOCK_PUBKEY,
       })
       .signers([TEST_CONTRIBUTOR_WALLET])
@@ -45,25 +39,27 @@ export const setupBountySubmission = async (
 
     console.log("Your transaction signature", tx);
   } catch (err) {
-    console.log("Transaction / Simulation fail.", err);
+    console.log(
+      "[SubmitToBlankSubmission] Transaction / Simulation fail.",
+      err
+    );
     throw err;
   }
 
-  console.log("--- Bounty Submission Acc ---");
-  let bountySubmissionAcc;
+  console.log("--- Bounty Submission Acc (After First Submit) ---");
+  let updatedBountySubmissionAcc;
   try {
-    bountySubmissionAcc = await program.account.bountySubmission.fetch(
-      bountySubmissionPDA
+    updatedBountySubmissionAcc = await program.account.bountySubmission.fetch(
+      TEST_BOUNTY_SUBMISSION_PK
     );
-    console.log("Found", bountySubmissionAcc);
+    console.log("Found", updatedBountySubmissionAcc);
   } catch (err) {
     console.log("Not found. Error", err.message, err);
     return;
   }
 
   return {
-    bountySubmissionPDA,
-    bountySubmissionAcc,
+    updatedBountySubmissionAcc,
   };
 };
 
