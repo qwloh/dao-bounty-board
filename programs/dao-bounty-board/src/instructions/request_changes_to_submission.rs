@@ -18,6 +18,14 @@ pub fn request_changes_to_submission(
         contributor_record.key(),
         BountyBoardError::NotAuthorizedToReviewSubmission
     );
+    // submission state must be PendingReview
+    require!(
+        matches!(
+            bounty_submission.state,
+            BountySubmissionState::PendingReview
+        ),
+        BountyBoardError::NotPendingReview
+    );
 
     bounty_submission.state = BountySubmissionState::ChangeRequested;
     bounty_submission.change_requested_at = Some(clock.unix_timestamp);
@@ -32,7 +40,7 @@ pub fn request_changes_to_submission(
 pub struct RequestChangesToSubmission<'info> {
     pub bounty: Account<'info, Bounty>,
 
-    #[account(mut)]
+    #[account(mut, seeds = [PROGRAM_AUTHORITY_SEED, &bounty.key().as_ref(), b"bounty_submission", &(bounty.assign_count - 1).to_le_bytes()], bump)]
     pub bounty_submission: Account<'info, BountySubmission>,
 
     #[account(seeds=[PROGRAM_AUTHORITY_SEED, &bounty.bounty_board.as_ref(), b"contributor_record", &contributor_wallet.key.as_ref()], bump)]

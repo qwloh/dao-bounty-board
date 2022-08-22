@@ -23,7 +23,7 @@ import {
 import {
   cleanUpBountySubmission,
   requestChangesToSubmission,
-  setupBountySubmission,
+  submitToBlankSubmission,
 } from "./setup_fixtures/bounty_submission";
 import {
   cleanUpContributorRecord,
@@ -76,7 +76,7 @@ describe("request changes to submission", () => {
   // Test applicant public key 28M8zp37GSxmdQWEUyeuFHXEgB6YuosaehXKHFr1BuSc
   // Test applicant contributor record PDA DBLtdjCPPCA449xfsAo9fgnr37NguQURHMdM9PADAaGf
   // Bounty application PDA 7TiA6bxCzfqzKDK4pFx8f9qFnMDvW1EEGfy8jA4ai5k2
-  // Bounty submission PDA H5NdebuyN8vCtmpqup2eYksz8N3dX1YGumCN2aieaf6t
+  // Bounty submission PDA 4cNU6aqYqmJkXYGXeM5MnxY6pqE4ucVWJmdQ6Hq9NVz7
 
   beforeEach(async () => {
     console.log("Test realm public key", TEST_REALM_PK.toString());
@@ -117,7 +117,7 @@ describe("request changes to submission", () => {
     TEST_CREATOR_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
 
     // set up bounty
-    const { bountyPDA, bountyEscrowPDA } = await setupBounty(
+    const { bountyPDA, bountyEscrowPDA, bountyAcc } = await setupBounty(
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
@@ -126,6 +126,7 @@ describe("request changes to submission", () => {
     );
     TEST_BOUNTY_PK = bountyPDA;
     TEST_BOUNTY_ESCROW_PK = bountyEscrowPDA;
+    const TEST_BOUNTY_ASSIGN_COUNT = bountyAcc.assignCount;
 
     // create bounty application
     console.log(
@@ -149,25 +150,27 @@ describe("request changes to submission", () => {
     TEST_BOUNTY_APPLICATION_PK = bountyApplicationPDA;
 
     // assign bounty
-    await assignBounty(
+    const { bountySubmissionPDA } = await assignBounty(
       provider,
       program,
       TEST_BOUNTY_PK,
+      TEST_BOUNTY_ASSIGN_COUNT,
       TEST_BOUNTY_APPLICATION_PK
-    );
-
-    // create submission
-    const { bountySubmissionPDA } = await setupBountySubmission(
-      provider,
-      program,
-      TEST_BOUNTY_PK,
-      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
-      TEST_APPLICANT_WALLET
     );
     TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPDA;
   });
 
   it("update state of bounty submission acc correctly", async () => {
+    // submit work to the blank submission to change state of submission to PendingReview
+    await submitToBlankSubmission(
+      provider,
+      program,
+      TEST_BOUNTY_PK,
+      TEST_BOUNTY_SUBMISSION_PK,
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+      TEST_APPLICANT_WALLET
+    );
+
     const COMMENT = "Please redo.";
 
     const { updatedBountySubmissionAcc } = await requestChangesToSubmission(
@@ -192,6 +195,16 @@ describe("request changes to submission", () => {
   });
 
   it("should not let non-creator request changes", async () => {
+    // submit work to the blank submission to change state of submission to PendingReview
+    await submitToBlankSubmission(
+      provider,
+      program,
+      TEST_BOUNTY_PK,
+      TEST_BOUNTY_SUBMISSION_PK,
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+      TEST_APPLICANT_WALLET
+    );
+
     await assertReject(
       () =>
         requestChangesToSubmission(
@@ -203,6 +216,21 @@ describe("request changes to submission", () => {
           TEST_APPLICANT_WALLET
         ),
       /NotAuthorizedToReviewSubmission/
+    );
+  });
+
+  it("should throw when submission state is not PendingReview", async () => {
+    // request changes without first submitting work
+    await assertReject(
+      () =>
+        requestChangesToSubmission(
+          provider,
+          program,
+          TEST_BOUNTY_SUBMISSION_PK,
+          TEST_BOUNTY_PK,
+          TEST_CREATOR_CONTRIBUTOR_RECORD_PK
+        ),
+      /NotPendingReview/
     );
   });
 
