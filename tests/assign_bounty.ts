@@ -20,6 +20,7 @@ import {
   seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
+import { cleanUpBountySubmission } from "./setup_fixtures/bounty_submission";
 import {
   cleanUpContributorRecord,
   setupContributorRecord,
@@ -67,6 +68,7 @@ describe("assign bounty", () => {
   );
   let TEST_2ND_APPLICANT_CONTRIBUTOR_RECORD_PK;
   let TEST_2ND_BOUNTY_APPLICATION_PK;
+  let TEST_BOUNTY_SUBMISSION_PDA;
 
   // test realm public key E2aMhD53dVQXeLeahVeA6gPq4RwfdtCdRQNVBTgb3bLZ
   // Test realm governance public key CWtEZrgWftwmhFUWtmXoEGJCsB4y3ivdmv49Mde5ueqX
@@ -81,6 +83,10 @@ describe("assign bounty", () => {
   // Test 2nd applicant public key 5v9WTC8HfW7TQydoYL4X2zjLVKBoUkc5q5mvFgWe1dR4
   // Test 2nd Applicant contributor record PDA GEfwnE6ssXcwoF12j64HEF63gGxuRwfbV2xx9iSZ8tXp
   // 2nd Bounty application PDA FbvtDf9eXqLEw9fbynNDpgLHcVi74LSXU3p7AEjpoEsT
+  // Test Bounty submission PDA C2Z72dXJajNRH2FDc9ENaK2GdAGVrx3r8VbxuXBDKXCW
+
+  // data to help assertion
+  let TEST_BOUNTY_ASSIGN_COUNT;
 
   beforeEach(async () => {
     console.log("Test realm public key", TEST_REALM_PK.toString());
@@ -121,7 +127,7 @@ describe("assign bounty", () => {
     TEST_CREATOR_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
 
     // set up bounty
-    const { bountyPDA, bountyEscrowPDA } = await setupBounty(
+    const { bountyPDA, bountyAcc, bountyEscrowPDA } = await setupBounty(
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
@@ -130,6 +136,7 @@ describe("assign bounty", () => {
     );
     TEST_BOUNTY_PK = bountyPDA;
     TEST_BOUNTY_ESCROW_PK = bountyEscrowPDA;
+    TEST_BOUNTY_ASSIGN_COUNT = bountyAcc.assignCount;
 
     console.log(
       "Test applicant public key",
@@ -153,36 +160,54 @@ describe("assign bounty", () => {
   });
 
   it("assign bounty to a bounty application and update both account correctly", async () => {
-    const { updatedBountyAcc, updatedBountyApplicationAcc } =
-      await assignBounty(
-        provider,
-        program,
-        TEST_BOUNTY_PK,
-        TEST_BOUNTY_APPLICATION_PK
-      );
+    const {
+      updatedBountyAcc,
+      updatedBountyApplicationAcc,
+      bountySubmissionPDA,
+      bountySubmissionAcc,
+    } = await assignBounty(
+      provider,
+      program,
+      TEST_BOUNTY_PK,
+      TEST_BOUNTY_ASSIGN_COUNT,
+      TEST_BOUNTY_APPLICATION_PK
+    );
+    TEST_BOUNTY_SUBMISSION_PDA = bountySubmissionPDA;
 
-    assert.deepEqual(updatedBountyAcc.state, { assigned: {} });
+    // assert blank `bounty_submission` acc is created with correct fields
     assert.equal(
-      updatedBountyAcc.assignee.toString(),
+      bountySubmissionAcc.bounty.toString(),
+      TEST_BOUNTY_PK.toString()
+    );
+    assert.deepEqual(bountySubmissionAcc.state, { pendingSubmission: {} });
+    assert.equal(
+      bountySubmissionAcc.assignee.toString(),
       TEST_APPLICANT_CONTRIBUTOR_RECORD_PK.toString()
     );
     assert.closeTo(
-      updatedBountyAcc.assignedAt.toNumber(),
+      bountySubmissionAcc.assignedAt.toNumber(),
       new Date().getTime() / 1000,
       5000
     );
 
+    // assert `bounty` acc is updated properly
+    assert.deepEqual(updatedBountyAcc.state, { assigned: {} });
+    assert.equal(updatedBountyAcc.assignCount, TEST_BOUNTY_ASSIGN_COUNT + 1);
+
+    // assert ` bounty_application` acc status is updated
     assert.deepEqual(updatedBountyApplicationAcc.status, { assigned: {} });
   });
 
   it("fails if attempt to assign for an assigned bounty", async () => {
     // assign first
-    await assignBounty(
+    const { updatedBountyAcc, bountySubmissionPDA } = await assignBounty(
       provider,
       program,
       TEST_BOUNTY_PK,
+      TEST_BOUNTY_ASSIGN_COUNT,
       TEST_BOUNTY_APPLICATION_PK
     );
+    TEST_BOUNTY_SUBMISSION_PDA = bountySubmissionPDA;
 
     // set up a second application
     console.log(
@@ -212,6 +237,7 @@ describe("assign bounty", () => {
           provider,
           program,
           TEST_BOUNTY_PK,
+          updatedBountyAcc.assignCount,
           TEST_2ND_BOUNTY_APPLICATION_PK
         ),
       /BountyAlreadyAssigned/
@@ -253,13 +279,14 @@ describe("assign bounty", () => {
     await sleep(2000); // sleep 2s to ensure application has expired
     console.log("Exit sleep");
 
-    // attempt to re-assign to 2nd applicant
+    // attempt to assign to 2nd applicant with short application validity
     await assertReject(
       () =>
         assignBounty(
           provider,
           program,
           TEST_BOUNTY_PK,
+          TEST_BOUNTY_ASSIGN_COUNT,
           TEST_2ND_BOUNTY_APPLICATION_PK
         ),
       /BountyApplicationExpired/
@@ -277,6 +304,15 @@ describe("assign bounty", () => {
 
   afterEach(async () => {
     console.log("--- Cleanup logs ---");
+    // clean up bounty submission created on assigning bounty
+    // if assertRejects fails, the extra bounty submission created with TEST_2ND_APPLICATION may not be cleaned up
+    if (TEST_BOUNTY_SUBMISSION_PDA) {
+      await cleanUpBountySubmission(
+        provider,
+        program,
+        TEST_BOUNTY_SUBMISSION_PDA
+      );
+    }
     // clean up bounty application created
     await cleanUpBountyApplication(
       provider,

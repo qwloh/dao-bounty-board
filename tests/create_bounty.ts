@@ -65,7 +65,8 @@ describe("create bounty", () => {
   // Bounty PDA 5xT7816aQ8kpJzVNWDBaMYS8GTmcF3qd4zN1tC3njaXM
   // Bounty Escrow PDA 77ByK52JEothrMCFu4HRiPhobXWHbPH9P2uKKmMqL7uj
 
-  let TEST_BOUNTY_BOARD_BOUNTY_INDEX; // data to help assertion
+  // data to help assertion
+  let TEST_BOUNTY_BOARD_BOUNTY_INDEX;
 
   beforeEach(async () => {
     console.log("Test realm public key", TEST_REALM_PK.toString());

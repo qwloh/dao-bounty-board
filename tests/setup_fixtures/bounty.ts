@@ -17,6 +17,7 @@ import { readableTokenAcc } from "../utils/common";
 import {
   getBountyAddress,
   getBountyEscrowAddress,
+  getBountySubmissionAddress,
 } from "../utils/get_addresses";
 
 export enum Skill {
@@ -127,10 +128,17 @@ export const assignBounty = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
   bountyPubkey: PublicKey,
+  bountyAssignCount: number,
   bountyApplicationPubkey: PublicKey
 ) => {
   const TEST_BOUNTY_PK = bountyPubkey;
   const TEST_BOUNTY_APPLICATION_PK = bountyApplicationPubkey;
+
+  const [bountySubmissionPDA] = await getBountySubmissionAddress(
+    bountyPubkey,
+    bountyAssignCount
+  );
+  console.log("Bounty submission PDA", bountySubmissionPDA.toString());
 
   try {
     const tx = await program.methods
@@ -138,6 +146,8 @@ export const assignBounty = async (
       .accounts({
         bounty: TEST_BOUNTY_PK,
         bountyApplication: TEST_BOUNTY_APPLICATION_PK,
+        bountySubmission: bountySubmissionPDA,
+        systemProgram: SystemProgram.programId,
         clock: SYSVAR_CLOCK_PUBKEY,
       })
       // .simulate();
@@ -150,7 +160,7 @@ export const assignBounty = async (
 
   // get updated bounty acc
   let updatedBountyAcc;
-  console.log("--- Bounty Acc ---");
+  console.log("--- Bounty Acc (After Assign) ---");
   try {
     updatedBountyAcc = await program.account.bounty.fetch(TEST_BOUNTY_PK);
     console.log("Found", JSON.parse(JSON.stringify(updatedBountyAcc)));
@@ -172,9 +182,23 @@ export const assignBounty = async (
     console.log("Not found. Error", err.message);
   }
 
+  // get created bounty submission acc
+  let bountySubmissionAcc;
+  console.log("--- Bounty Submission Acc ---");
+  try {
+    bountySubmissionAcc = await program.account.bountySubmission.fetch(
+      bountySubmissionPDA
+    );
+    console.log("Found", JSON.parse(JSON.stringify(bountySubmissionAcc)));
+  } catch (err) {
+    console.log("Not found. Error", err.message);
+  }
+
   return {
     updatedBountyAcc,
     updatedBountyApplicationAcc,
+    bountySubmissionPDA,
+    bountySubmissionAcc,
   };
 };
 

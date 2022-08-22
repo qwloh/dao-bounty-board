@@ -25,6 +25,14 @@ export const setupBountyApplication = async (
   const TEST_APPLICANT_PK = testApplicantWallet.publicKey;
   const VALIDITY = new BN(validity);
 
+  const testApplicantWalletBalance = await provider.connection.getBalance(
+    TEST_APPLICANT_PK
+  );
+  console.log(
+    "Test applicant wallet lamport balance",
+    testApplicantWalletBalance
+  );
+
   const [TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA] =
     await getContributorRecordAddress(TEST_BOUNTY_BOARD_PK, TEST_APPLICANT_PK);
   console.log(

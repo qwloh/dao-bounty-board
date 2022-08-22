@@ -95,14 +95,14 @@ export const getPayoutRecordAddress = (bountyPubkey: PublicKey) =>
 
 export const getBountySubmissionAddress = (
   bountyPubkey: PublicKey,
-  contributorRecordPubkey: PublicKey
+  bountyAssignCount: number
 ) =>
   PublicKey.findProgramAddress(
     [
       utils.bytes.utf8.encode(PROGRAM_AUTHORITY_SEED),
       bountyPubkey.toBytes(),
       utils.bytes.utf8.encode("bounty_submission"),
-      contributorRecordPubkey.toBytes(),
+      new BN(bountyAssignCount).toBuffer("le", 1),
     ],
     new PublicKey(BOUNTY_BOARD_PROGRAM_ID)
   );
