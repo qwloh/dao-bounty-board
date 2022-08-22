@@ -29,6 +29,7 @@ export enum Skill {
 export const DEFAULT_BOUNTY_DETAILS = {
   title: "My First Bounty",
   description: "", // to be replaced with ipfs impl
+  durationInHr: 7 * 24, // 7 days in hours
   tier: "Entry",
   skill: { development: {} },
 };
@@ -39,12 +40,7 @@ export const setupBounty = async (
   bountyBoardPubkey: PublicKey,
   bountyBoardVaultPubkey: PublicKey,
   contributorRecordPubkey: PublicKey,
-  bountyDetails: {
-    title: string;
-    description: string;
-    tier: string;
-    skill: Partial<Record<Skill, {}>>;
-  } = DEFAULT_BOUNTY_DETAILS
+  bountyDetails: typeof DEFAULT_BOUNTY_DETAILS = DEFAULT_BOUNTY_DETAILS
 ) => {
   const BOUNTY_BOARD_PK = bountyBoardPubkey;
   const BOUNTY_BOARD_VAULT_PK = bountyBoardVaultPubkey;
@@ -66,11 +62,8 @@ export const setupBounty = async (
     const createBountyTx = await program.methods
       //@ts-ignore
       .createBounty({
-        title,
-        description,
         bountyBoard: BOUNTY_BOARD_PK,
-        tier,
-        skill,
+        ...bountyDetails,
       })
       .accounts({
         bountyBoard: BOUNTY_BOARD_PK,

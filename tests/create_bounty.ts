@@ -65,15 +65,15 @@ describe("create bounty", () => {
   // Bounty PDA 5xT7816aQ8kpJzVNWDBaMYS8GTmcF3qd4zN1tC3njaXM
   // Bounty Escrow PDA 77ByK52JEothrMCFu4HRiPhobXWHbPH9P2uKKmMqL7uj
 
+  let TEST_BOUNTY_BOARD_BOUNTY_INDEX; // data to help assertion
+
   beforeEach(async () => {
     console.log("Test realm public key", TEST_REALM_PK.toString());
-    const { bountyBoardPDA, bountyBoardVaultPDA } = await setupBountyBoard(
-      provider,
-      program,
-      TEST_REALM_PK
-    );
+    const { bountyBoardPDA, bountyBoardVaultPDA, bountyBoardAcc } =
+      await setupBountyBoard(provider, program, TEST_REALM_PK);
     TEST_BOUNTY_BOARD_PK = bountyBoardPDA;
     TEST_BOUNTY_BOARD_VAULT_PK = bountyBoardVaultPDA;
+    TEST_BOUNTY_BOARD_BOUNTY_INDEX = bountyBoardAcc.bountyIndex;
 
     // add tiers config
     await addBountyBoardTierConfig(
@@ -121,15 +121,23 @@ describe("create bounty", () => {
       bountyAcc.bountyBoard.toString(),
       TEST_BOUNTY_BOARD_PK.toString()
     );
+    assert.equal(
+      bountyAcc.bountyIndex.toNumber(),
+      TEST_BOUNTY_BOARD_BOUNTY_INDEX.toNumber()
+    );
+
     assert.deepEqual(bountyAcc.state, { open: {} });
-    assert.deepEqual(bountyAcc.skill, DEFAULT_BOUNTY_DETAILS.skill);
+
     assert.equal(
       bountyAcc.creator.toString(),
       TEST_CONTRIBUTOR_RECORD_PK.toString()
     );
-    assert.equal(bountyAcc.tier, DEFAULT_BOUNTY_DETAILS.tier);
+
     assert.equal(bountyAcc.title, DEFAULT_BOUNTY_DETAILS.title);
     assert.equal(bountyAcc.description, DEFAULT_BOUNTY_DETAILS.description);
+    assert.equal(bountyAcc.durationInHr, DEFAULT_BOUNTY_DETAILS.durationInHr);
+    assert.deepEqual(bountyAcc.skill, DEFAULT_BOUNTY_DETAILS.skill);
+    assert.equal(bountyAcc.tier, DEFAULT_BOUNTY_DETAILS.tier);
 
     const defaultTiers = getTiersInVec(new PublicKey(DUMMY_MINT_PK.USDC));
     const rewardTier = defaultTiers.find(
@@ -151,6 +159,10 @@ describe("create bounty", () => {
       bountyAcc.rewardSkillPt.toNumber(),
       rewardTier.skillsPtReward.toNumber()
     );
+
+    assert.equal(bountyAcc.assignCount, 0);
+    assert.equal(bountyAcc.unassignCount, 0);
+    assert.isNull(bountyAcc.completedAt);
 
     // test bounty escrow acc created and funded
     assert.equal(bountyEscrowAcc.owner.toString(), TEST_BOUNTY_PDA.toString());

@@ -70,20 +70,23 @@ pub struct Bounty {
     pub creator: Pubkey, // 32, contributor record
     pub created_at: i64, // 8, UnixTimestamp ni seconds
 
+    pub title: String,       // unknown
+    pub description: String, // unknown, ipfs cid
+    pub duration_in_hr: u16, // 2, expected task duration in hours, 65535h ~ 10 yrs is a reasonable upper limit
+    pub skill: Skill,        // 1
+    pub tier: String,        // unknown
+
     #[get_size(ignore)]
     pub reward_mint: Pubkey, // 32
     pub reward_payout: u64,     // 8
-    pub skill: Skill,           // 1
     pub reward_skill_pt: u64,   // 8
     pub reward_reputation: u64, // 8
-    pub tier: String,           // unknown
 
-    pub title: String,       // unknown
-    pub description: String, // unknown, ipfs cid
+    pub assign_count: u8,   // 1, 256 is a reasonable number
+    pub unassign_count: u8, // 1
 
-    #[get_size(ignore)]
-    pub assignee: Option<Pubkey>, // 32, contributor record
-    pub assigned_at: Option<i64>, // 8
-
+    // #[get_size(ignore)]
+    // pub assignee: Option<Pubkey>, // 32, contributor record
+    // pub assigned_at: Option<i64>, // 8
     pub completed_at: Option<i64>, // 8
 }

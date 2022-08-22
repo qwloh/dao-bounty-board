@@ -14,7 +14,7 @@ pub fn delete_bounty(ctx: Context<DeleteBounty>) -> Result<()> {
     let token_program = &ctx.accounts.token_program;
 
     require!(
-        bounty.assignee == Option::None,
+        bounty.assign_count == bounty.unassign_count, // no assignee currently
         BountyBoardError::BountyAlreadyAssigned
     );
     // in the future do permission based check to allow non creator delete bounty as well

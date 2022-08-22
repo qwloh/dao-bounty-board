@@ -10,7 +10,7 @@ pub fn assign_bounty(ctx: Context<AssignBounty>) -> Result<()> {
     let clock = &ctx.accounts.clock;
 
     require!(
-        bounty.assignee == Option::None,
+        bounty.assign_count == bounty.unassign_count, // bounty currently not assigned
         BountyBoardError::BountyAlreadyAssigned
     );
 
@@ -22,8 +22,9 @@ pub fn assign_bounty(ctx: Context<AssignBounty>) -> Result<()> {
     );
 
     bounty.state = BountyState::Assigned;
-    bounty.assignee = Some(bounty_application.contributor_record);
-    bounty.assigned_at = Some(clock.unix_timestamp);
+    bounty.assign_count += 1;
+    // bounty.assignee = Some(bounty_application.contributor_record);
+    // bounty.assigned_at = Some(clock.unix_timestamp);
 
     bounty_application.status = BountyApplicationStatus::Assigned;
 

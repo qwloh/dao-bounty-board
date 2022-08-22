@@ -38,27 +38,30 @@ pub fn create_bounty(ctx: Context<CreateBounty>, data: BountyVM) -> Result<()> {
         BountyBoardError::NotAuthorizedToCreateBounty
     );
 
+    // 1. populate data on bounty account
+    bounty.bounty_board = data.bounty_board;
     msg!("Current bounty count: {}", bounty_board.bounty_index);
     bounty.bounty_index = bounty_board.bounty_index;
 
-    // 1. populate data on bounty account
-    bounty.title = data.title;
-    bounty.description = data.description;
-    bounty.bounty_board = data.bounty_board;
     bounty.state = BountyState::Open;
+
     bounty.creator = contributor_record.key();
     bounty.created_at = clock.unix_timestamp;
+
+    bounty.title = data.title;
+    bounty.description = data.description;
+    bounty.duration_in_hr = data.duration_in_hr;
     bounty.skill = data.skill;
     bounty.tier = data.tier;
+
     let tier_reward_config = bounty_board
         .config
         .tiers
         .iter()
         .find(|t| t.tier_name == bounty.tier)
         .unwrap();
-
-    bounty.reward_payout = tier_reward_config.payout_reward;
     bounty.reward_mint = tier_reward_config.payout_mint;
+    bounty.reward_payout = tier_reward_config.payout_reward;
     bounty.reward_skill_pt = tier_reward_config.skills_pt_reward;
     bounty.reward_reputation = tier_reward_config.reputation_reward;
 
@@ -146,9 +149,10 @@ pub struct CreateBounty<'info> {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub struct BountyVM {
+    pub bounty_board: Pubkey,
     pub title: String,
     pub description: String,
-    pub bounty_board: Pubkey,
+    pub duration_in_hr: u16, // expected task duration in hours
     pub tier: String,
     pub skill: Skill,
 }

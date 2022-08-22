@@ -12,16 +12,16 @@ pub fn submit_to_bounty(ctx: Context<SubmitToBounty>, data: SubmitToBountyVM) ->
     let clock = &ctx.accounts.clock;
 
     // validate caller is assignee
-    require_keys_eq!(
-        bounty.assignee.unwrap(),
-        contributor_record.key(),
-        BountyBoardError::NotAssignee
-    );
+    // require_keys_eq!(
+    //     bounty.assignee.unwrap(),
+    //     contributor_record.key(),
+    //     BountyBoardError::NotAssignee
+    // );
 
     // populate fields for submission obj
     bounty_submission.bounty = bounty.key();
     bounty_submission.link_to_submission = data.link_to_submission;
-    bounty_submission.contributor_record = contributor_record.key();
+    // bounty_submission.contributor_record = contributor_record.key();
     bounty_submission.state = BountySubmissionState::PendingReview;
     bounty_submission.request_change_count = 0;
     bounty_submission.first_submitted_at = clock.unix_timestamp;
@@ -35,12 +35,12 @@ pub fn submit_to_bounty(ctx: Context<SubmitToBounty>, data: SubmitToBountyVM) ->
 #[derive(Accounts)]
 #[instruction(data: SubmitToBountyVM)]
 pub struct SubmitToBounty<'info> {
-    #[account(init, seeds = [PROGRAM_AUTHORITY_SEED, &bounty.key().as_ref(), b"bounty_submission", &contributor_record.key().as_ref()], bump, payer = contributor_wallet, space = 2500 )]
-    pub bounty_submission: Account<'info, BountySubmission>,
-
     // seed check?
     #[account(mut)]
     pub bounty: Account<'info, Bounty>,
+
+    #[account(init, seeds = [PROGRAM_AUTHORITY_SEED, &bounty.key().as_ref(), b"bounty_submission", &bounty.assign_count.to_le_bytes()], bump, payer = contributor_wallet, space = 2500 )]
+    pub bounty_submission: Account<'info, BountySubmission>,
 
     #[account(seeds=[PROGRAM_AUTHORITY_SEED, &bounty.bounty_board.as_ref(), b"contributor_record", &contributor_wallet.key().as_ref()], bump)]
     pub contributor_record: Account<'info, ContributorRecord>,
