@@ -5,8 +5,15 @@ use anchor_lang::prelude::*;
 
 pub fn update_submission(ctx: Context<UpdateSubmission>, data: UpdateSubmissionVM) -> Result<()> {
     let bounty_submission = &mut ctx.accounts.bounty_submission;
+    let contributor_record = &ctx.accounts.contributor_record;
     let clock = &ctx.accounts.clock;
 
+    // only original assignee is authorized to submit work
+    require_keys_eq!(
+        bounty_submission.assignee,
+        contributor_record.key(),
+        BountyBoardError::NotAssignee,
+    );
     // submission state can only be either PendingReview or ChangeRequested
     require!(
         matches!(
@@ -27,8 +34,7 @@ pub fn update_submission(ctx: Context<UpdateSubmission>, data: UpdateSubmissionV
 pub struct UpdateSubmission<'info> {
     pub bounty: Account<'info, Bounty>, // for contributor record seed derivation
 
-    // seeds constraint ensures contributor record in input is original submitter
-    #[account(mut, seeds=[PROGRAM_AUTHORITY_SEED, &bounty.key().as_ref(), b"bounty_submission", &contributor_record.key().as_ref()], bump)]
+    #[account(mut, seeds = [PROGRAM_AUTHORITY_SEED, &bounty.key().as_ref(), b"bounty_submission", &(bounty.assign_count - 1).to_le_bytes()], bump)]
     pub bounty_submission: Account<'info, BountySubmission>,
 
     #[account(seeds=[PROGRAM_AUTHORITY_SEED, &bounty.bounty_board.as_ref(), b"contributor_record", &contributor_wallet.key.as_ref()], bump)]

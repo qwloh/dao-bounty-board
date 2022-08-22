@@ -22,7 +22,7 @@ import {
 } from "./setup_fixtures/bounty_board";
 import {
   cleanUpBountySubmission,
-  setupBountySubmission,
+  submitToBlankSubmission,
   updateSubmission,
 } from "./setup_fixtures/bounty_submission";
 import {
@@ -117,7 +117,7 @@ describe("update submission", () => {
     TEST_CREATOR_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
 
     // set up bounty
-    const { bountyPDA, bountyEscrowPDA } = await setupBounty(
+    const { bountyPDA, bountyEscrowPDA, bountyAcc } = await setupBounty(
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
@@ -126,6 +126,7 @@ describe("update submission", () => {
     );
     TEST_BOUNTY_PK = bountyPDA;
     TEST_BOUNTY_ESCROW_PK = bountyEscrowPDA;
+    const TEST_BOUNTY_ASSIGN_COUNT = bountyAcc.assignCount;
 
     // create bounty application
     console.log(
@@ -149,22 +150,24 @@ describe("update submission", () => {
     TEST_BOUNTY_APPLICATION_PK = bountyApplicationPDA;
 
     // assign bounty
-    await assignBounty(
+    const { bountySubmissionPDA } = await assignBounty(
       provider,
       program,
       TEST_BOUNTY_PK,
+      TEST_BOUNTY_ASSIGN_COUNT,
       TEST_BOUNTY_APPLICATION_PK
     );
+    TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPDA;
 
     // create submission
-    const { bountySubmissionPDA } = await setupBountySubmission(
+    await submitToBlankSubmission(
       provider,
       program,
       TEST_BOUNTY_PK,
+      TEST_BOUNTY_SUBMISSION_PK,
       TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
       TEST_APPLICANT_WALLET
     );
-    TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPDA;
   });
 
   it("update bounty submission acc correctly", async () => {
@@ -206,7 +209,7 @@ describe("update submission", () => {
           TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
           undefined
         ),
-      /AnchorError caused by account: bounty_submission. Error Code: ConstraintSeeds/
+      /NotAssignee/
     );
   });
 
