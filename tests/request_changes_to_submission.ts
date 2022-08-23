@@ -24,6 +24,7 @@ import {
   cleanUpBountySubmission,
   requestChangesToSubmission,
   submitToBlankSubmission,
+  updateSubmission,
 } from "./setup_fixtures/bounty_submission";
 import {
   cleanUpContributorRecord,
@@ -77,6 +78,28 @@ describe("request changes to submission", () => {
   // Test applicant contributor record PDA DBLtdjCPPCA449xfsAo9fgnr37NguQURHMdM9PADAaGf
   // Bounty application PDA 7TiA6bxCzfqzKDK4pFx8f9qFnMDvW1EEGfy8jA4ai5k2
   // Bounty submission PDA 4cNU6aqYqmJkXYGXeM5MnxY6pqE4ucVWJmdQ6Hq9NVz7
+
+  // test specific setup fn
+  const accelerateIteration = async (iterationCount: number) => {
+    for (let i = 0; i < iterationCount; i++) {
+      await requestChangesToSubmission(
+        provider,
+        program,
+        TEST_BOUNTY_SUBMISSION_PK,
+        TEST_BOUNTY_PK,
+        TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
+        undefined // sign with provider.wallet
+      );
+      await updateSubmission(
+        provider,
+        program,
+        TEST_BOUNTY_SUBMISSION_PK,
+        TEST_BOUNTY_PK,
+        TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+        TEST_APPLICANT_WALLET
+      );
+    }
+  };
 
   beforeEach(async () => {
     console.log("Test realm public key", TEST_REALM_PK.toString());
@@ -231,6 +254,33 @@ describe("request changes to submission", () => {
           TEST_CREATOR_CONTRIBUTOR_RECORD_PK
         ),
       /NotPendingReview/
+    );
+  });
+
+  it("should throw if change request has already been made 3 times prior", async () => {
+    // submit work to the blank submission to change state of submission to PendingReview
+    await submitToBlankSubmission(
+      provider,
+      program,
+      TEST_BOUNTY_PK,
+      TEST_BOUNTY_SUBMISSION_PK,
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+      TEST_APPLICANT_WALLET
+    );
+    // accelerate request_change_count to 3
+    await accelerateIteration(3);
+
+    // request changes for the 4th time
+    await assertReject(
+      () =>
+        requestChangesToSubmission(
+          provider,
+          program,
+          TEST_BOUNTY_SUBMISSION_PK,
+          TEST_BOUNTY_PK,
+          TEST_CREATOR_CONTRIBUTOR_RECORD_PK
+        ),
+      /ChangeRequestQuotaReached/
     );
   });
 

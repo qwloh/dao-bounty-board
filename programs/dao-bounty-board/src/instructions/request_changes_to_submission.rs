@@ -26,6 +26,13 @@ pub fn request_changes_to_submission(
         ),
         BountyBoardError::NotPendingReview
     );
+    // can only request changes for max of 3 times
+    // after which must make a decision to accept or reject
+    require_gt!(
+        3,
+        bounty_submission.request_change_count,
+        BountyBoardError::ChangeRequestQuotaReached
+    );
 
     bounty_submission.state = BountySubmissionState::ChangeRequested;
     bounty_submission.change_requested_at = Some(clock.unix_timestamp);
