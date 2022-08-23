@@ -86,6 +86,13 @@ pub mod dao_bounty_board {
         instructions::reject_submission(ctx, data)
     }
 
+    pub fn reject_stale_submission(
+        ctx: Context<RejectStaleSubmission>,
+        data: RejectStaleSubmissionVM,
+    ) -> Result<()> {
+        instructions::reject_stale_submission(ctx, data)
+    }
+
     // "contributor fn"
 
     pub fn apply_to_bounty(ctx: Context<ApplyToBounty>, data: ApplyToBountyVM) -> Result<()> {

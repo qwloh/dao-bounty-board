@@ -243,6 +243,96 @@ export const rejectSubmission = async (
   };
 };
 
+export const rejectStaleSubmission = async (
+  provider: AnchorProvider,
+  program: Program<DaoBountyBoard>,
+  bountyPubkey: PublicKey,
+  bountySubmissionPubkey: PublicKey,
+  assigneeContributorRecordPubkey: PublicKey,
+  contributorRecordPubkey: PublicKey,
+  contributorWallet: Keypair = undefined,
+  comment: string = ""
+) => {
+  const TEST_BOUNTY_PK = bountyPubkey;
+  const TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPubkey;
+  const TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK = assigneeContributorRecordPubkey;
+  const TEST_CONTRIBUTOR_RECORD_PK = contributorRecordPubkey;
+  const TEST_CONTRIBUTOR_WALLET = contributorWallet || provider.wallet;
+
+  const SIGNERS = contributorWallet ? [contributorWallet] : [];
+  try {
+    const tx = await program.methods
+      .rejectStaleSubmission({
+        comment,
+      })
+      .accounts({
+        bounty: TEST_BOUNTY_PK,
+        bountySubmission: TEST_BOUNTY_SUBMISSION_PK,
+        assigneeContributorRecord: TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK,
+        contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
+        contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
+        clock: SYSVAR_CLOCK_PUBKEY,
+      })
+      .signers(SIGNERS)
+      .rpc();
+
+    console.log("Submission updated successfully.");
+    console.log("Your transaction signature", tx);
+  } catch (err) {
+    console.log("[RejectStaleSubmission] Transaction / Simulation fail.", err);
+    throw err;
+  }
+
+  let updatedBountySubmissionAcc;
+  let updatedBountyAcc;
+  let updatedAssigneeContributorRecord;
+
+  console.log("--- Updated Bounty Submission Acc (After reject stale) ---");
+  try {
+    updatedBountySubmissionAcc = await program.account.bountySubmission.fetch(
+      TEST_BOUNTY_SUBMISSION_PK
+    );
+    console.log("Found", updatedBountySubmissionAcc);
+  } catch (err) {
+    console.log("Not found. Error", err.message, err);
+    return;
+  }
+
+  console.log("--- Updated Bounty Acc (After reject stale) ---");
+  try {
+    updatedBountyAcc = await program.account.bounty.fetch(TEST_BOUNTY_PK);
+    console.log("Found", updatedBountyAcc);
+  } catch (err) {
+    console.log("Not found. Error", err.message, err);
+    return;
+  }
+
+  console.log("--- Assignee Contributor Record (After reject stale) ---");
+  if (updatedBountySubmissionAcc) {
+    try {
+      updatedAssigneeContributorRecord =
+        await program.account.contributorRecord.fetch(
+          TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK
+        );
+      console.log("Found", updatedAssigneeContributorRecord);
+    } catch (err) {
+      console.log(
+        "Not found. Error",
+        err.name,
+        "for",
+        TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK.toString(),
+        err
+      );
+    }
+  }
+
+  return {
+    updatedBountySubmissionAcc,
+    updatedBountyAcc,
+    updatedAssigneeContributorRecord,
+  };
+};
+
 export const cleanUpBountySubmission = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,

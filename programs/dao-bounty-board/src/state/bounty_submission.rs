@@ -7,7 +7,7 @@ pub enum BountySubmissionState {
     PendingReview,
     ChangeRequested,
     Rejected,
-    RejectedForStale,
+    RejectedForUnaddressedChangeRequest,
     Accepted,
     ForceAccepted,
 }
