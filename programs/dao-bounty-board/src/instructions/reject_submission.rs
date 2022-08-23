@@ -10,12 +10,21 @@ pub fn reject_submission(ctx: Context<RejectSubmission>, data: RejectSubmissionV
     let clock = &ctx.accounts.clock;
 
     // contributor_record must be bounty creator
-    require_keys_eq!(bounty.creator, contributor_record.key());
-    require_gte!(bounty_submission.request_change_count, 3);
-    let min_wait_time: i64 = 3 * 24 * 3600;
+    require_keys_eq!(
+        bounty.creator,
+        contributor_record.key(),
+        BountyBoardError::NotAuthorizedToRejectSubmission
+    );
+
+    // submission state must be pendingReview, i.e. contributor has addressed changes requested
+    let change_request_addressed = matches!(
+        bounty_submission.state,
+        BountySubmissionState::PendingReview,
+    );
+    // option only available after 3 iterations between reviewer (creator) and assignee
     require!(
-        clock.unix_timestamp - bounty_submission.change_requested_at.unwrap_or(0) >= min_wait_time,
-        BountyBoardError::MinWaitTimeNotReached
+        change_request_addressed && bounty_submission.request_change_count >= 3,
+        BountyBoardError::MinIterationCountNotReached
     );
 
     bounty_submission.state = BountySubmissionState::Rejected;
@@ -23,8 +32,9 @@ pub fn reject_submission(ctx: Context<RejectSubmission>, data: RejectSubmissionV
 
     // unassign bounty
     bounty.state = BountyState::Open;
-    bounty.assignee = None;
-    bounty.assigned_at = None;
+    bounty.unassign_count += 1;
+
+    // No need to deduct contributor reputation?
 
     // data.comment is used when creating BountyActivity
 
