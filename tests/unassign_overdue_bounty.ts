@@ -2,7 +2,7 @@ import { AnchorProvider, Program, setProvider } from "@project-serum/anchor";
 import { bs58 } from "@project-serum/anchor/dist/cjs/utils/bytes";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { assert } from "chai";
-import { BOUNTY_BOARD_PROGRAM_ID } from "../app/api/constants";
+import { BOUNTY_BOARD_PROGRAM_ID, DUMMY_MINT_PK } from "../app/api/constants";
 import idl from "../target/idl/dao_bounty_board.json";
 import { DaoBountyBoard } from "../target/types/dao_bounty_board";
 import {
@@ -19,6 +19,7 @@ import {
 import {
   addBountyBoardTierConfig,
   cleanUpBountyBoard,
+  getTiersInVec,
   seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
@@ -84,7 +85,9 @@ describe("unassign overdue bounty", () => {
   // Bounty submission PDA HdAjvib6M2JhBAtQb2nuMELisefzQGiUm1RofNov3DHE
 
   // test specific setup fn
-  const setupAssignedBountyWithVaryingDuration = async (duration: number) => {
+  const setupAssignedBountyWithVaryingTier = async (tierName: string) => {
+    // in this test, Entry tier bounty is set to have task submission window of 1 s to facilitate testing
+
     // set up bounty
     const { bountyPDA, bountyEscrowPDA, bountyAcc } = await setupBounty(
       provider,
@@ -94,7 +97,7 @@ describe("unassign overdue bounty", () => {
       TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
       {
         ...DEFAULT_BOUNTY_DETAILS,
-        duration,
+        tier: tierName,
       }
     );
     TEST_BOUNTY_PK = bountyPDA;
@@ -144,12 +147,19 @@ describe("unassign overdue bounty", () => {
     TEST_BOUNTY_BOARD_PK = bountyBoardPDA;
     TEST_BOUNTY_BOARD_VAULT_PK = bountyBoardVaultPDA;
 
-    // add tiers config
+    // add tiers config (with custom/non-default windows for Entry tier)
     await addBountyBoardTierConfig(
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
-      TEST_REALM_GOVERNANCE
+      TEST_REALM_GOVERNANCE,
+      getTiersInVec(new PublicKey(DUMMY_MINT_PK.USDC)).map((t) => {
+        if (t.tierName !== "Entry") return t;
+        t.taskSubmissionWindow = 1;
+        t.submissionReviewWindow = 1;
+        t.addressChangeReqWindow = 1;
+        return t;
+      })
     );
 
     // seed bounty board vault
@@ -173,7 +183,7 @@ describe("unassign overdue bounty", () => {
   });
 
   it("unassign bounty correctly", async () => {
-    await setupAssignedBountyWithVaryingDuration(1); // 1 sec for quick overdue
+    await setupAssignedBountyWithVaryingTier("Entry"); // 1 sec for quick overdue
     await sleep(2000); // sleep 2s to ensure duration rlly overdue
     const TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK =
       TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
@@ -219,7 +229,7 @@ describe("unassign overdue bounty", () => {
   });
 
   it("should not let non-creator unassign bounty", async () => {
-    await setupAssignedBountyWithVaryingDuration(1); // duration doesn't matter
+    await setupAssignedBountyWithVaryingTier("Entry"); // duration doesn't matter
     const TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK =
       TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
     await assertReject(
@@ -239,7 +249,7 @@ describe("unassign overdue bounty", () => {
   });
 
   it("should throw if deadline has not passed", async () => {
-    await setupAssignedBountyWithVaryingDuration(7 * 24 * 3600); // arbitrarily 1wk
+    await setupAssignedBountyWithVaryingTier("A"); // arbitrarily 1wk
     const TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK =
       TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
     await assertReject(
@@ -258,7 +268,8 @@ describe("unassign overdue bounty", () => {
   });
 
   it("should throw if assignee has already submitted his work", async () => {
-    await setupAssignedBountyWithVaryingDuration(7 * 24 * 3600); // arbitrarily 1wk
+    await setupAssignedBountyWithVaryingTier("Entry"); // should throw even if time is after deadline
+    await sleep(2000);
     // create submission
     await submitToBlankSubmission(
       provider,

@@ -19,7 +19,6 @@ pub fn create_bounty(ctx: Context<CreateBounty>, data: BountyVM) -> Result<()> {
     let bounty_escrow = &ctx.accounts.bounty_escrow;
     let contributor_record = &ctx.accounts.contributor_record;
 
-    let sender = &mut ctx.accounts.user;
     let token_program = &ctx.accounts.token_program;
     let clock = &ctx.accounts.clock;
 

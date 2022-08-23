@@ -31,7 +31,6 @@ export enum Skill {
 export const DEFAULT_BOUNTY_DETAILS = {
   title: "My First Bounty",
   description: "", // to be replaced with ipfs impl
-  duration: 7 * 24 * 3600, // 7 days in seconds
   tier: "Entry",
   skill: { development: {} },
 };
