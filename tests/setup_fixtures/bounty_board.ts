@@ -32,7 +32,7 @@ export enum Permission {
   RejectSubmission = "rejectSubmission",
 }
 
-const getTiersInVec = (PAYOUT_MINT: PublicKey) => [
+export const getTiersInVec = (PAYOUT_MINT: PublicKey) => [
   {
     tierName: "Entry",
     difficultyLevel: "First contribution",

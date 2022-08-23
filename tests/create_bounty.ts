@@ -12,6 +12,7 @@ import { BOUNTY_BOARD_PROGRAM_ID, DUMMY_MINT_PK } from "../app/api/constants";
 import {
   addBountyBoardTierConfig,
   cleanUpBountyBoard,
+  getTiersInVec,
   seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
@@ -24,7 +25,6 @@ import {
   cleanUpContributorRecord,
   setupContributorRecord,
 } from "./setup_fixtures/contributor_record";
-import { getTiersInVec } from "../app/api/utils";
 
 describe("create bounty", () => {
   // Configure the client to use the local cluster.
@@ -136,26 +136,37 @@ describe("create bounty", () => {
 
     assert.equal(bountyAcc.title, DEFAULT_BOUNTY_DETAILS.title);
     assert.equal(bountyAcc.description, DEFAULT_BOUNTY_DETAILS.description);
-    assert.equal(bountyAcc.duration, DEFAULT_BOUNTY_DETAILS.duration);
     assert.deepEqual(bountyAcc.skill, DEFAULT_BOUNTY_DETAILS.skill);
     assert.equal(bountyAcc.tier, DEFAULT_BOUNTY_DETAILS.tier);
 
     const defaultTiers = getTiersInVec(new PublicKey(DUMMY_MINT_PK.USDC));
-    const rewardTier = defaultTiers.find(
+    const tierConfig = defaultTiers.find(
       (t) => t.tierName === DEFAULT_BOUNTY_DETAILS.tier
     );
     assert.equal(
+      bountyAcc.taskSubmissionWindow,
+      tierConfig.taskSubmissionWindow
+    );
+    assert.equal(
+      bountyAcc.submissionReviewWindow,
+      tierConfig.submissionReviewWindow
+    );
+    assert.equal(
+      bountyAcc.addressChangeReqWindow,
+      tierConfig.addressChangeReqWindow
+    );
+    assert.equal(
       bountyAcc.rewardMint.toString(),
-      rewardTier.payoutMint.toString()
+      tierConfig.payoutMint.toString()
     );
     assert.equal(
       bountyAcc.rewardPayout.toNumber(),
-      rewardTier.payoutReward.toNumber()
+      tierConfig.payoutReward.toNumber()
     );
-    assert.equal(bountyAcc.rewardReputation, rewardTier.reputationReward);
+    assert.equal(bountyAcc.rewardReputation, tierConfig.reputationReward);
     assert.equal(
       bountyAcc.rewardSkillPt.toNumber(),
-      rewardTier.skillsPtReward.toNumber()
+      tierConfig.skillsPtReward.toNumber()
     );
 
     assert.equal(bountyAcc.assignCount, 0);
@@ -166,7 +177,7 @@ describe("create bounty", () => {
     assert.equal(bountyEscrowAcc.owner.toString(), TEST_BOUNTY_PDA.toString());
     assert.equal(
       Number(bountyEscrowAcc.amount),
-      rewardTier.payoutReward.toNumber()
+      tierConfig.payoutReward.toNumber()
     );
 
     // test bounty board account bounty_count updated
