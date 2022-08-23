@@ -8,9 +8,11 @@ pub use create_bounty::*;
 pub use delete_bounty::*;
 pub use force_accept_submission::*;
 pub use init_bounty_board::*;
+pub use reject_stale_submission::*;
 pub use reject_submission::*;
 pub use request_changes_to_submission::*;
 pub use submit_to_bounty::*;
+pub use unassign_overdue_bounty::*;
 pub use update_bounty_board::*;
 pub use update_submission::*;
 // dev purpose
@@ -35,9 +37,11 @@ pub mod create_bounty;
 pub mod delete_bounty;
 pub mod force_accept_submission;
 pub mod init_bounty_board;
+pub mod reject_stale_submission;
 pub mod reject_submission;
 pub mod request_changes_to_submission;
 pub mod submit_to_bounty;
+pub mod unassign_overdue_bounty;
 pub mod update_bounty_board;
 pub mod update_submission;
 // dev purpose

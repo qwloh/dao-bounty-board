@@ -72,15 +72,15 @@ pub struct Bounty {
 
     pub title: String,       // unknown
     pub description: String, // unknown, ipfs cid
-    pub duration_in_hr: u16, // 2, expected task duration in hours, 65535h ~ 10 yrs is a reasonable upper limit
-    pub skill: Skill,        // 1
-    pub tier: String,        // unknown
+    pub duration: u32, // 4, expected task duration in seconds. Hours is more memory saving, but seconds allow tests to be written
+    pub skill: Skill,  // 1
+    pub tier: String,  // unknown
 
     #[get_size(ignore)]
     pub reward_mint: Pubkey, // 32
     pub reward_payout: u64,     // 8
     pub reward_skill_pt: u64,   // 8
-    pub reward_reputation: u64, // 8
+    pub reward_reputation: u32, // 8
 
     pub assign_count: u8,   // 1, 256 is a reasonable number
     pub unassign_count: u8, // 1

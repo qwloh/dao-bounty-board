@@ -190,7 +190,7 @@ describe("submit to bounty", () => {
     assert.closeTo(
       updatedBountySubmissionAcc.firstSubmittedAt.toNumber(),
       new Date().getTime() / 1000,
-      5000
+      60
     );
 
     // assert `bounty` state is updated

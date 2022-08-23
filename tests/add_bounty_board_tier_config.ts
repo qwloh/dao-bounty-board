@@ -82,8 +82,8 @@ describe("add bounty board tier config", () => {
         updatedBountyBoardAcc.config.tiers[idx].payoutMint.toString()
       );
       assert.equal(
-        tier.reputationReward.toNumber(),
-        updatedBountyBoardAcc.config.tiers[idx].reputationReward.toNumber()
+        tier.reputationReward,
+        updatedBountyBoardAcc.config.tiers[idx].reputationReward
       );
       assert.equal(
         tier.payoutReward.toNumber(),
@@ -94,8 +94,8 @@ describe("add bounty board tier config", () => {
         updatedBountyBoardAcc.config.tiers[idx].skillsPtReward.toNumber()
       );
       assert.equal(
-        tier.minRequiredReputation.toNumber(),
-        updatedBountyBoardAcc.config.tiers[idx].minRequiredReputation.toNumber()
+        tier.minRequiredReputation,
+        updatedBountyBoardAcc.config.tiers[idx].minRequiredReputation
       );
       assert.equal(
         tier.minRequiredSkillsPt.toNumber(),

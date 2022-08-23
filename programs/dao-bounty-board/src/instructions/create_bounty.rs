@@ -50,7 +50,7 @@ pub fn create_bounty(ctx: Context<CreateBounty>, data: BountyVM) -> Result<()> {
 
     bounty.title = data.title;
     bounty.description = data.description;
-    bounty.duration_in_hr = data.duration_in_hr;
+    bounty.duration = data.duration;
     bounty.skill = data.skill;
     bounty.tier = data.tier;
 
@@ -152,7 +152,7 @@ pub struct BountyVM {
     pub bounty_board: Pubkey,
     pub title: String,
     pub description: String,
-    pub duration_in_hr: u16, // expected task duration in hours
+    pub duration: u32, // expected task duration in seconds
     pub tier: String,
     pub skill: Skill,
 }

@@ -192,7 +192,7 @@ describe("update submission", () => {
     assert.closeTo(
       updatedBountySubmissionAcc.updatedAt.toNumber(),
       new Date().getTime() / 1000,
-      5000
+      60
     );
 
     // assert bounty activity

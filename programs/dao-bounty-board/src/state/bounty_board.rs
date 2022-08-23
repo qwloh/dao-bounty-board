@@ -51,10 +51,10 @@ pub struct BountyTier {
     pub tier_name: String,
     pub difficulty_level: String,
 
-    pub min_required_reputation: u64, // same size as defined in Bounty
+    pub min_required_reputation: u32, // same size as defined in Bounty, to prevent overflow in reputation in contributor_record which allows negative value
     pub min_required_skills_pt: u64,
 
-    pub reputation_reward: u64,
+    pub reputation_reward: u32,
     pub skills_pt_reward: u64,
     pub payout_reward: u64,
     pub payout_mint: Pubkey,

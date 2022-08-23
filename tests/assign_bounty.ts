@@ -187,7 +187,7 @@ describe("assign bounty", () => {
     assert.closeTo(
       bountySubmissionAcc.assignedAt.toNumber(),
       new Date().getTime() / 1000,
-      5000
+      60
     );
 
     // assert `bounty` acc is updated properly

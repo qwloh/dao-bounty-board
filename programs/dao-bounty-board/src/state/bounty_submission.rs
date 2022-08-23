@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub enum BountySubmissionState {
     PendingSubmission,
+    UnassignedForOverdue,
     PendingReview,
     ChangeRequested,
     Rejected,
@@ -25,7 +26,8 @@ pub struct BountySubmission {
     pub request_change_count: u8,         // 1
     pub change_requested_at: Option<i64>, // 8
 
-    pub updated_at: Option<i64>,  // 8
-    pub rejected_at: Option<i64>, // 8
-    pub accepted_at: Option<i64>, // 8
+    pub updated_at: Option<i64>,    // 8
+    pub unassigned_at: Option<i64>, // 8
+    pub rejected_at: Option<i64>,   // 8
+    pub accepted_at: Option<i64>,   // 8
 }

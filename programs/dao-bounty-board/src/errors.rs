@@ -21,6 +21,9 @@ pub enum BountyBoardError {
     SubmissionAlreadyConcluded,
     // request change to submission
     NotAuthorizedToReviewSubmission,
+    // unassign overdue
+    NotAuthorizedToUnassignBounty,
+    NotOverdue,
     // reject submission
     NotAuthorizedToRejectSubmission,
     MinIterationCountNotReached,

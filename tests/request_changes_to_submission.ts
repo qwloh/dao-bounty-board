@@ -187,7 +187,7 @@ describe("request changes to submission", () => {
     assert.closeTo(
       updatedBountySubmissionAcc.changeRequestedAt.toNumber(),
       new Date().getTime() / 1000,
-      5000
+      60
     );
     assert.equal(updatedBountySubmissionAcc.requestChangeCount, 1);
 

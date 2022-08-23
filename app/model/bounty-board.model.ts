@@ -33,10 +33,10 @@ export interface BountyTier {
   tierName: string;
   difficultyLevel: string;
 
-  minRequiredReputation: BN;
+  minRequiredReputation: number;
   minRequiredSkillsPt: BN;
 
-  reputationReward: BN;
+  reputationReward: number;
   skillsPtReward: BN;
   payoutReward: BN;
   payoutMint: PublicKey;

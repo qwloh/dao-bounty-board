@@ -136,7 +136,7 @@ describe("create bounty", () => {
 
     assert.equal(bountyAcc.title, DEFAULT_BOUNTY_DETAILS.title);
     assert.equal(bountyAcc.description, DEFAULT_BOUNTY_DETAILS.description);
-    assert.equal(bountyAcc.durationInHr, DEFAULT_BOUNTY_DETAILS.durationInHr);
+    assert.equal(bountyAcc.duration, DEFAULT_BOUNTY_DETAILS.duration);
     assert.deepEqual(bountyAcc.skill, DEFAULT_BOUNTY_DETAILS.skill);
     assert.equal(bountyAcc.tier, DEFAULT_BOUNTY_DETAILS.tier);
 
@@ -152,10 +152,7 @@ describe("create bounty", () => {
       bountyAcc.rewardPayout.toNumber(),
       rewardTier.payoutReward.toNumber()
     );
-    assert.equal(
-      bountyAcc.rewardReputation.toNumber(),
-      rewardTier.reputationReward.toNumber()
-    );
+    assert.equal(bountyAcc.rewardReputation, rewardTier.reputationReward);
     assert.equal(
       bountyAcc.rewardSkillPt.toNumber(),
       rewardTier.skillsPtReward.toNumber()

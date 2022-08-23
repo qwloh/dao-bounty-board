@@ -54,6 +54,13 @@ pub mod dao_bounty_board {
         instructions::assign_bounty(ctx)
     }
 
+    pub fn unassign_overdue_bounty(
+        ctx: Context<UnassignOverdueBounty>,
+        data: UnassignOverdueBountyVM,
+    ) -> Result<()> {
+        instructions::unassign_overdue_bounty(ctx, data)
+    }
+
     pub fn delete_bounty(ctx: Context<DeleteBounty>) -> Result<()> {
         instructions::delete_bounty(ctx)
     }

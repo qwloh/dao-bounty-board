@@ -6,6 +6,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import {
+  Keypair,
   PublicKey,
   SystemProgram,
   SYSVAR_CLOCK_PUBKEY,
@@ -30,7 +31,7 @@ export enum Skill {
 export const DEFAULT_BOUNTY_DETAILS = {
   title: "My First Bounty",
   description: "", // to be replaced with ipfs impl
-  durationInHr: 7 * 24, // 7 days in hours
+  duration: 7 * 24 * 3600, // 7 days in seconds
   tier: "Entry",
   skill: { development: {} },
 };
@@ -199,6 +200,106 @@ export const assignBounty = async (
     updatedBountyApplicationAcc,
     bountySubmissionPDA,
     bountySubmissionAcc,
+  };
+};
+
+export const unassignOverdueBounty = async (
+  provider: AnchorProvider,
+  program: Program<DaoBountyBoard>,
+  bountyPubkey: PublicKey,
+  currentBountySubmissionPubkey: PublicKey,
+  assigneeContributorRecordPubkey: PublicKey,
+  bountyCreatorContributorRecordPubkey: PublicKey,
+  bountyCreatorWallet: Keypair = undefined,
+  comment: string = ""
+) => {
+  const TEST_BOUNTY_PK = bountyPubkey;
+  const TEST_BOUNTY_SUBMISSION_PK = currentBountySubmissionPubkey;
+  const TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK = assigneeContributorRecordPubkey;
+  const TEST_CONTRIBUTOR_RECORD_PK = bountyCreatorContributorRecordPubkey;
+  const TEST_CONTRIBUTOR_WALLET = bountyCreatorWallet || provider.wallet;
+
+  const SIGNERS = bountyCreatorWallet ? [bountyCreatorWallet] : [];
+  try {
+    const unassignTx = await program.methods
+      //@ts-ignore
+      .unassignOverdueBounty({
+        comment,
+      })
+      .accounts({
+        bounty: TEST_BOUNTY_PK,
+        bountySubmission: TEST_BOUNTY_SUBMISSION_PK,
+        assigneeContributorRecord: TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK,
+        contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
+        contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
+        clock: SYSVAR_CLOCK_PUBKEY,
+      })
+      .signers(SIGNERS)
+      // .simulate();
+      .rpc();
+    console.log("Your transaction signature", unassignTx);
+  } catch (err) {
+    console.log("[UnassignOverdueBounty] Transaction / Simulation fail.", err);
+    throw err;
+  }
+
+  let updatedBountySubmissionAcc;
+  let updatedBountyAcc;
+  let updatedAssigneeContributorRecord;
+
+  console.log("--- Bounty Submission Acc (After Unassign) ---");
+  try {
+    updatedBountySubmissionAcc = await program.account.bountySubmission.fetch(
+      TEST_BOUNTY_SUBMISSION_PK
+    );
+    console.log("Found", updatedBountySubmissionAcc);
+  } catch (err) {
+    console.log(
+      "Not found. Error",
+      err.name,
+      "for",
+      TEST_BOUNTY_SUBMISSION_PK.toString(),
+      err
+    );
+  }
+
+  console.log("--- Bounty Acc (After Unassign) ---");
+  try {
+    updatedBountyAcc = await program.account.bounty.fetch(TEST_BOUNTY_PK);
+    console.log("Found", updatedBountyAcc);
+  } catch (err) {
+    console.log(
+      "Not found. Error",
+      err.name,
+      "for",
+      TEST_BOUNTY_PK.toString(),
+      err
+    );
+  }
+
+  console.log("--- Assignee Contributor Record (After Unassign) ---");
+  if (updatedBountySubmissionAcc) {
+    try {
+      updatedAssigneeContributorRecord =
+        await program.account.contributorRecord.fetch(
+          TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK
+        );
+      console.log("Found", updatedAssigneeContributorRecord);
+    } catch (err) {
+      console.log(
+        "Not found. Error",
+        err.name,
+        "for",
+        TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK.toString(),
+        err
+      );
+    }
+  }
+
+  return {
+    updatedBountySubmissionAcc,
+    updatedBountyAcc,
+    updatedAssigneeContributorRecord,
   };
 };
 
