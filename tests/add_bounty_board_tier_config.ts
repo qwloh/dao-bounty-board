@@ -9,7 +9,7 @@ import idl from "../target/idl/dao_bounty_board.json";
 import { assert } from "chai";
 import { DaoBountyBoard } from "../target/types/dao_bounty_board";
 import { Keypair, PublicKey } from "@solana/web3.js";
-import { DUMMY_MINT_PK, BOUNTY_BOARD_PROGRAM_ID } from "../app/api/constants";
+import { BOUNTY_BOARD_PROGRAM_ID } from "../app/api/constants";
 import {
   addBountyBoardTierConfig,
   cleanUpBountyBoard,
@@ -100,6 +100,18 @@ describe("add bounty board tier config", () => {
       assert.equal(
         tier.minRequiredSkillsPt.toNumber(),
         updatedBountyBoardAcc.config.tiers[idx].minRequiredSkillsPt.toNumber()
+      );
+      assert.equal(
+        tier.taskSubmissionWindow,
+        updatedBountyBoardAcc.config.tiers[idx].taskSubmissionWindow
+      );
+      assert.equal(
+        tier.submissionReviewWindow,
+        updatedBountyBoardAcc.config.tiers[idx].submissionReviewWindow
+      );
+      assert.equal(
+        tier.addressChangeReqWindow,
+        updatedBountyBoardAcc.config.tiers[idx].addressChangeReqWindow
       );
     }
   });

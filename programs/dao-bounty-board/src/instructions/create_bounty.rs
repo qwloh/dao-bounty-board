@@ -50,20 +50,22 @@ pub fn create_bounty(ctx: Context<CreateBounty>, data: BountyVM) -> Result<()> {
 
     bounty.title = data.title;
     bounty.description = data.description;
-    bounty.duration = data.duration;
     bounty.skill = data.skill;
     bounty.tier = data.tier;
 
-    let tier_reward_config = bounty_board
+    let tier_config = bounty_board
         .config
         .tiers
         .iter()
         .find(|t| t.tier_name == bounty.tier)
         .unwrap();
-    bounty.reward_mint = tier_reward_config.payout_mint;
-    bounty.reward_payout = tier_reward_config.payout_reward;
-    bounty.reward_skill_pt = tier_reward_config.skills_pt_reward;
-    bounty.reward_reputation = tier_reward_config.reputation_reward;
+    bounty.task_submission_window = tier_config.task_submission_window;
+    bounty.submission_review_window = tier_config.submission_review_window;
+    bounty.address_change_req_window = tier_config.address_change_req_window;
+    bounty.reward_mint = tier_config.payout_mint;
+    bounty.reward_payout = tier_config.payout_reward;
+    bounty.reward_skill_pt = tier_config.skills_pt_reward;
+    bounty.reward_reputation = tier_config.reputation_reward;
 
     // 2. update bounty_index on bounty_board
     bounty_board.bounty_index += 1;
@@ -152,7 +154,6 @@ pub struct BountyVM {
     pub bounty_board: Pubkey,
     pub title: String,
     pub description: String,
-    pub duration: u32, // expected task duration in seconds
     pub tier: String,
     pub skill: Skill,
 }

@@ -48,16 +48,21 @@ pub struct BountyBoardConfig {
 
 #[derive(Debug, AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Default)]
 pub struct BountyTier {
+    // ~92 per tier
     pub tier_name: String,
     pub difficulty_level: String,
 
-    pub min_required_reputation: u32, // same size as defined in Bounty, to prevent overflow in reputation in contributor_record which allows negative value
-    pub min_required_skills_pt: u64,
+    pub min_required_reputation: u32, // 4, same size as defined in Bounty, to prevent overflow in reputation in contributor_record which allows negative value
+    pub min_required_skills_pt: u64,  // 8
 
-    pub reputation_reward: u32,
-    pub skills_pt_reward: u64,
-    pub payout_reward: u64,
-    pub payout_mint: Pubkey,
+    pub reputation_reward: u32, // 4
+    pub skills_pt_reward: u64,  // 8
+    pub payout_reward: u64,     // 8
+    pub payout_mint: Pubkey,    // 32
+
+    pub task_submission_window: u32,    // 4, duration in seconds
+    pub submission_review_window: u32,  // 4, duration in seconds
+    pub address_change_req_window: u32, // 4, duration in seconds
 }
 
 // a bit of an overkill

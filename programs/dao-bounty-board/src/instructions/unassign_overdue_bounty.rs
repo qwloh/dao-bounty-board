@@ -25,7 +25,7 @@ pub fn unassign_overdue_bounty(
         bounty_submission.state,
         BountySubmissionState::PendingSubmission
     );
-    let deadline = bounty_submission.assigned_at + i64::from(bounty.duration);
+    let deadline = bounty_submission.assigned_at + i64::from(bounty.task_submission_window);
     let deadline_crossed = clock.unix_timestamp > deadline;
     msg!(
         "Deadline: {}. Timestamp on chain: {}. Deadline crossed {}",

@@ -72,9 +72,12 @@ pub struct Bounty {
 
     pub title: String,       // unknown
     pub description: String, // unknown, ipfs cid
-    pub duration: u32, // 4, expected task duration in seconds. Hours is more memory saving, but seconds allow tests to be written
-    pub skill: Skill,  // 1
-    pub tier: String,  // unknown
+    pub skill: Skill,        // 1
+    pub tier: String,        // unknown
+
+    pub task_submission_window: u32,    // 4, duration in seconds
+    pub submission_review_window: u32,  // 4, duration in seconds
+    pub address_change_req_window: u32, // 4, duration in seconds
 
     #[get_size(ignore)]
     pub reward_mint: Pubkey, // 32

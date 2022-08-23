@@ -40,4 +40,8 @@ export interface BountyTier {
   skillsPtReward: BN;
   payoutReward: BN;
   payoutMint: PublicKey;
+
+  taskSubmissionWindow: number;
+  submissionReviewWindow: number;
+  addressChangeReqWindow: number;
 }

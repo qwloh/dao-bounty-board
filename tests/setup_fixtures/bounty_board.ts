@@ -42,6 +42,9 @@ const getTiersInVec = (PAYOUT_MINT: PublicKey) => [
     skillsPtReward: new BN(10),
     payoutReward: new BN(50),
     payoutMint: PAYOUT_MINT,
+    taskSubmissionWindow: 7 * 24 * 3600, // 7 days
+    submissionReviewWindow: 3 * 24 * 3600, // 3 days
+    addressChangeReqWindow: 3 * 24 * 3600, // 3 days
   },
   {
     tierName: "A",
@@ -52,6 +55,9 @@ const getTiersInVec = (PAYOUT_MINT: PublicKey) => [
     skillsPtReward: new BN(20),
     payoutReward: new BN(200),
     payoutMint: PAYOUT_MINT,
+    taskSubmissionWindow: 14 * 24 * 3600, // 14 days
+    submissionReviewWindow: 7 * 24 * 3600, // 7 days
+    addressChangeReqWindow: 7 * 24 * 3600, // 7 days
   },
   {
     tierName: "AA",
@@ -62,6 +68,9 @@ const getTiersInVec = (PAYOUT_MINT: PublicKey) => [
     skillsPtReward: new BN(50),
     payoutReward: new BN(500),
     payoutMint: PAYOUT_MINT,
+    taskSubmissionWindow: 30 * 24 * 3600, // 30 days
+    submissionReviewWindow: 7 * 24 * 3600, // 7 days
+    addressChangeReqWindow: 7 * 24 * 3600, // 7 days
   },
   {
     tierName: "S",
@@ -72,6 +81,9 @@ const getTiersInVec = (PAYOUT_MINT: PublicKey) => [
     skillsPtReward: new BN(100),
     payoutReward: new BN(2000),
     payoutMint: PAYOUT_MINT,
+    taskSubmissionWindow: 60 * 24 * 3600, // 60 days
+    submissionReviewWindow: 14 * 24 * 3600, // 14 days
+    addressChangeReqWindow: 14 * 24 * 3600, // 14 days
   },
 ];
 
