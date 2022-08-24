@@ -3,11 +3,15 @@ import { bs58 } from "@project-serum/anchor/dist/cjs/utils/bytes";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { assert } from "chai";
-import { BOUNTY_BOARD_PROGRAM_ID } from "../app/api/constants";
+import { BOUNTY_BOARD_PROGRAM_ID, DUMMY_MINT_PK } from "../app/api/constants";
 import { setupContributorRecord } from "../app/api/utils";
 import idl from "../target/idl/dao_bounty_board.json";
 import { DaoBountyBoard } from "../target/types/dao_bounty_board";
-import { cleanUpBounty, setupBounty } from "./setup_fixtures/bounty";
+import {
+  cleanUpBounty,
+  DEFAULT_BOUNTY_DETAILS,
+  setupBounty,
+} from "./setup_fixtures/bounty";
 import {
   cleanUpBountyApplication,
   setupBountyApplication,
@@ -16,10 +20,12 @@ import {
   addBountyBoardTierConfig,
   cleanUpBountyBoard,
   getRolesInVec,
+  getTiersInVec,
   seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
 import { cleanUpContributorRecord } from "./setup_fixtures/contributor_record";
+import { assertReject } from "./utils/assert-promise-utils";
 
 describe("apply to bounty", () => {
   // Configure the client to use the local cluster.
@@ -67,6 +73,26 @@ describe("apply to bounty", () => {
   // Applicant contributor record PDA 72Ad1wVNGa4HYnZaK4JcCjhbPnPo7TRkKRePnUqDds27
   // Bounty application PDA FqdhNR8vrERcQ5UHoBhWR7J82UG5HGjEd38yEJmW9Htt
 
+  // test specific setup fn
+  const setupBountyWithVaryingTier = async (tierName: string) => {
+    //  tune tier for different min_reputation / min_skills_pt requirement for testing
+
+    // set up bounty
+    const { bountyPDA, bountyEscrowPDA } = await setupBounty(
+      provider,
+      program,
+      TEST_BOUNTY_BOARD_PK,
+      TEST_BOUNTY_BOARD_VAULT_PK,
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
+      {
+        ...DEFAULT_BOUNTY_DETAILS,
+        tier: tierName,
+      }
+    );
+    TEST_BOUNTY_PK = bountyPDA;
+    TEST_BOUNTY_ESCROW_PK = bountyEscrowPDA;
+  };
+
   beforeEach(async () => {
     console.log("Test realm public key", TEST_REALM_PK.toString());
     // set up bounty board
@@ -83,7 +109,20 @@ describe("apply to bounty", () => {
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
-      TEST_REALM_GOVERNANCE
+      TEST_REALM_GOVERNANCE,
+      // tiers with custom / no default min required reputation & skills pt for testing
+      getTiersInVec(new PublicKey(DUMMY_MINT_PK.USDC)).map((t) => {
+        switch (t.tierName) {
+          case "A":
+            t.minRequiredReputation = 0;
+            return t;
+          case "AA":
+            t.minRequiredSkillsPt = new BN(0);
+            return t;
+          default:
+            return t;
+        }
+      })
     );
 
     // seed bounty board vault
@@ -104,20 +143,11 @@ describe("apply to bounty", () => {
       "Core"
     );
     TEST_CREATOR_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
-
-    // set up bounty
-    const { bountyPDA, bountyEscrowPDA } = await setupBounty(
-      provider,
-      program,
-      TEST_BOUNTY_BOARD_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK,
-      TEST_CREATOR_CONTRIBUTOR_RECORD_PK
-    );
-    TEST_BOUNTY_PK = bountyPDA;
-    TEST_BOUNTY_ESCROW_PK = bountyEscrowPDA;
   });
 
   it("create bounty application acc correctly", async () => {
+    await setupBountyWithVaryingTier("Entry");
+
     console.log(
       "Test applicant public key",
       TEST_APPLICANT_WALLET.publicKey.toString()
@@ -184,6 +214,38 @@ describe("apply to bounty", () => {
     assert.isEmpty(applicantContributorRecordAcc.skillsPt);
     assert.equal(applicantContributorRecordAcc.bountyCompleted, 0);
     assert.equal(applicantContributorRecordAcc.recentRepChange, 0);
+  });
+
+  it("should throw when applicant does not have sufficient skill point", async () => {
+    await setupBountyWithVaryingTier("A"); // 0 min required rep, non 0 min required sp
+    await assertReject(
+      () =>
+        setupBountyApplication(
+          provider,
+          program,
+          TEST_BOUNTY_BOARD_PK,
+          TEST_BOUNTY_PK,
+          TEST_APPLICANT_WALLET,
+          7 * 24 * 3600 // 1 wk
+        ),
+      /InsufficientSkillsPt/
+    );
+  });
+
+  it("should throw when applicant does not have sufficient reputation", async () => {
+    await setupBountyWithVaryingTier("AA"); // 0 min required sp, non 0 min required rep
+    await assertReject(
+      () =>
+        setupBountyApplication(
+          provider,
+          program,
+          TEST_BOUNTY_BOARD_PK,
+          TEST_BOUNTY_PK,
+          TEST_APPLICANT_WALLET,
+          7 * 24 * 3600 // 1 wk
+        ),
+      /InsufficientReputation/
+    );
   });
 
   afterEach(async () => {

@@ -66,6 +66,7 @@ export const setupBountyApplication = async (
     console.log("Your transaction signature", tx);
   } catch (err) {
     console.log("[ApplyToBounty] Transaction / Simulation fail.", err);
+    throw err;
   }
 
   let bountyApplicationAcc;

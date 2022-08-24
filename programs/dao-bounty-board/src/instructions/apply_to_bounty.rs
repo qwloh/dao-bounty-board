@@ -1,3 +1,4 @@
+use crate::errors::BountyBoardError;
 use crate::state::{bounty::*, bounty_application::*, bounty_board::*, contributor_record::*};
 use crate::PROGRAM_AUTHORITY_SEED;
 use anchor_lang::prelude::*;
@@ -10,6 +11,27 @@ pub fn apply_to_bounty(ctx: Context<ApplyToBounty>, data: ApplyToBountyVM) -> Re
     let contributor_record = &mut ctx.accounts.contributor_record;
     let applicant = &ctx.accounts.applicant;
     let clock = &ctx.accounts.clock;
+
+    // find the skills point for the skill involved in this bounty
+    let applicant_skills_pt = contributor_record
+        .skills_pt
+        .iter()
+        .find(|t| t.skill == bounty.skill)
+        .unwrap_or(&SkillsPt {
+            skill: Skill::Design, // skill doesn't matter, just a placeholder
+            point: 0,
+        })
+        .point;
+    require_gte!(
+        applicant_skills_pt,
+        bounty.min_required_skills_pt,
+        BountyBoardError::InsufficientSkillsPt
+    );
+    require_gte!(
+        contributor_record.reputation,
+        i64::from(bounty.min_required_reputation),
+        BountyBoardError::InsufficientReputation
+    );
 
     bounty_application.bounty = bounty.key();
     bounty_application.applicant = *applicant.key;

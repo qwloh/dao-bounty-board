@@ -9,6 +9,8 @@ pub enum BountyBoardError {
     NotAuthorizedToCreateBounty,
     // apply to bounty
     NoDefaultRoleConfigured,
+    InsufficientReputation,
+    InsufficientSkillsPt,
     // assign bounty
     BountyApplicationExpired,
     // assign or delete bounty
