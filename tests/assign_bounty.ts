@@ -179,6 +179,7 @@ describe("assign bounty", () => {
       bountySubmissionAcc.bounty.toString(),
       TEST_BOUNTY_PK.toString()
     );
+    assert.equal(bountySubmissionAcc.submissionIndex, TEST_BOUNTY_ASSIGN_COUNT);
     assert.deepEqual(bountySubmissionAcc.state, { pendingSubmission: {} });
     assert.equal(
       bountySubmissionAcc.assignee.toString(),

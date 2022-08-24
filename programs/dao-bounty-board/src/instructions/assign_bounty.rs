@@ -25,9 +25,10 @@ pub fn assign_bounty(ctx: Context<AssignBounty>) -> Result<()> {
 
     // 1. create blank 'bounty_submission' for assignee
     bounty_submission.bounty = bounty.key();
-    bounty_submission.state = BountySubmissionState::PendingSubmission;
+    bounty_submission.submission_index = bounty.assign_count;
     bounty_submission.assignee = bounty_application.contributor_record;
     bounty_submission.assigned_at = clock.unix_timestamp;
+    bounty_submission.state = BountySubmissionState::PendingSubmission;
 
     // 2. update `bounty` state & assign_count
     bounty.state = BountyState::Assigned;

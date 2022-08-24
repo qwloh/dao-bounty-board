@@ -16,6 +16,7 @@ pub enum BountySubmissionState {
 #[account]
 pub struct BountySubmission {
     pub bounty: Pubkey,               // 32
+    pub submission_index: u8,         // 1, the assign_count used to derive PDA for this submission
     pub assignee: Pubkey,             // 32, contributor record
     pub assigned_at: i64,             // 8
     pub state: BountySubmissionState, // 1
