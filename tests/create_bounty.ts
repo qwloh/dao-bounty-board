@@ -163,10 +163,18 @@ describe("create bounty", () => {
       bountyAcc.rewardPayout.toNumber(),
       tierConfig.payoutReward.toNumber()
     );
-    assert.equal(bountyAcc.rewardReputation, tierConfig.reputationReward);
     assert.equal(
       bountyAcc.rewardSkillPt.toNumber(),
       tierConfig.skillsPtReward.toNumber()
+    );
+    assert.equal(bountyAcc.rewardReputation, tierConfig.reputationReward);
+    assert.equal(
+      bountyAcc.minRequiredReputation,
+      tierConfig.minRequiredReputation
+    );
+    assert.equal(
+      bountyAcc.minRequiredSkillsPt.toNumber(),
+      tierConfig.minRequiredSkillsPt.toNumber()
     );
 
     assert.equal(bountyAcc.assignCount, 0);

@@ -81,9 +81,11 @@ pub struct Bounty {
 
     #[get_size(ignore)]
     pub reward_mint: Pubkey, // 32
-    pub reward_payout: u64,     // 8
-    pub reward_skill_pt: u64,   // 8
-    pub reward_reputation: u32, // 8
+    pub reward_payout: u64,           // 8
+    pub reward_skill_pt: u64,         // 8
+    pub reward_reputation: u32,       // 8
+    pub min_required_reputation: u32, // 4, same size as defined in Bounty, to prevent overflow in reputation in contributor_record which allows negative value
+    pub min_required_skills_pt: u64,  // 8
 
     pub assign_count: u8,   // 1, 256 is a reasonable number
     pub unassign_count: u8, // 1

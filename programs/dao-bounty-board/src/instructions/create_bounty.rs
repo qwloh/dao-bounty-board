@@ -65,6 +65,8 @@ pub fn create_bounty(ctx: Context<CreateBounty>, data: BountyVM) -> Result<()> {
     bounty.reward_payout = tier_config.payout_reward;
     bounty.reward_skill_pt = tier_config.skills_pt_reward;
     bounty.reward_reputation = tier_config.reputation_reward;
+    bounty.min_required_reputation = tier_config.min_required_reputation;
+    bounty.min_required_skills_pt = tier_config.min_required_skills_pt;
 
     // 2. update bounty_index on bounty_board
     bounty_board.bounty_index += 1;
