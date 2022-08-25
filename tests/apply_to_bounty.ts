@@ -8,13 +8,13 @@ import { setupContributorRecord } from "../app/api/utils";
 import idl from "../target/idl/dao_bounty_board.json";
 import { DaoBountyBoard } from "../target/types/dao_bounty_board";
 import {
-  cleanUpBounty,
+  cleanUpCreateBounty,
   DEFAULT_BOUNTY_DETAILS,
-  setupBounty,
+  createBounty,
 } from "./setup_fixtures/bounty";
 import {
-  cleanUpBountyApplication,
-  setupBountyApplication,
+  cleanUpApplyToBounty,
+  applyToBounty,
 } from "./setup_fixtures/bounty_application";
 import {
   addBountyBoardTierConfig,
@@ -84,7 +84,7 @@ describe("apply to bounty", () => {
     //  tune tier for different min_reputation / min_skills_pt requirement for testing
 
     // set up bounty
-    const { bountyPDA, bountyEscrowPDA, bountyAcc } = await setupBounty(
+    const { bountyPDA, bountyEscrowPDA, bountyAcc } = await createBounty(
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
@@ -172,7 +172,7 @@ describe("apply to bounty", () => {
       bountyActivityApplyPDA,
       bountyActivityApplyAcc,
       updatedBountyAcc,
-    } = await setupBountyApplication(
+    } = await applyToBounty(
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
@@ -258,7 +258,7 @@ describe("apply to bounty", () => {
     await setupBountyWithVaryingTier("A"); // 0 min required rep, non 0 min required sp
     await assertReject(
       () =>
-        setupBountyApplication(
+        applyToBounty(
           provider,
           program,
           TEST_BOUNTY_BOARD_PK,
@@ -275,7 +275,7 @@ describe("apply to bounty", () => {
     await setupBountyWithVaryingTier("AA"); // 0 min required sp, non 0 min required rep
     await assertReject(
       () =>
-        setupBountyApplication(
+        applyToBounty(
           provider,
           program,
           TEST_BOUNTY_BOARD_PK,
@@ -291,7 +291,7 @@ describe("apply to bounty", () => {
   afterEach(async () => {
     console.log("--- Cleanup logs ---");
     // clean up bounty application created
-    await cleanUpBountyApplication(
+    await cleanUpApplyToBounty(
       provider,
       program,
       TEST_BOUNTY_APPLICATION_PDA,
@@ -299,7 +299,7 @@ describe("apply to bounty", () => {
       TEST_BOUNTY_ACTIVITY_APPLY_PDA
     );
     // clean up bounty-related accounts
-    await cleanUpBounty(
+    await cleanUpCreateBounty(
       provider,
       program,
       TEST_BOUNTY_PK,

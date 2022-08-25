@@ -1,6 +1,6 @@
 use crate::{
     errors::BountyBoardError,
-    state::{bounty::*, bounty_application::*, bounty_submission::*},
+    state::{bounty::*, bounty_activity::*, bounty_application::*, bounty_submission::*},
     PROGRAM_AUTHORITY_SEED,
 };
 use anchor_lang::prelude::*;
@@ -9,6 +9,8 @@ pub fn assign_bounty(ctx: Context<AssignBounty>) -> Result<()> {
     let bounty = &mut ctx.accounts.bounty;
     let bounty_application = &mut ctx.accounts.bounty_application;
     let bounty_submission = &mut ctx.accounts.bounty_submission;
+    let bounty_activity = &mut ctx.accounts.bounty_activity;
+    let user = &ctx.accounts.user;
     let clock = &ctx.accounts.clock;
 
     require!(
@@ -30,12 +32,21 @@ pub fn assign_bounty(ctx: Context<AssignBounty>) -> Result<()> {
     bounty_submission.assigned_at = clock.unix_timestamp;
     bounty_submission.state = BountySubmissionState::PendingSubmission;
 
-    // 2. update `bounty` state & assign_count
+    // 2. update `bounty_application` status
+    bounty_application.status = BountyApplicationStatus::Assigned;
+
+    // 3. populate fields for `bounty_activity`
+    bounty_activity.bounty = bounty.key();
+    bounty_activity.activity_type = BountyActivityType::Assign;
+    bounty_activity.activity_index = bounty.activity_index;
+    bounty_activity.timestamp = clock.unix_timestamp;
+    bounty_activity.actor_wallet = *user.key;
+    bounty_activity.target_wallet = Some(bounty_application.applicant);
+
+    // 4. update `bounty` state & assign_count & activity_index
     bounty.state = BountyState::Assigned;
     bounty.assign_count += 1;
-
-    // 3. update `bounty_application` status
-    bounty_application.status = BountyApplicationStatus::Assigned;
+    bounty.activity_index += 1; // must do this ONLY after assigning existing activity_index to bounty_activity.activity_index
 
     Ok(())
 }
@@ -51,6 +62,9 @@ pub struct AssignBounty<'info> {
     // create blank bounty submission for assignee
     #[account(init, seeds = [PROGRAM_AUTHORITY_SEED, &bounty.key().as_ref(), b"bounty_submission", &bounty.assign_count.to_le_bytes()], bump, payer = user, space = 2500 )]
     pub bounty_submission: Account<'info, BountySubmission>,
+
+    #[account(init, seeds=[PROGRAM_AUTHORITY_SEED, &bounty.key().as_ref(), b"bounty_activity", &bounty.activity_index.to_le_bytes()], bump, payer = user, space=500)]
+    pub bounty_activity: Account<'info, BountyActivity>,
 
     #[account(mut)]
     pub user: Signer<'info>,

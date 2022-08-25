@@ -12,12 +12,12 @@ import {
   getContributorRecordAddress,
 } from "../utils/get_addresses";
 
-export const setupBountyApplication = async (
+export const applyToBounty = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
   testBountyBoardPubkey: PublicKey,
   testBountyPubkey: PublicKey,
-  currentActivityIndex: number,
+  bountyActivityIndex: number,
   testApplicantWallet: Keypair,
   validity: number // time in seconds
 ) => {
@@ -42,7 +42,7 @@ export const setupBountyApplication = async (
     TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA.toString()
   );
 
-  console.log("Current activity index", currentActivityIndex);
+  console.log("[ApplyToBounty] Current activity index", bountyActivityIndex);
   const [TEST_BOUNTY_APPLICATION_PDA] = await getBountyApplicationAddress(
     TEST_BOUNTY_PK,
     TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA
@@ -51,7 +51,7 @@ export const setupBountyApplication = async (
 
   const [TEST_BOUNTY_ACTIVITY_APPLY_PDA] = await getBountyActivityAddress(
     TEST_BOUNTY_PK,
-    currentActivityIndex
+    bountyActivityIndex
   );
   console.log(
     "Bounty activity (Apply) PDA",
@@ -148,7 +148,7 @@ export const setupBountyApplication = async (
   };
 };
 
-export const cleanUpBountyApplication = async (
+export const cleanUpApplyToBounty = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
   bountyApplicationPDA: PublicKey,

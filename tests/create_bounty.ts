@@ -17,9 +17,9 @@ import {
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
 import {
-  cleanUpBounty,
+  cleanUpCreateBounty,
   DEFAULT_BOUNTY_DETAILS,
-  setupBounty,
+  createBounty,
 } from "./setup_fixtures/bounty";
 import {
   cleanUpContributorRecord,
@@ -106,7 +106,7 @@ describe("create bounty", () => {
 
   it("should create bounty PDA with correct data", async () => {
     const { bountyAcc, bountyPDA, bountyEscrowAcc, bountyEscrowPDA } =
-      await setupBounty(
+      await createBounty(
         provider,
         program,
         TEST_BOUNTY_BOARD_PK,
@@ -199,7 +199,7 @@ describe("create bounty", () => {
 
   afterEach(async () => {
     console.log("--- Cleanup logs ---");
-    await cleanUpBounty(
+    await cleanUpCreateBounty(
       provider,
       program,
       TEST_BOUNTY_PDA,
