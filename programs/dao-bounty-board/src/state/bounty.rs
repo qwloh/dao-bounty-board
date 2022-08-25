@@ -90,8 +90,7 @@ pub struct Bounty {
     pub assign_count: u8,   // 1, 256 is a reasonable number
     pub unassign_count: u8, // 1
 
-    // #[get_size(ignore)]
-    // pub assignee: Option<Pubkey>, // 32, contributor record
-    // pub assigned_at: Option<i64>, // 8
+    pub activity_index: u16, // 2, 65,536, reasonable number imo
+
     pub completed_at: Option<i64>, // 8
 }

@@ -179,6 +179,7 @@ describe("create bounty", () => {
 
     assert.equal(bountyAcc.assignCount, 0);
     assert.equal(bountyAcc.unassignCount, 0);
+    assert.equal(bountyAcc.activityIndex, 0);
     assert.isNull(bountyAcc.completedAt);
 
     // test bounty escrow acc created and funded
