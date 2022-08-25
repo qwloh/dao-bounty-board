@@ -41,6 +41,7 @@ describe("apply to bounty", () => {
     programId
   ) as Program<DaoBountyBoard>;
 
+  // accounts involved in this test
   let TEST_REALM_PK = new PublicKey(
     "ERnGrQLSFk7CG15kPqRC9JeuV8zLq5cje29ycJUmsnzQ"
   );
@@ -60,6 +61,7 @@ describe("apply to bounty", () => {
   );
   let TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA;
   let TEST_BOUNTY_APPLICATION_PDA;
+  let TEST_BOUNTY_ACTIVITY_APPLY_PDA;
 
   // Test realm public key ERnGrQLSFk7CG15kPqRC9JeuV8zLq5cje29ycJUmsnzQ
   // Test realm governance public key Ex1qQwFhSGd9zWDDUcPMdm85Yhbf4B7sHUae72cD7j3T
@@ -72,13 +74,17 @@ describe("apply to bounty", () => {
   // Test applicant secret key 542ZkFLa8T3cc3deiFdzXSe1NmoyPSc3fWfhjBNsPdSzCBxWMXyiTb3Cifnz5NY95NjsX3gofn4Chgri3TRVzAJW
   // Applicant contributor record PDA 72Ad1wVNGa4HYnZaK4JcCjhbPnPo7TRkKRePnUqDds27
   // Bounty application PDA FqdhNR8vrERcQ5UHoBhWR7J82UG5HGjEd38yEJmW9Htt
+  // Bounty Activity (Apply) PDA 4uK4NfW3orSh1aoZ4Bdd67TJtZf6h4udjqjRT2oSEvSJ
+
+  // acc level fields involved in this test
+  let TEST_BOUNTY_ACTIVITY_INDEX;
 
   // test specific setup fn
   const setupBountyWithVaryingTier = async (tierName: string) => {
     //  tune tier for different min_reputation / min_skills_pt requirement for testing
 
     // set up bounty
-    const { bountyPDA, bountyEscrowPDA } = await setupBounty(
+    const { bountyPDA, bountyEscrowPDA, bountyAcc } = await setupBounty(
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
@@ -91,6 +97,7 @@ describe("apply to bounty", () => {
     );
     TEST_BOUNTY_PK = bountyPDA;
     TEST_BOUNTY_ESCROW_PK = bountyEscrowPDA;
+    TEST_BOUNTY_ACTIVITY_INDEX = bountyAcc.activityIndex;
   };
 
   beforeEach(async () => {
@@ -162,16 +169,21 @@ describe("apply to bounty", () => {
       bountyApplicationAcc,
       applicantContributorRecordPDA,
       applicantContributorRecordAcc,
+      bountyActivityApplyPDA,
+      bountyActivityApplyAcc,
+      updatedBountyAcc,
     } = await setupBountyApplication(
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
       TEST_BOUNTY_PK,
+      TEST_BOUNTY_ACTIVITY_INDEX,
       TEST_APPLICANT_WALLET,
       7 * 24 * 3600 // 1 wk
     );
     TEST_BOUNTY_APPLICATION_PDA = bountyApplicationPDA;
     TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA = applicantContributorRecordPDA;
+    TEST_BOUNTY_ACTIVITY_APPLY_PDA = bountyActivityApplyPDA;
 
     // assert bounty application is okay
     assert.equal(
@@ -214,6 +226,32 @@ describe("apply to bounty", () => {
     assert.isEmpty(applicantContributorRecordAcc.skillsPt);
     assert.equal(applicantContributorRecordAcc.bountyCompleted, 0);
     assert.equal(applicantContributorRecordAcc.recentRepChange, 0);
+
+    // assert bounty activity is created
+    assert.equal(
+      bountyActivityApplyAcc.bounty.toString(),
+      TEST_BOUNTY_PK.toString()
+    );
+    assert.deepEqual(bountyActivityApplyAcc.activityType, { apply: {} });
+    assert.equal(
+      bountyActivityApplyAcc.activityIndex,
+      TEST_BOUNTY_ACTIVITY_INDEX
+    );
+    assert.closeTo(
+      bountyActivityApplyAcc.timestamp.toNumber(),
+      new Date().getTime() / 1000,
+      60
+    );
+    assert.equal(
+      bountyActivityApplyAcc.actorWallet.toString(),
+      TEST_APPLICANT_WALLET.publicKey.toString()
+    );
+
+    // assert activity index is incremented on bounty
+    assert.equal(
+      updatedBountyAcc.activityIndex,
+      TEST_BOUNTY_ACTIVITY_INDEX + 1
+    );
   });
 
   it("should throw when applicant does not have sufficient skill point", async () => {
@@ -225,6 +263,7 @@ describe("apply to bounty", () => {
           program,
           TEST_BOUNTY_BOARD_PK,
           TEST_BOUNTY_PK,
+          TEST_BOUNTY_ACTIVITY_INDEX,
           TEST_APPLICANT_WALLET,
           7 * 24 * 3600 // 1 wk
         ),
@@ -241,6 +280,7 @@ describe("apply to bounty", () => {
           program,
           TEST_BOUNTY_BOARD_PK,
           TEST_BOUNTY_PK,
+          TEST_BOUNTY_ACTIVITY_INDEX,
           TEST_APPLICANT_WALLET,
           7 * 24 * 3600 // 1 wk
         ),
@@ -255,7 +295,8 @@ describe("apply to bounty", () => {
       provider,
       program,
       TEST_BOUNTY_APPLICATION_PDA,
-      TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA,
+      TEST_BOUNTY_ACTIVITY_APPLY_PDA
     );
     // clean up bounty-related accounts
     await cleanUpBounty(

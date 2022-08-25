@@ -116,7 +116,7 @@ export const getBountyActivityAddress = (
       utils.bytes.utf8.encode(PROGRAM_AUTHORITY_SEED),
       bountyPubkey.toBytes(),
       utils.bytes.utf8.encode("bounty_activity"),
-      new BN(activityIndex).toBuffer("le", 4),
+      new BN(activityIndex).toBuffer("le", 2),
     ],
     new PublicKey(BOUNTY_BOARD_PROGRAM_ID)
   );

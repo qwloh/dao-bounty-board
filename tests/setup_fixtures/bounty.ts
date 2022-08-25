@@ -322,10 +322,10 @@ export const cleanUpBounty = async (
         tokenProgram: TOKEN_PROGRAM_ID,
       })
       .rpc();
-    console.log(`Bounty escrow acc ${bountyEscrowPDA.toString()} closed`);
+    console.log(`Bounty escrow acc ${bountyEscrowPDA} closed`);
   } catch (err) {
     console.log(
-      `Error clearing bounty escrow acc ${bountyEscrowPDA.toString()}`,
+      `Error clearing bounty escrow acc ${bountyEscrowPDA}`,
       err.message || err.name
     );
     return; // don't clear bounty board account if bounty board vault account is not successfully cleared
