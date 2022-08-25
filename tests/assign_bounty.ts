@@ -21,7 +21,6 @@ import {
   seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
-import { cleanUpBountySubmission } from "./setup_fixtures/bounty_submission";
 import {
   cleanUpContributorRecord,
   setupContributorRecord,
@@ -53,9 +52,11 @@ describe("assign bounty", () => {
   ); // my own ATA for the mint
   let TEST_BOUNTY_BOARD_PK;
   let TEST_BOUNTY_BOARD_VAULT_PK;
+
   let TEST_BOUNTY_PK;
   let TEST_BOUNTY_ESCROW_PK;
   let TEST_CREATOR_CONTRIBUTOR_RECORD_PK;
+
   let TEST_APPLICANT_WALLET = Keypair.fromSecretKey(
     bs58.decode(
       "2rbbsGD3LUDn6fmD8NU9o1YA9dyvvj1uBTZiJ32WqkxZs9pfParg3JZuSHZHfAPr3hy4e9dxsacuhdcd8vS3HfuC"
@@ -64,6 +65,7 @@ describe("assign bounty", () => {
   let TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
   let TEST_BOUNTY_APPLICATION_PK;
   let TEST_BOUNTY_ACTIVITY_APPLY_PK;
+
   let TEST_2ND_APPLICANT_WALLET = Keypair.fromSecretKey(
     bs58.decode(
       "46M2VLp1a2gTqWA66YwdJWyJA7eqMA8nE2FY2yn7jT4RAt5JaUTuxKgEHDyMk4qABD5L3egHa1tnRX1bRXQderJE"
@@ -72,6 +74,7 @@ describe("assign bounty", () => {
   let TEST_2ND_APPLICANT_CONTRIBUTOR_RECORD_PK;
   let TEST_2ND_BOUNTY_APPLICATION_PK;
   let TEST_2ND_BOUNTY_ACTIVITY_APPLY_PK;
+
   let TEST_BOUNTY_SUBMISSION_PDA;
   let TEST_BOUNTY_ACTIVITY_ASSIGN_PDA;
 
@@ -178,7 +181,7 @@ describe("assign bounty", () => {
 
   it("assign bounty to a bounty application and update both account correctly", async () => {
     const {
-      updatedBountyAcc,
+      bountyAccAfterAssign,
       updatedBountyApplicationAcc,
       bountySubmissionPDA,
       bountySubmissionAcc,
@@ -214,10 +217,13 @@ describe("assign bounty", () => {
     );
 
     // assert `bounty` acc is updated properly
-    assert.deepEqual(updatedBountyAcc.state, { assigned: {} });
-    assert.equal(updatedBountyAcc.assignCount, TEST_BOUNTY_ASSIGN_COUNT + 1);
+    assert.deepEqual(bountyAccAfterAssign.state, { assigned: {} });
     assert.equal(
-      updatedBountyAcc.activityIndex,
+      bountyAccAfterAssign.assignCount,
+      TEST_BOUNTY_ASSIGN_COUNT + 1
+    );
+    assert.equal(
+      bountyAccAfterAssign.activityIndex,
       CURRENT_BOUNTY_ACTIVITY_INDEX + 1
     );
 
@@ -251,18 +257,21 @@ describe("assign bounty", () => {
 
   it("fails if attempt to assign for an assigned bounty", async () => {
     // assign first
-    const { updatedBountyAcc, bountySubmissionPDA, bountyActivityAssignPDA } =
-      await assignBounty(
-        provider,
-        program,
-        TEST_BOUNTY_PK,
-        TEST_BOUNTY_ASSIGN_COUNT,
-        CURRENT_BOUNTY_ACTIVITY_INDEX,
-        TEST_BOUNTY_APPLICATION_PK
-      );
+    const {
+      bountyAccAfterAssign,
+      bountySubmissionPDA,
+      bountyActivityAssignPDA,
+    } = await assignBounty(
+      provider,
+      program,
+      TEST_BOUNTY_PK,
+      TEST_BOUNTY_ASSIGN_COUNT,
+      CURRENT_BOUNTY_ACTIVITY_INDEX,
+      TEST_BOUNTY_APPLICATION_PK
+    );
     TEST_BOUNTY_SUBMISSION_PDA = bountySubmissionPDA;
     TEST_BOUNTY_ACTIVITY_ASSIGN_PDA = bountyActivityAssignPDA;
-    CURRENT_BOUNTY_ACTIVITY_INDEX = updatedBountyAcc.activityIndex;
+    CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterAssign.activityIndex;
 
     // set up a second application
     console.log(
@@ -299,7 +308,7 @@ describe("assign bounty", () => {
           provider,
           program,
           TEST_BOUNTY_PK,
-          updatedBountyAcc.assignCount,
+          bountyAccAfterAssign.assignCount,
           CURRENT_BOUNTY_ACTIVITY_INDEX,
           TEST_2ND_BOUNTY_APPLICATION_PK
         ),
@@ -378,26 +387,17 @@ describe("assign bounty", () => {
 
   afterEach(async () => {
     console.log("--- Cleanup logs ---");
-    console.log("Reset CURRENT_BOUNTY_ACTIVITY_INDEX to 0.");
-    CURRENT_BOUNTY_ACTIVITY_INDEX = 0;
 
-    if (TEST_BOUNTY_ACTIVITY_ASSIGN_PDA) {
+    if (TEST_BOUNTY_ACTIVITY_ASSIGN_PDA || TEST_BOUNTY_SUBMISSION_PDA) {
+      // if assertRejects fails, the extra bounty submission created with TEST_2ND_APPLICATION may not be cleaned up
       await cleanUpAssignBounty(
         provider,
         program,
-        TEST_BOUNTY_ACTIVITY_ASSIGN_PDA
-      );
-    }
-
-    // clean up bounty submission created on assigning bounty
-    // if assertRejects fails, the extra bounty submission created with TEST_2ND_APPLICATION may not be cleaned up
-    if (TEST_BOUNTY_SUBMISSION_PDA) {
-      await cleanUpBountySubmission(
-        provider,
-        program,
+        TEST_BOUNTY_ACTIVITY_ASSIGN_PDA,
         TEST_BOUNTY_SUBMISSION_PDA
       );
     }
+
     // clean up bounty application created
     await cleanUpApplyToBounty(
       provider,

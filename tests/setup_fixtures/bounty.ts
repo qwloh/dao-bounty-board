@@ -221,11 +221,11 @@ export const assignBounty = async (
   }
 
   // get updated bounty acc
-  let updatedBountyAcc;
+  let bountyAccAfterAssign;
   console.log("--- Bounty Acc (After Assign) ---");
   try {
-    updatedBountyAcc = await program.account.bounty.fetch(TEST_BOUNTY_PK);
-    console.log("Found", JSON.parse(JSON.stringify(updatedBountyAcc)));
+    bountyAccAfterAssign = await program.account.bounty.fetch(TEST_BOUNTY_PK);
+    console.log("Found", JSON.parse(JSON.stringify(bountyAccAfterAssign)));
   } catch (err) {
     console.log("Not found. Error", err.message);
   }
@@ -269,7 +269,7 @@ export const assignBounty = async (
   }
 
   return {
-    updatedBountyAcc,
+    bountyAccAfterAssign,
     updatedBountyApplicationAcc,
     bountySubmissionPDA: TEST_BOUNTY_SUBMISSION_PDA,
     bountySubmissionAcc,
@@ -281,7 +281,8 @@ export const assignBounty = async (
 export const cleanUpAssignBounty = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
-  bountyActivityAssignPDA: PublicKey
+  bountyActivityAssignPDA: PublicKey,
+  bountySubmissionPDA: PublicKey
 ) => {
   // clean up bounty activity: assign
   try {
@@ -301,6 +302,24 @@ export const cleanUpAssignBounty = async (
       `Error clearing bounty activity (Assign) acc ${bountyActivityAssignPDA}`,
       err.message
     );
+  }
+  // clean up bounty submission created from assign
+  try {
+    await program.methods
+      .closeBountySubmission()
+      .accounts({
+        bountySubmission: bountySubmissionPDA,
+        user: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+    console.log(`Bounty submission acc ${bountySubmissionPDA} closed`);
+  } catch (err) {
+    console.log(
+      `Error clearing bounty submission acc ${bountySubmissionPDA}`,
+      err.message
+    );
+    return;
   }
 };
 

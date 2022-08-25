@@ -7,13 +7,14 @@ import idl from "../target/idl/dao_bounty_board.json";
 import { DaoBountyBoard } from "../target/types/dao_bounty_board";
 import {
   assignBounty,
-  cleanUpBounty,
+  cleanUpCreateBounty,
   DEFAULT_BOUNTY_DETAILS,
-  setupBounty,
+  createBounty,
+  cleanUpAssignBounty,
 } from "./setup_fixtures/bounty";
 import {
-  cleanUpBountyApplication,
-  setupBountyApplication,
+  cleanUpApplyToBounty,
+  applyToBounty,
 } from "./setup_fixtures/bounty_application";
 import {
   addBountyBoardTierConfig,
@@ -23,7 +24,6 @@ import {
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
 import {
-  cleanUpBountySubmission,
   rejectStaleSubmission,
   requestChangesToSubmission,
   submitToBlankSubmission,
@@ -50,6 +50,7 @@ describe("reject stale submission", () => {
     programId
   ) as Program<DaoBountyBoard>;
 
+  // accounts involved in this test
   let TEST_REALM_PK = new PublicKey(
     "D7uqCFCYxPQr19ve7hL3x3gUhwtaV45eoRN7iotyeo9U"
   );
@@ -57,12 +58,14 @@ describe("reject stale submission", () => {
   const TEST_REALM_TREASURY_USDC_ATA = new PublicKey(
     "EoCo8zx6fZiAmwNxG1xqLKHYtsQapNx39wWTJvGZaZwq"
   ); // my own ATA for the mint
-  // accounts to cleanup
+
   let TEST_BOUNTY_BOARD_PK;
   let TEST_BOUNTY_BOARD_VAULT_PK;
+
   let TEST_BOUNTY_PK;
   let TEST_BOUNTY_ESCROW_PK;
   let TEST_CREATOR_CONTRIBUTOR_RECORD_PK;
+
   let TEST_APPLICANT_WALLET = Keypair.fromSecretKey(
     bs58.decode(
       "61J7rnnjQPWbW6MyRkqFzWRgTSM8RM1KSAr9mB2VbkBojYUerhAR8YRkHC4sxh6y2j54zKezUfSsUruuSaKr1TJ5"
@@ -70,7 +73,10 @@ describe("reject stale submission", () => {
   );
   let TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
   let TEST_BOUNTY_APPLICATION_PK;
+  let TEST_BOUNTY_ACTIVITY_APPLY_PK;
+
   let TEST_BOUNTY_SUBMISSION_PK;
+  let TEST_BOUNTY_ACTIVITY_ASSIGN_PK;
 
   // Test realm public key D7uqCFCYxPQr19ve7hL3x3gUhwtaV45eoRN7iotyeo9U
   // Test realm governance public key 3DqNuhEXXUj531shswW8RxFq6WDmNf3rgSW6TzCDU9oY
@@ -84,7 +90,13 @@ describe("reject stale submission", () => {
   // Test applicant wallet lamport balance 0
   // Applicant contributor record PDA 2NrnRQeYNGbcPttHT9HMVzqNTd8nd74r5fbhF2yEokqY
   // Bounty application PDA Co3hU4ui8DrYARaAvMnMEKGwZBTYqyuKancRWdvd2geL
+  // Bounty activity (Apply) PDA DNVDCqdpQSDuXRYAzwoyHGmxTv8xfctWpAnoAT7q8Xje
   // Bounty submission PDA 3xW2WyKheTccjBmrLWm2v4urou9Zmz13rRB8PutCe2du
+  // Bounty activity (Assign) PDA CGBwZXHYnKsZdkzQskEYZ7wVmHqzyAKnEvqZqEtgKnpN
+
+  // acc level fields involved in this test
+  let TEST_BOUNTY_ASSIGN_COUNT;
+  let CURRENT_BOUNTY_ACTIVITY_INDEX;
 
   // test specific setup fn
   // product a bounty submission with request_change_count = 1
@@ -92,7 +104,7 @@ describe("reject stale submission", () => {
     // in this test, Entry tier bounty is set to have task submission window of 1 s to facilitate testing
 
     // set up bounty
-    const { bountyPDA, bountyEscrowPDA, bountyAcc } = await setupBounty(
+    const { bountyPDA, bountyEscrowPDA, bountyAcc } = await createBounty(
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
@@ -105,7 +117,8 @@ describe("reject stale submission", () => {
     );
     TEST_BOUNTY_PK = bountyPDA;
     TEST_BOUNTY_ESCROW_PK = bountyEscrowPDA;
-    const TEST_BOUNTY_ASSIGN_COUNT = bountyAcc.assignCount;
+    TEST_BOUNTY_ASSIGN_COUNT = bountyAcc.assignCount;
+    CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAcc.activityIndex;
 
     // create bounty application
     console.log(
@@ -116,27 +129,41 @@ describe("reject stale submission", () => {
       "Test applicant secret key",
       bs58.encode(TEST_APPLICANT_WALLET.secretKey)
     );
-    const { applicantContributorRecordPDA, bountyApplicationPDA } =
-      await setupBountyApplication(
-        provider,
-        program,
-        TEST_BOUNTY_BOARD_PK,
-        TEST_BOUNTY_PK,
-        TEST_APPLICANT_WALLET,
-        7 * 24 * 3600 // 1wk
-      );
+    const {
+      applicantContributorRecordPDA,
+      bountyApplicationPDA,
+      bountyActivityApplyPDA,
+      updatedBountyAcc,
+    } = await applyToBounty(
+      provider,
+      program,
+      TEST_BOUNTY_BOARD_PK,
+      TEST_BOUNTY_PK,
+      CURRENT_BOUNTY_ACTIVITY_INDEX,
+      TEST_APPLICANT_WALLET,
+      7 * 24 * 3600 // 1wk
+    );
     TEST_APPLICANT_CONTRIBUTOR_RECORD_PK = applicantContributorRecordPDA;
     TEST_BOUNTY_APPLICATION_PK = bountyApplicationPDA;
+    TEST_BOUNTY_ACTIVITY_APPLY_PK = bountyActivityApplyPDA;
+    CURRENT_BOUNTY_ACTIVITY_INDEX = updatedBountyAcc.activityIndex;
 
     // assign bounty
-    const { bountySubmissionPDA } = await assignBounty(
+    const {
+      bountyAccAfterAssign,
+      bountySubmissionPDA,
+      bountyActivityAssignPDA,
+    } = await assignBounty(
       provider,
       program,
       TEST_BOUNTY_PK,
       TEST_BOUNTY_ASSIGN_COUNT,
+      CURRENT_BOUNTY_ACTIVITY_INDEX,
       TEST_BOUNTY_APPLICATION_PK
     );
     TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPDA;
+    TEST_BOUNTY_ACTIVITY_ASSIGN_PK = bountyActivityAssignPDA;
+    CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterAssign.activityIndex;
 
     // create submission
     await submitToBlankSubmission(
@@ -325,16 +352,23 @@ describe("reject stale submission", () => {
   afterEach(async () => {
     console.log("--- Cleanup logs ---");
     // clean up bounty submission created
-    await cleanUpBountySubmission(provider, program, TEST_BOUNTY_SUBMISSION_PK);
+    // clean up accounts created from assign
+    await cleanUpAssignBounty(
+      provider,
+      program,
+      TEST_BOUNTY_ACTIVITY_ASSIGN_PK,
+      TEST_BOUNTY_SUBMISSION_PK
+    );
     // clean up bounty application created
-    await cleanUpBountyApplication(
+    await cleanUpApplyToBounty(
       provider,
       program,
       TEST_BOUNTY_APPLICATION_PK,
-      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+      TEST_BOUNTY_ACTIVITY_APPLY_PK
     );
     // clean up bounty-related accounts
-    await cleanUpBounty(
+    await cleanUpCreateBounty(
       provider,
       program,
       TEST_BOUNTY_PK,

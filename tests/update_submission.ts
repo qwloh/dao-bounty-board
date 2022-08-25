@@ -7,12 +7,13 @@ import idl from "../target/idl/dao_bounty_board.json";
 import { DaoBountyBoard } from "../target/types/dao_bounty_board";
 import {
   assignBounty,
-  cleanUpBounty,
-  setupBounty,
+  cleanUpAssignBounty,
+  cleanUpCreateBounty,
+  createBounty,
 } from "./setup_fixtures/bounty";
 import {
-  cleanUpBountyApplication,
-  setupBountyApplication,
+  cleanUpApplyToBounty,
+  applyToBounty,
 } from "./setup_fixtures/bounty_application";
 import {
   addBountyBoardTierConfig,
@@ -21,7 +22,6 @@ import {
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
 import {
-  cleanUpBountySubmission,
   submitToBlankSubmission,
   updateSubmission,
 } from "./setup_fixtures/bounty_submission";
@@ -45,6 +45,7 @@ describe("update submission", () => {
     programId
   ) as Program<DaoBountyBoard>;
 
+  // accounts involved in this test
   let TEST_REALM_PK = new PublicKey(
     "DPbetRnHerQ2KHjv62V1EZ3CsyZFAcmrNwvbvLvUimou"
   );
@@ -52,11 +53,14 @@ describe("update submission", () => {
   const TEST_REALM_TREASURY_USDC_ATA = new PublicKey(
     "EoCo8zx6fZiAmwNxG1xqLKHYtsQapNx39wWTJvGZaZwq"
   ); // my own ATA for the mint
+
   let TEST_BOUNTY_BOARD_PK;
   let TEST_BOUNTY_BOARD_VAULT_PK;
+
   let TEST_BOUNTY_PK;
   let TEST_BOUNTY_ESCROW_PK;
   let TEST_CREATOR_CONTRIBUTOR_RECORD_PK;
+
   let TEST_APPLICANT_WALLET = Keypair.fromSecretKey(
     bs58.decode(
       "36okAqBf6emniQMeE1k6ypGcfZXoiNzbJGf5Ms9CtSRxg9GK6dfcVGgsyA42UjdURJnx6pgWhnbEvH9rgo2679u3"
@@ -64,7 +68,10 @@ describe("update submission", () => {
   );
   let TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
   let TEST_BOUNTY_APPLICATION_PK;
+  let TEST_BOUNTY_ACTIVITY_APPLY_PK;
+
   let TEST_BOUNTY_SUBMISSION_PK;
+  let TEST_BOUNTY_ACTIVITY_ASSIGN_PK;
 
   // Test realm public key DPbetRnHerQ2KHjv62V1EZ3CsyZFAcmrNwvbvLvUimou
   // Test realm governance public key mHdsrki8HHfGcpryeHA8VdZwNnsjXFuuc5zXoS3Qn4K
@@ -76,7 +83,14 @@ describe("update submission", () => {
   // Test applicant public key BMLYHno2MR6RtyAiuMDyo8LgxhzmvdTijE3FG2jDu8uf
   // Test applicant contributor record PDA 9SWZGTZLw2iEP5UrJmJqjaomeRz4R2sksfbHJjaGMm9V
   // Bounty application PDA 8RFSufYsLXVARfos4GTgvC2twTTHVF2Uswb9S2n89eks
+  // Bounty activity (Apply) PDA BgrCC3t1zdGaWb3yte9TAJURLUKT67sQdboX1uXkcUzg
+
   // Bounty submission PDA GumW8PB1Toae4s3McnfdC3MADrqgV5TzMzhrCxxQ4Y5r
+  // Bounty activity (Assign) PDA JaxqZJyUYXtgVa4YwFoFyxdAqVPYSd8bZNjL3ECy2CE
+
+  // acc level fields involved in this test
+  let TEST_BOUNTY_ASSIGN_COUNT;
+  let CURRENT_BOUNTY_ACTIVITY_INDEX;
 
   beforeEach(async () => {
     console.log("Test realm public key", TEST_REALM_PK.toString());
@@ -117,7 +131,7 @@ describe("update submission", () => {
     TEST_CREATOR_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
 
     // set up bounty
-    const { bountyPDA, bountyEscrowPDA, bountyAcc } = await setupBounty(
+    const { bountyPDA, bountyEscrowPDA, bountyAcc } = await createBounty(
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
@@ -126,7 +140,8 @@ describe("update submission", () => {
     );
     TEST_BOUNTY_PK = bountyPDA;
     TEST_BOUNTY_ESCROW_PK = bountyEscrowPDA;
-    const TEST_BOUNTY_ASSIGN_COUNT = bountyAcc.assignCount;
+    TEST_BOUNTY_ASSIGN_COUNT = bountyAcc.assignCount;
+    CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAcc.activityIndex;
 
     // create bounty application
     console.log(
@@ -137,27 +152,41 @@ describe("update submission", () => {
       "Test applicant secret key",
       bs58.encode(TEST_APPLICANT_WALLET.secretKey)
     );
-    const { applicantContributorRecordPDA, bountyApplicationPDA } =
-      await setupBountyApplication(
-        provider,
-        program,
-        TEST_BOUNTY_BOARD_PK,
-        TEST_BOUNTY_PK,
-        TEST_APPLICANT_WALLET,
-        7 * 24 * 3600 // 1wk
-      );
+    const {
+      applicantContributorRecordPDA,
+      bountyApplicationPDA,
+      bountyActivityApplyPDA,
+      updatedBountyAcc,
+    } = await applyToBounty(
+      provider,
+      program,
+      TEST_BOUNTY_BOARD_PK,
+      TEST_BOUNTY_PK,
+      CURRENT_BOUNTY_ACTIVITY_INDEX,
+      TEST_APPLICANT_WALLET,
+      7 * 24 * 3600 // 1wk
+    );
     TEST_APPLICANT_CONTRIBUTOR_RECORD_PK = applicantContributorRecordPDA;
     TEST_BOUNTY_APPLICATION_PK = bountyApplicationPDA;
+    TEST_BOUNTY_ACTIVITY_APPLY_PK = bountyActivityApplyPDA;
+    CURRENT_BOUNTY_ACTIVITY_INDEX = updatedBountyAcc.activityIndex;
 
     // assign bounty
-    const { bountySubmissionPDA } = await assignBounty(
+    const {
+      bountySubmissionPDA,
+      bountyActivityAssignPDA,
+      bountyAccAfterAssign,
+    } = await assignBounty(
       provider,
       program,
       TEST_BOUNTY_PK,
       TEST_BOUNTY_ASSIGN_COUNT,
+      CURRENT_BOUNTY_ACTIVITY_INDEX,
       TEST_BOUNTY_APPLICATION_PK
     );
     TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPDA;
+    TEST_BOUNTY_ACTIVITY_ASSIGN_PK = bountyActivityAssignPDA;
+    CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterAssign.activityIndex;
 
     // create submission
     await submitToBlankSubmission(
@@ -217,17 +246,23 @@ describe("update submission", () => {
 
   afterEach(async () => {
     console.log("--- Cleanup logs ---");
-    // clean up bounty submission created
-    await cleanUpBountySubmission(provider, program, TEST_BOUNTY_SUBMISSION_PK);
-    // clean up bounty application created
-    await cleanUpBountyApplication(
+    // clean up accounts created on assign
+    await cleanUpAssignBounty(
+      provider,
+      program,
+      TEST_BOUNTY_ACTIVITY_ASSIGN_PK,
+      TEST_BOUNTY_SUBMISSION_PK
+    );
+    // clean up bounty application related accounts
+    await cleanUpApplyToBounty(
       provider,
       program,
       TEST_BOUNTY_APPLICATION_PK,
-      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+      TEST_BOUNTY_ACTIVITY_APPLY_PK
     );
     // clean up bounty-related accounts
-    await cleanUpBounty(
+    await cleanUpCreateBounty(
       provider,
       program,
       TEST_BOUNTY_PK,

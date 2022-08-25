@@ -1,10 +1,5 @@
 import { AnchorProvider, Program } from "@project-serum/anchor";
-import {
-  Keypair,
-  PublicKey,
-  SystemProgram,
-  SYSVAR_CLOCK_PUBKEY,
-} from "@solana/web3.js";
+import { Keypair, PublicKey, SYSVAR_CLOCK_PUBKEY } from "@solana/web3.js";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
 
 export const submitToBlankSubmission = async (
@@ -331,28 +326,4 @@ export const rejectStaleSubmission = async (
     updatedBountyAcc,
     updatedAssigneeContributorRecord,
   };
-};
-
-export const cleanUpBountySubmission = async (
-  provider: AnchorProvider,
-  program: Program<DaoBountyBoard>,
-  bountySubmissionPDA: PublicKey
-) => {
-  try {
-    await program.methods
-      .closeBountySubmission()
-      .accounts({
-        bountySubmission: bountySubmissionPDA,
-        user: provider.wallet.publicKey,
-        systemProgram: SystemProgram.programId,
-      })
-      .rpc();
-    console.log(`Bounty submission acc ${bountySubmissionPDA} closed`);
-  } catch (err) {
-    console.log(
-      `Error clearing bounty submission acc ${bountySubmissionPDA}`,
-      err.message
-    );
-    return;
-  }
 };

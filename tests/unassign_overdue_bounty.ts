@@ -7,14 +7,15 @@ import idl from "../target/idl/dao_bounty_board.json";
 import { DaoBountyBoard } from "../target/types/dao_bounty_board";
 import {
   assignBounty,
-  cleanUpBounty,
+  cleanUpCreateBounty,
   DEFAULT_BOUNTY_DETAILS,
-  setupBounty,
+  createBounty,
   unassignOverdueBounty,
+  cleanUpAssignBounty,
 } from "./setup_fixtures/bounty";
 import {
-  cleanUpBountyApplication,
-  setupBountyApplication,
+  cleanUpApplyToBounty,
+  applyToBounty,
 } from "./setup_fixtures/bounty_application";
 import {
   addBountyBoardTierConfig,
@@ -23,10 +24,7 @@ import {
   seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
-import {
-  cleanUpBountySubmission,
-  submitToBlankSubmission,
-} from "./setup_fixtures/bounty_submission";
+import { submitToBlankSubmission } from "./setup_fixtures/bounty_submission";
 import {
   cleanUpContributorRecord,
   setupContributorRecord,
@@ -48,6 +46,7 @@ describe("unassign overdue bounty", () => {
     programId
   ) as Program<DaoBountyBoard>;
 
+  // accounts involved in this test
   let TEST_REALM_PK = new PublicKey(
     "DgmX5b4tG3foyTQ318iBmyH2kGLwemayyYRERJeJexRV"
   );
@@ -56,11 +55,14 @@ describe("unassign overdue bounty", () => {
     "EoCo8zx6fZiAmwNxG1xqLKHYtsQapNx39wWTJvGZaZwq"
   ); // my own ATA for the mint
   // accounts to cleanup
+
   let TEST_BOUNTY_BOARD_PK;
   let TEST_BOUNTY_BOARD_VAULT_PK;
+
   let TEST_BOUNTY_PK;
   let TEST_BOUNTY_ESCROW_PK;
   let TEST_CREATOR_CONTRIBUTOR_RECORD_PK;
+
   let TEST_APPLICANT_WALLET = Keypair.fromSecretKey(
     bs58.decode(
       "5VqP3B2tf9k4ftpKGxGa76HjcG6XwgVnuQFSq1rkMhz3Z8SYNZTjb1R7Nh317iWoWAaMZ2uBbpJrPuYoRhjDfLN2"
@@ -68,7 +70,10 @@ describe("unassign overdue bounty", () => {
   );
   let TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
   let TEST_BOUNTY_APPLICATION_PK;
+  let TEST_BOUNTY_ACTIVITY_APPLY_PK;
+
   let TEST_BOUNTY_SUBMISSION_PK;
+  let TEST_BOUNTY_ACTIVITY_ASSIGN_PK;
 
   // Test realm public key DgmX5b4tG3foyTQ318iBmyH2kGLwemayyYRERJeJexRV
   // Test realm governance public key 5hvuXjmDGzepp3BcRgzVbLFQjv168fBrP3QUbqZL6jMv
@@ -79,17 +84,22 @@ describe("unassign overdue bounty", () => {
   // Bounty Escrow PDA BwtsaqasLGHhCLeY1zK4UnLdYKebCvAwCsqar3Md5zcZ
   // Test applicant public key 316N9TnNT8sfQS21SGVyAPyufQsZScFHjjbYMaSw3G46
   // Test applicant secret key 5VqP3B2tf9k4ftpKGxGa76HjcG6XwgVnuQFSq1rkMhz3Z8SYNZTjb1R7Nh317iWoWAaMZ2uBbpJrPuYoRhjDfLN2
-  // Test applicant wallet lamport balance 0
   // Applicant contributor record PDA G2bMUHDS48sHtKke5LCTmk9Ux95XkDV1UgkhnwMUCcf8
   // Bounty application PDA 9XfGA6ubGxtPLHKxi1Sc3uJGETYDXkLjyCXBGnYZ8mWN
+  // Bounty activity (Apply) PDA Eb2T9fWQzT6GUPkStF8fPofAXS11qVxXzNK1H45MrG1Q
   // Bounty submission PDA HdAjvib6M2JhBAtQb2nuMELisefzQGiUm1RofNov3DHE
+  // Bounty activity (Assign) PDA Bxv9GGvPPhyinw5GNyiVraDCCfMFGKbSd7DDWbZMwifG
+
+  // acc level fields involved in this test
+  let TEST_BOUNTY_ASSIGN_COUNT;
+  let CURRENT_BOUNTY_ACTIVITY_INDEX;
 
   // test specific setup fn
   const setupAssignedBountyWithVaryingTier = async (tierName: string) => {
     // in this test, Entry tier bounty is set to have task submission window of 1 s to facilitate testing
 
     // set up bounty
-    const { bountyPDA, bountyEscrowPDA, bountyAcc } = await setupBounty(
+    const { bountyPDA, bountyEscrowPDA, bountyAcc } = await createBounty(
       provider,
       program,
       TEST_BOUNTY_BOARD_PK,
@@ -102,7 +112,8 @@ describe("unassign overdue bounty", () => {
     );
     TEST_BOUNTY_PK = bountyPDA;
     TEST_BOUNTY_ESCROW_PK = bountyEscrowPDA;
-    const TEST_BOUNTY_ASSIGN_COUNT = bountyAcc.assignCount;
+    TEST_BOUNTY_ASSIGN_COUNT = bountyAcc.assignCount;
+    CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAcc.activityIndex;
 
     // create bounty application
     console.log(
@@ -113,27 +124,41 @@ describe("unassign overdue bounty", () => {
       "Test applicant secret key",
       bs58.encode(TEST_APPLICANT_WALLET.secretKey)
     );
-    const { applicantContributorRecordPDA, bountyApplicationPDA } =
-      await setupBountyApplication(
-        provider,
-        program,
-        TEST_BOUNTY_BOARD_PK,
-        TEST_BOUNTY_PK,
-        TEST_APPLICANT_WALLET,
-        7 * 24 * 3600 // 1wk
-      );
+    const {
+      applicantContributorRecordPDA,
+      bountyApplicationPDA,
+      bountyActivityApplyPDA,
+      updatedBountyAcc,
+    } = await applyToBounty(
+      provider,
+      program,
+      TEST_BOUNTY_BOARD_PK,
+      TEST_BOUNTY_PK,
+      CURRENT_BOUNTY_ACTIVITY_INDEX,
+      TEST_APPLICANT_WALLET,
+      7 * 24 * 3600 // 1wk
+    );
     TEST_APPLICANT_CONTRIBUTOR_RECORD_PK = applicantContributorRecordPDA;
     TEST_BOUNTY_APPLICATION_PK = bountyApplicationPDA;
+    TEST_BOUNTY_ACTIVITY_APPLY_PK = bountyActivityApplyPDA;
+    CURRENT_BOUNTY_ACTIVITY_INDEX = updatedBountyAcc.activityIndex;
 
     // assign bounty
-    const { bountySubmissionPDA } = await assignBounty(
+    const {
+      bountySubmissionPDA,
+      bountyActivityAssignPDA,
+      bountyAccAfterAssign,
+    } = await assignBounty(
       provider,
       program,
       TEST_BOUNTY_PK,
       TEST_BOUNTY_ASSIGN_COUNT,
+      CURRENT_BOUNTY_ACTIVITY_INDEX,
       TEST_BOUNTY_APPLICATION_PK
     );
     TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPDA;
+    TEST_BOUNTY_ACTIVITY_ASSIGN_PK = bountyActivityAssignPDA;
+    CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterAssign.activityIndex;
   };
 
   beforeEach(async () => {
@@ -298,17 +323,23 @@ describe("unassign overdue bounty", () => {
 
   afterEach(async () => {
     console.log("--- Cleanup logs ---");
-    // clean up bounty submission created
-    await cleanUpBountySubmission(provider, program, TEST_BOUNTY_SUBMISSION_PK);
+    // clean up accounts created from assign
+    await cleanUpAssignBounty(
+      provider,
+      program,
+      TEST_BOUNTY_ACTIVITY_ASSIGN_PK,
+      TEST_BOUNTY_SUBMISSION_PK
+    );
     // clean up bounty application created
-    await cleanUpBountyApplication(
+    await cleanUpApplyToBounty(
       provider,
       program,
       TEST_BOUNTY_APPLICATION_PK,
-      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+      TEST_BOUNTY_ACTIVITY_APPLY_PK
     );
     // clean up bounty-related accounts
-    await cleanUpBounty(
+    await cleanUpCreateBounty(
       provider,
       program,
       TEST_BOUNTY_PK,
