@@ -170,6 +170,9 @@ describe("unassign overdue bounty", () => {
   };
 
   beforeEach(async () => {
+    await sleep(500); // delay 500ms between each test
+    console.log("-----------------------------");
+
     console.log("Test realm public key", TEST_REALM_PK.toString());
     // set up bounty board
     const { bountyBoardPDA, bountyBoardVaultPDA } = await setupBountyBoard(
@@ -357,6 +360,7 @@ describe("unassign overdue bounty", () => {
       provider,
       program,
       TEST_BOUNTY_PK,
+      CURRENT_BOUNTY_ACTIVITY_INDEX,
       TEST_BOUNTY_SUBMISSION_PK,
       TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
       TEST_APPLICANT_WALLET

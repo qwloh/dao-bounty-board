@@ -1,11 +1,18 @@
 import { AnchorProvider, Program } from "@project-serum/anchor";
-import { Keypair, PublicKey, SYSVAR_CLOCK_PUBKEY } from "@solana/web3.js";
+import {
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  SYSVAR_CLOCK_PUBKEY,
+} from "@solana/web3.js";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
+import { getBountyActivityAddress } from "../utils/get_addresses";
 
 export const submitToBlankSubmission = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
   bountyPubkey: PublicKey,
+  bountyActivityIndex: number,
   bountySubmissionPubkey: PublicKey,
   contributorRecordPubkey: PublicKey,
   contributorWallet: Keypair,
@@ -17,6 +24,16 @@ export const submitToBlankSubmission = async (
   const TEST_CONTRIBUTOR_WALLET = contributorWallet;
   const LINK_TO_SUBMISSION = linkToSubmission;
 
+  console.log("[SubmitToBounty] Current activity index", bountyActivityIndex);
+  const [TEST_BOUNTY_ACTIVITY_SUBMIT_PDA] = await getBountyActivityAddress(
+    TEST_BOUNTY_PK,
+    bountyActivityIndex
+  );
+  console.log(
+    "Bounty activity (Submit) PDA",
+    TEST_BOUNTY_ACTIVITY_SUBMIT_PDA.toString()
+  );
+
   try {
     const tx = await program.methods
       .submitToBounty({
@@ -25,8 +42,10 @@ export const submitToBlankSubmission = async (
       .accounts({
         bounty: TEST_BOUNTY_PK,
         bountySubmission: TEST_BOUNTY_SUBMISSION_PK,
+        bountyActivity: TEST_BOUNTY_ACTIVITY_SUBMIT_PDA,
         contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
         contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
+        systemProgram: SystemProgram.programId,
         clock: SYSVAR_CLOCK_PUBKEY,
       })
       .signers([TEST_CONTRIBUTOR_WALLET])
@@ -41,8 +60,8 @@ export const submitToBlankSubmission = async (
     throw err;
   }
 
-  console.log("--- Bounty Submission Acc (After First Submit) ---");
   let updatedBountySubmissionAcc;
+  console.log("--- Bounty Submission Acc (After First Submit) ---");
   try {
     updatedBountySubmissionAcc = await program.account.bountySubmission.fetch(
       TEST_BOUNTY_SUBMISSION_PK
@@ -53,9 +72,60 @@ export const submitToBlankSubmission = async (
     return;
   }
 
+  let bountyActivitySubmitAcc;
+  console.log("--- Bounty Activity (Submit) Acc ---");
+  try {
+    bountyActivitySubmitAcc = await program.account.bountyActivity.fetch(
+      TEST_BOUNTY_ACTIVITY_SUBMIT_PDA
+    );
+    console.log("Found", bountyActivitySubmitAcc);
+  } catch (err) {
+    console.log("Not found. Error", err.message, err);
+    return;
+  }
+
+  let bountyAccAfterSubmit;
+  console.log("--- Bounty Acc (After First Submit) ---");
+  try {
+    bountyAccAfterSubmit = await program.account.bounty.fetch(TEST_BOUNTY_PK);
+    console.log("Found", bountyAccAfterSubmit);
+  } catch (err) {
+    console.log("Not found. Error", err.message, err);
+    return;
+  }
+
   return {
+    bountyAccAfterSubmit,
     updatedBountySubmissionAcc,
+    bountyActivitySubmitPDA: TEST_BOUNTY_ACTIVITY_SUBMIT_PDA,
+    bountyActivitySubmitAcc,
   };
+};
+
+export const cleanUpSubmitToBlankSubmission = async (
+  provider: AnchorProvider,
+  program: Program<DaoBountyBoard>,
+  bountyActivitySubmitPDA: PublicKey
+) => {
+  // clean up bounty activity: Submit
+  try {
+    await program.methods
+      .closeBountyActivity()
+      .accounts({
+        bountyActivity: bountyActivitySubmitPDA,
+        user: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+    console.log(
+      `Bounty activity (Submit) acc ${bountyActivitySubmitPDA} closed`
+    );
+  } catch (err) {
+    console.log(
+      `Error clearing bounty activity (Submit) acc ${bountyActivitySubmitPDA}`,
+      err.message
+    );
+  }
 };
 
 export const requestChangesToSubmission = async (
@@ -116,6 +186,32 @@ export const requestChangesToSubmission = async (
   };
 };
 
+export const cleanUpRequestChangesToSubmission = async (
+  provider: AnchorProvider,
+  program: Program<DaoBountyBoard>,
+  bountyActivityReqChangePDA: PublicKey
+) => {
+  // clean up bounty activity: Request Change
+  try {
+    await program.methods
+      .closeBountyActivity()
+      .accounts({
+        bountyActivity: bountyActivityReqChangePDA,
+        user: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+    console.log(
+      `Bounty activity (Request Change) acc ${bountyActivityReqChangePDA} closed`
+    );
+  } catch (err) {
+    console.log(
+      `Error clearing bounty activity (Request Change) acc ${bountyActivityReqChangePDA}`,
+      err.message
+    );
+  }
+};
+
 export const updateSubmission = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
@@ -169,6 +265,32 @@ export const updateSubmission = async (
   return {
     updatedBountySubmissionAcc,
   };
+};
+
+export const cleanUpUpdateSubmission = async (
+  provider: AnchorProvider,
+  program: Program<DaoBountyBoard>,
+  bountyActivityUpdateSubmissionPDA: PublicKey
+) => {
+  // clean up bounty activity: Update Submission
+  try {
+    await program.methods
+      .closeBountyActivity()
+      .accounts({
+        bountyActivity: bountyActivityUpdateSubmissionPDA,
+        user: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+    console.log(
+      `Bounty activity (Update Submission) acc ${bountyActivityUpdateSubmissionPDA} closed`
+    );
+  } catch (err) {
+    console.log(
+      `Error clearing bounty activity (Update Submission) acc ${bountyActivityUpdateSubmissionPDA}`,
+      err.message
+    );
+  }
 };
 
 export const rejectSubmission = async (
@@ -236,6 +358,32 @@ export const rejectSubmission = async (
     updatedBountySubmissionAcc,
     updatedBountyAcc,
   };
+};
+
+export const cleanUpRejectSubmission = async (
+  provider: AnchorProvider,
+  program: Program<DaoBountyBoard>,
+  bountyActivityRejectPDA: PublicKey
+) => {
+  // clean up bounty activity: Reject
+  try {
+    await program.methods
+      .closeBountyActivity()
+      .accounts({
+        bountyActivity: bountyActivityRejectPDA,
+        user: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+    console.log(
+      `Bounty activity (Reject) acc ${bountyActivityRejectPDA} closed`
+    );
+  } catch (err) {
+    console.log(
+      `Error clearing bounty activity (Reject) acc ${bountyActivityRejectPDA}`,
+      err.message
+    );
+  }
 };
 
 export const rejectStaleSubmission = async (
@@ -326,4 +474,30 @@ export const rejectStaleSubmission = async (
     updatedBountyAcc,
     updatedAssigneeContributorRecord,
   };
+};
+
+export const cleanUpRejectStaleSubmission = async (
+  provider: AnchorProvider,
+  program: Program<DaoBountyBoard>,
+  bountyActivityRejectStalePDA: PublicKey
+) => {
+  // clean up bounty activity: Reject Stale
+  try {
+    await program.methods
+      .closeBountyActivity()
+      .accounts({
+        bountyActivity: bountyActivityRejectStalePDA,
+        user: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+    console.log(
+      `Bounty activity (Reject Stale) acc ${bountyActivityRejectStalePDA} closed`
+    );
+  } catch (err) {
+    console.log(
+      `Error clearing bounty activity (Reject Stale) acc ${bountyActivityRejectStalePDA}`,
+      err.message
+    );
+  }
 };

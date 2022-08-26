@@ -21,12 +21,16 @@ import {
   seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
-import { submitToBlankSubmission } from "./setup_fixtures/bounty_submission";
+import {
+  cleanUpSubmitToBlankSubmission,
+  submitToBlankSubmission,
+} from "./setup_fixtures/bounty_submission";
 import {
   cleanUpContributorRecord,
   setupContributorRecord,
 } from "./setup_fixtures/contributor_record";
 import { assertReject } from "./utils/assert-promise-utils";
+import { sleep } from "./utils/common";
 
 describe("submit to bounty", () => {
   // Configure the client to use the local cluster.
@@ -70,6 +74,8 @@ describe("submit to bounty", () => {
   let TEST_BOUNTY_SUBMISSION_PK;
   let TEST_BOUNTY_ACTIVITY_ASSIGN_PK;
 
+  let TEST_BOUNTY_ACTIVITY_SUBMIT_PK;
+
   let TEST_2ND_APPLICANT_WALLET = Keypair.fromSecretKey(
     bs58.decode(
       "4ceNMUZaYGKgGnmC5g7bgLEBHhNcCBJBEnhPPheb6x3vQnVTDHpbbjtV36G3y54Lapjfrjj9sF2QiMNybjGG47oF"
@@ -87,19 +93,26 @@ describe("submit to bounty", () => {
   // Test applicant public key GvJT4nCmfm77PW1PVBTtE2tDNpR5Cmw3LnsfuuocBMS2
   // Test applicant contributor record PDA 4ufgBtgPMCso8VzWkZtYxFb9gZMjRBU8n52WRaJEuFFe
   // Bounty application PDA 5Tw8WVmJKiXcuEVhgnWrxP9MjgVoWnQ6HG3rHszC4KJs
+  // Bounty activity (Apply) PDA 7mW2f2rvxj5FSSDp3Jkjq2by7rRMmzjq9Xc31Z54kigD
   // Test Bounty submission PDA CQw291Fuqtoq8zsBcpGe6heABeGE8MYYVo3Z9JST1QBa
+  // Bounty activity (Assign) PDA 7qiShJ8U4Wkwqhjvhfe2L7W8EZMt3zi4CWvbCEM6iWwT
+  // Bounty activity (Submit) PDA 2zqQbTSPu5Ke2zWAgkJHLw875z1Da3yXoV9y3SrpGRc1
   // Test 2nd applicant public key B6mH2BRDNguBJ9pVp41m7Nnj4jpN3xj6rJQ98iuCMfYm
   // Test 2nd applicant contributor record PDA 7g1XfEuLM9vQVk3RhbqcK4xBSKZ8fRmtSKep7NHJDbta
 
   // acc level fields involved in this test
   let TEST_BOUNTY_ASSIGN_COUNT;
   let CURRENT_BOUNTY_ACTIVITY_INDEX;
+  let TEST_SUBMISSION_SUBMISSION_INDEX;
 
   // data for assertion
   const LINK_TO_SUBMISSION =
     "https://assets.reedpopcdn.com/shiny-bulbasaur-evolution-perfect-iv-stats-walrein-best-moveset-pokemon-go-9004-1642763882514.jpg/BROK/resize/690%3E/format/jpg/quality/75/shiny-bulbasaur-evolution-perfect-iv-stats-walrein-best-moveset-pokemon-go-9004-1642763882514.jpg";
 
   beforeEach(async () => {
+    await sleep(500); // delay 500ms between each test
+    console.log("-----------------------------");
+
     console.log("Test realm public key", TEST_REALM_PK.toString());
     // set up bounty board
     const { bountyBoardPDA, bountyBoardVaultPDA } = await setupBountyBoard(
@@ -179,9 +192,10 @@ describe("submit to bounty", () => {
 
     // assign bounty
     const {
-      bountyAccAfterAssign,
       bountySubmissionPDA,
+      bountySubmissionAcc,
       bountyActivityAssignPDA,
+      bountyAccAfterAssign,
     } = await assignBounty(
       provider,
       program,
@@ -193,18 +207,27 @@ describe("submit to bounty", () => {
     TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPDA;
     TEST_BOUNTY_ACTIVITY_ASSIGN_PK = bountyActivityAssignPDA;
     CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterAssign.activityIndex;
+    TEST_SUBMISSION_SUBMISSION_INDEX = bountySubmissionAcc.submissionIndex;
   });
 
   it("update bounty submission acc correctly", async () => {
-    const { updatedBountySubmissionAcc } = await submitToBlankSubmission(
+    const {
+      bountyAccAfterSubmit,
+      updatedBountySubmissionAcc,
+      bountyActivitySubmitPDA,
+      bountyActivitySubmitAcc,
+    } = await submitToBlankSubmission(
       provider,
       program,
       TEST_BOUNTY_PK,
+      CURRENT_BOUNTY_ACTIVITY_INDEX,
       TEST_BOUNTY_SUBMISSION_PK,
       TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
       TEST_APPLICANT_WALLET,
       LINK_TO_SUBMISSION
     );
+    TEST_BOUNTY_ACTIVITY_SUBMIT_PK = bountyActivitySubmitPDA;
+    // DON't update current_bounty_activity_index after actual test (^)
 
     // assert `bounty_submission` acc is updated accordingly
     assert.equal(
@@ -218,9 +241,35 @@ describe("submit to bounty", () => {
       60
     );
 
+    // assert `bounty_activity` (submit) is created correctly
+    assert.equal(
+      bountyActivitySubmitAcc.bounty.toString(),
+      TEST_BOUNTY_PK.toString()
+    );
+    assert.equal(
+      bountyActivitySubmitAcc.activityIndex,
+      CURRENT_BOUNTY_ACTIVITY_INDEX
+    );
+    assert.closeTo(
+      bountyActivitySubmitAcc.timestamp.toNumber(),
+      new Date().getTime() / 1000,
+      60
+    );
+    assert.equal(
+      bountyActivitySubmitAcc.payload.submit.assigneeWallet.toString(),
+      TEST_APPLICANT_WALLET.publicKey.toString() // assignee wallet
+    );
+    assert.equal(
+      bountyActivitySubmitAcc.payload.submit.submissionIndex,
+      TEST_SUBMISSION_SUBMISSION_INDEX
+    );
+
     // assert `bounty` state is updated
-    const updatedBounty = await program.account.bounty.fetch(TEST_BOUNTY_PK);
-    assert.deepEqual(updatedBounty.state, { submissionUnderReview: {} });
+    assert.deepEqual(bountyAccAfterSubmit.state, { submissionUnderReview: {} });
+    assert.equal(
+      bountyAccAfterSubmit.activityIndex,
+      CURRENT_BOUNTY_ACTIVITY_INDEX + 1
+    );
   });
 
   it("should not let non-assignee submit", async () => {
@@ -251,6 +300,7 @@ describe("submit to bounty", () => {
           provider,
           program,
           TEST_BOUNTY_PK,
+          CURRENT_BOUNTY_ACTIVITY_INDEX,
           TEST_BOUNTY_SUBMISSION_PK,
           TEST_2ND_APPLICANT_CONTRIBUTOR_RECORD_PK,
           TEST_2ND_APPLICANT_WALLET
@@ -269,15 +319,19 @@ describe("submit to bounty", () => {
 
   it("should throw if submission is not blank", async () => {
     // make first submission
-    await submitToBlankSubmission(
-      provider,
-      program,
-      TEST_BOUNTY_PK,
-      TEST_BOUNTY_SUBMISSION_PK,
-      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
-      TEST_APPLICANT_WALLET,
-      LINK_TO_SUBMISSION
-    );
+    const { bountyAccAfterSubmit, bountyActivitySubmitPDA } =
+      await submitToBlankSubmission(
+        provider,
+        program,
+        TEST_BOUNTY_PK,
+        CURRENT_BOUNTY_ACTIVITY_INDEX,
+        TEST_BOUNTY_SUBMISSION_PK,
+        TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+        TEST_APPLICANT_WALLET,
+        LINK_TO_SUBMISSION
+      );
+    TEST_BOUNTY_ACTIVITY_SUBMIT_PK = bountyActivitySubmitPDA;
+    CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterSubmit.activityIndex;
 
     // then attempt to call the method again should fail
     await assertReject(
@@ -286,6 +340,7 @@ describe("submit to bounty", () => {
           provider,
           program,
           TEST_BOUNTY_PK,
+          CURRENT_BOUNTY_ACTIVITY_INDEX,
           TEST_BOUNTY_SUBMISSION_PK,
           TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
           TEST_APPLICANT_WALLET,
@@ -297,42 +352,75 @@ describe("submit to bounty", () => {
 
   afterEach(async () => {
     console.log("--- Cleanup logs ---");
+    // clean up bounty activity created at submit
+    if (TEST_BOUNTY_ACTIVITY_SUBMIT_PK) {
+      await cleanUpSubmitToBlankSubmission(
+        provider,
+        program,
+        TEST_BOUNTY_ACTIVITY_SUBMIT_PK
+      );
+      TEST_BOUNTY_ACTIVITY_SUBMIT_PK = undefined;
+    }
     // clean up accounts created from assign
-    await cleanUpAssignBounty(
-      provider,
-      program,
-      TEST_BOUNTY_ACTIVITY_ASSIGN_PK,
-      TEST_BOUNTY_SUBMISSION_PK
-    );
+    if (TEST_BOUNTY_ACTIVITY_ASSIGN_PK || TEST_BOUNTY_SUBMISSION_PK) {
+      await cleanUpAssignBounty(
+        provider,
+        program,
+        TEST_BOUNTY_ACTIVITY_ASSIGN_PK,
+        TEST_BOUNTY_SUBMISSION_PK
+      );
+      TEST_BOUNTY_ACTIVITY_ASSIGN_PK = undefined;
+      TEST_BOUNTY_SUBMISSION_PK = undefined;
+    }
     // clean up bounty application created
-    await cleanUpApplyToBounty(
-      provider,
-      program,
-      TEST_BOUNTY_APPLICATION_PK,
-      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+    if (
+      TEST_BOUNTY_APPLICATION_PK ||
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK ||
       TEST_BOUNTY_ACTIVITY_APPLY_PK
-    );
+    ) {
+      await cleanUpApplyToBounty(
+        provider,
+        program,
+        TEST_BOUNTY_APPLICATION_PK,
+        TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+        TEST_BOUNTY_ACTIVITY_APPLY_PK
+      );
+      TEST_BOUNTY_APPLICATION_PK = undefined;
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK = undefined;
+      TEST_BOUNTY_ACTIVITY_APPLY_PK = undefined;
+    }
     // clean up bounty-related accounts
-    await cleanUpCreateBounty(
-      provider,
-      program,
-      TEST_BOUNTY_PK,
-      TEST_BOUNTY_ESCROW_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK
-    );
+    if (TEST_BOUNTY_PK || TEST_BOUNTY_ESCROW_PK) {
+      await cleanUpCreateBounty(
+        provider,
+        program,
+        TEST_BOUNTY_PK,
+        TEST_BOUNTY_ESCROW_PK,
+        TEST_BOUNTY_BOARD_VAULT_PK
+      );
+      TEST_BOUNTY_PK = undefined;
+      TEST_BOUNTY_ESCROW_PK = undefined;
+    }
     // clean up creator contributor record
-    await cleanUpContributorRecord(
-      provider,
-      program,
-      TEST_CREATOR_CONTRIBUTOR_RECORD_PK
-    );
+    if (TEST_CREATOR_CONTRIBUTOR_RECORD_PK) {
+      await cleanUpContributorRecord(
+        provider,
+        program,
+        TEST_CREATOR_CONTRIBUTOR_RECORD_PK
+      );
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK = undefined;
+    }
     // clean up bounty board-related accounts
-    await cleanUpBountyBoard(
-      provider,
-      program,
-      TEST_BOUNTY_BOARD_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK,
-      TEST_REALM_TREASURY_USDC_ATA
-    );
+    if (TEST_BOUNTY_BOARD_PK || TEST_BOUNTY_BOARD_VAULT_PK) {
+      await cleanUpBountyBoard(
+        provider,
+        program,
+        TEST_BOUNTY_BOARD_PK,
+        TEST_BOUNTY_BOARD_VAULT_PK,
+        TEST_REALM_TREASURY_USDC_ATA
+      );
+      TEST_BOUNTY_BOARD_PK = undefined;
+      TEST_BOUNTY_BOARD_VAULT_PK = undefined;
+    }
   });
 });
