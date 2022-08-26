@@ -232,7 +232,6 @@ describe("apply to bounty", () => {
       bountyActivityApplyAcc.bounty.toString(),
       TEST_BOUNTY_PK.toString()
     );
-    assert.deepEqual(bountyActivityApplyAcc.activityType, { apply: {} });
     assert.equal(
       bountyActivityApplyAcc.activityIndex,
       TEST_BOUNTY_ACTIVITY_INDEX
@@ -243,7 +242,7 @@ describe("apply to bounty", () => {
       60
     );
     assert.equal(
-      bountyActivityApplyAcc.actorWallet.toString(),
+      bountyActivityApplyAcc.payload.apply.applicantWallet.toString(),
       TEST_APPLICANT_WALLET.publicKey.toString()
     );
 

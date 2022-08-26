@@ -37,11 +37,13 @@ pub fn assign_bounty(ctx: Context<AssignBounty>) -> Result<()> {
 
     // 3. populate fields for `bounty_activity`
     bounty_activity.bounty = bounty.key();
-    bounty_activity.activity_type = BountyActivityType::Assign;
     bounty_activity.activity_index = bounty.activity_index;
     bounty_activity.timestamp = clock.unix_timestamp;
-    bounty_activity.actor_wallet = *user.key;
-    bounty_activity.target_wallet = Some(bounty_application.applicant);
+    bounty_activity.payload = BountyActivityPayload::Assign {
+        actor_wallet: *user.key,
+        submission_index: bounty_submission.submission_index,
+        assignee_wallet: bounty_application.applicant,
+    };
 
     // 4. update `bounty` state & assign_count & activity_index
     bounty.state = BountyState::Assigned;

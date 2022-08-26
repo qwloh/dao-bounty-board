@@ -1,6 +1,7 @@
 import { AnchorProvider, Program, setProvider } from "@project-serum/anchor";
 import { bs58 } from "@project-serum/anchor/dist/cjs/utils/bytes";
 import { Keypair, PublicKey } from "@solana/web3.js";
+import { BN } from "bn.js";
 import { assert } from "chai";
 import { BOUNTY_BOARD_PROGRAM_ID, DUMMY_MINT_PK } from "../app/api/constants";
 import idl from "../target/idl/dao_bounty_board.json";
@@ -12,6 +13,7 @@ import {
   createBounty,
   unassignOverdueBounty,
   cleanUpAssignBounty,
+  cleanUpUnassignOverdue,
 } from "./setup_fixtures/bounty";
 import {
   cleanUpApplyToBounty,
@@ -75,6 +77,8 @@ describe("unassign overdue bounty", () => {
   let TEST_BOUNTY_SUBMISSION_PK;
   let TEST_BOUNTY_ACTIVITY_ASSIGN_PK;
 
+  let TEST_BOUNTY_ACTIVITY_UNASSIGN_PK;
+
   // Test realm public key DgmX5b4tG3foyTQ318iBmyH2kGLwemayyYRERJeJexRV
   // Test realm governance public key 5hvuXjmDGzepp3BcRgzVbLFQjv168fBrP3QUbqZL6jMv
   // Bounty board PDA 3SkMwBmibrVBxMtc3vGKRn4bGbVuMFAe2sbjM9aC3Laf
@@ -89,10 +93,12 @@ describe("unassign overdue bounty", () => {
   // Bounty activity (Apply) PDA Eb2T9fWQzT6GUPkStF8fPofAXS11qVxXzNK1H45MrG1Q
   // Bounty submission PDA HdAjvib6M2JhBAtQb2nuMELisefzQGiUm1RofNov3DHE
   // Bounty activity (Assign) PDA Bxv9GGvPPhyinw5GNyiVraDCCfMFGKbSd7DDWbZMwifG
+  // Bounty activity (Unassign overdue) PDA 53ttHZto1QQtBYa1uYXoAkYmDsaMjfgQA1JfzA3NXKnZ
 
   // acc level fields involved in this test
   let TEST_BOUNTY_ASSIGN_COUNT;
   let CURRENT_BOUNTY_ACTIVITY_INDEX;
+  let TEST_SUBMISSION_SUBMISSION_INDEX;
 
   // test specific setup fn
   const setupAssignedBountyWithVaryingTier = async (tierName: string) => {
@@ -146,6 +152,7 @@ describe("unassign overdue bounty", () => {
     // assign bounty
     const {
       bountySubmissionPDA,
+      bountySubmissionAcc,
       bountyActivityAssignPDA,
       bountyAccAfterAssign,
     } = await assignBounty(
@@ -159,6 +166,7 @@ describe("unassign overdue bounty", () => {
     TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPDA;
     TEST_BOUNTY_ACTIVITY_ASSIGN_PK = bountyActivityAssignPDA;
     CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterAssign.activityIndex;
+    TEST_SUBMISSION_SUBMISSION_INDEX = bountySubmissionAcc.submissionIndex;
   };
 
   beforeEach(async () => {
@@ -179,10 +187,16 @@ describe("unassign overdue bounty", () => {
       TEST_BOUNTY_BOARD_PK,
       TEST_REALM_GOVERNANCE,
       getTiersInVec(new PublicKey(DUMMY_MINT_PK.USDC)).map((t) => {
-        if (t.tierName !== "Entry") return t;
-        t.taskSubmissionWindow = 1;
-        t.submissionReviewWindow = 1;
-        t.addressChangeReqWindow = 1;
+        switch (t.tierName) {
+          case "Entry":
+            t.taskSubmissionWindow = 1;
+            t.submissionReviewWindow = 1;
+            t.addressChangeReqWindow = 1;
+          case "A":
+            t.minRequiredSkillsPt = new BN(0);
+            t.minRequiredReputation = 0;
+          default:
+        }
         return t;
       })
     );
@@ -208,23 +222,31 @@ describe("unassign overdue bounty", () => {
   });
 
   it("unassign bounty correctly", async () => {
+    const COMMENT = "";
+
     await setupAssignedBountyWithVaryingTier("Entry"); // 1 sec for quick overdue
     await sleep(2000); // sleep 2s to ensure duration rlly overdue
     const TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK =
       TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
+
     const {
+      bountyAccAfterUnassign,
       updatedBountySubmissionAcc,
-      updatedBountyAcc,
       updatedAssigneeContributorRecord,
+      bountyActivityUnassignPDA,
+      bountyActivityUnassignAcc,
     } = await unassignOverdueBounty(
       provider,
       program,
       TEST_BOUNTY_PK,
+      CURRENT_BOUNTY_ACTIVITY_INDEX,
       TEST_BOUNTY_SUBMISSION_PK,
       TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK,
       TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
       undefined // use provider.wallet to sign
     );
+    TEST_BOUNTY_ACTIVITY_UNASSIGN_PK = bountyActivityUnassignPDA;
+    // DON't update current_bounty_activity_index after actual test (^)
 
     // assert `bounty_submission` acc is updated correctly
     assert.deepEqual(updatedBountySubmissionAcc.state, {
@@ -236,21 +258,54 @@ describe("unassign overdue bounty", () => {
       60 // 1 min tolerance
     );
 
-    // assert `bounty` acc is updated correctly
-    assert.deepEqual(updatedBountyAcc.state, { open: {} });
-    assert.equal(updatedBountyAcc.unassignCount, 1);
-
     // assert reputation is deducted from `contributor_record` of assignee
     assert.equal(
       updatedAssigneeContributorRecord.reputation.toNumber(),
-      0 - updatedBountyAcc.rewardReputation
+      0 - bountyAccAfterUnassign.rewardReputation
     );
     assert.equal(
       updatedAssigneeContributorRecord.recentRepChange.toNumber(),
-      -1 * updatedBountyAcc.rewardReputation
+      -1 * bountyAccAfterUnassign.rewardReputation
     );
 
     // assert bounty activity
+    assert.equal(
+      bountyActivityUnassignAcc.bounty.toString(),
+      TEST_BOUNTY_PK.toString()
+    );
+    assert.equal(
+      bountyActivityUnassignAcc.activityIndex,
+      CURRENT_BOUNTY_ACTIVITY_INDEX
+    );
+    assert.closeTo(
+      bountyActivityUnassignAcc.timestamp.toNumber(),
+      new Date().getTime() / 1000,
+      60
+    );
+    assert.equal(
+      bountyActivityUnassignAcc.payload.unassignOverdue.actorWallet.toString(),
+      provider.wallet.publicKey.toString() // bounty creator wallet
+    );
+    assert.equal(
+      bountyActivityUnassignAcc.payload.unassignOverdue.submissionIndex,
+      TEST_SUBMISSION_SUBMISSION_INDEX
+    );
+    assert.equal(
+      bountyActivityUnassignAcc.payload.unassignOverdue.assigneeWallet.toString(),
+      TEST_APPLICANT_WALLET.publicKey.toString()
+    );
+    assert.equal(
+      bountyActivityUnassignAcc.payload.unassignOverdue.repDeducted,
+      bountyAccAfterUnassign.rewardReputation
+    );
+
+    // assert `bounty` acc is updated correctly
+    assert.deepEqual(bountyAccAfterUnassign.state, { open: {} });
+    assert.equal(bountyAccAfterUnassign.unassignCount, 1);
+    assert.equal(
+      bountyAccAfterUnassign.activityIndex,
+      CURRENT_BOUNTY_ACTIVITY_INDEX + 1
+    );
   });
 
   it("should not let non-creator unassign bounty", async () => {
@@ -263,6 +318,7 @@ describe("unassign overdue bounty", () => {
           provider,
           program,
           TEST_BOUNTY_PK,
+          CURRENT_BOUNTY_ACTIVITY_INDEX,
           TEST_BOUNTY_SUBMISSION_PK,
           TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK,
           // unassign as applicant instead of bounty creator
@@ -283,6 +339,7 @@ describe("unassign overdue bounty", () => {
           provider,
           program,
           TEST_BOUNTY_PK,
+          CURRENT_BOUNTY_ACTIVITY_INDEX,
           TEST_BOUNTY_SUBMISSION_PK,
           TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK,
           TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
@@ -312,6 +369,7 @@ describe("unassign overdue bounty", () => {
           provider,
           program,
           TEST_BOUNTY_PK,
+          CURRENT_BOUNTY_ACTIVITY_INDEX,
           TEST_BOUNTY_SUBMISSION_PK,
           TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK,
           TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
@@ -323,42 +381,75 @@ describe("unassign overdue bounty", () => {
 
   afterEach(async () => {
     console.log("--- Cleanup logs ---");
+    // clean up bounty activity created at unassign
+    if (TEST_BOUNTY_ACTIVITY_UNASSIGN_PK) {
+      await cleanUpUnassignOverdue(
+        provider,
+        program,
+        TEST_BOUNTY_ACTIVITY_UNASSIGN_PK
+      );
+      TEST_BOUNTY_ACTIVITY_UNASSIGN_PK = undefined;
+    }
     // clean up accounts created from assign
-    await cleanUpAssignBounty(
-      provider,
-      program,
-      TEST_BOUNTY_ACTIVITY_ASSIGN_PK,
-      TEST_BOUNTY_SUBMISSION_PK
-    );
+    if (TEST_BOUNTY_ACTIVITY_ASSIGN_PK || TEST_BOUNTY_SUBMISSION_PK) {
+      await cleanUpAssignBounty(
+        provider,
+        program,
+        TEST_BOUNTY_ACTIVITY_ASSIGN_PK,
+        TEST_BOUNTY_SUBMISSION_PK
+      );
+      TEST_BOUNTY_ACTIVITY_ASSIGN_PK = undefined;
+      TEST_BOUNTY_SUBMISSION_PK = undefined;
+    }
     // clean up bounty application created
-    await cleanUpApplyToBounty(
-      provider,
-      program,
-      TEST_BOUNTY_APPLICATION_PK,
-      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+    if (
+      TEST_BOUNTY_APPLICATION_PK ||
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK ||
       TEST_BOUNTY_ACTIVITY_APPLY_PK
-    );
+    ) {
+      await cleanUpApplyToBounty(
+        provider,
+        program,
+        TEST_BOUNTY_APPLICATION_PK,
+        TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+        TEST_BOUNTY_ACTIVITY_APPLY_PK
+      );
+      TEST_BOUNTY_APPLICATION_PK = undefined;
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK = undefined;
+      TEST_BOUNTY_ACTIVITY_APPLY_PK = undefined;
+    }
     // clean up bounty-related accounts
-    await cleanUpCreateBounty(
-      provider,
-      program,
-      TEST_BOUNTY_PK,
-      TEST_BOUNTY_ESCROW_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK
-    );
+    if (TEST_BOUNTY_PK || TEST_BOUNTY_ESCROW_PK) {
+      await cleanUpCreateBounty(
+        provider,
+        program,
+        TEST_BOUNTY_PK,
+        TEST_BOUNTY_ESCROW_PK,
+        TEST_BOUNTY_BOARD_VAULT_PK
+      );
+      TEST_BOUNTY_PK = undefined;
+      TEST_BOUNTY_ESCROW_PK = undefined;
+    }
     // clean up creator contributor record
-    await cleanUpContributorRecord(
-      provider,
-      program,
-      TEST_CREATOR_CONTRIBUTOR_RECORD_PK
-    );
+    if (TEST_CREATOR_CONTRIBUTOR_RECORD_PK) {
+      await cleanUpContributorRecord(
+        provider,
+        program,
+        TEST_CREATOR_CONTRIBUTOR_RECORD_PK
+      );
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK = undefined;
+    }
     // clean up bounty board-related accounts
-    await cleanUpBountyBoard(
-      provider,
-      program,
-      TEST_BOUNTY_BOARD_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK,
-      TEST_REALM_TREASURY_USDC_ATA
-    );
+    if (TEST_BOUNTY_BOARD_PK || TEST_BOUNTY_BOARD_VAULT_PK) {
+      await cleanUpBountyBoard(
+        provider,
+        program,
+        TEST_BOUNTY_BOARD_PK,
+        TEST_BOUNTY_BOARD_VAULT_PK,
+        TEST_REALM_TREASURY_USDC_ATA
+      );
+      TEST_BOUNTY_BOARD_PK = undefined;
+      TEST_BOUNTY_BOARD_VAULT_PK = undefined;
+    }
   });
 });

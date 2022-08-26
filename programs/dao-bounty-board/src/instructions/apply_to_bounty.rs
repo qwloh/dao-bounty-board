@@ -46,10 +46,11 @@ pub fn apply_to_bounty(ctx: Context<ApplyToBounty>, data: ApplyToBountyVM) -> Re
 
     // fill in fields in `bounty_activity`
     bounty_activity.bounty = bounty.key();
-    bounty_activity.activity_type = BountyActivityType::Apply;
     bounty_activity.activity_index = bounty.activity_index;
     bounty_activity.timestamp = clock.unix_timestamp;
-    bounty_activity.actor_wallet = *applicant.key;
+    bounty_activity.payload = BountyActivityPayload::Apply {
+        applicant_wallet: *applicant.key,
+    };
 
     // increment activity_index on `bounty`
     bounty.activity_index += 1;

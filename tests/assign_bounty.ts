@@ -151,6 +151,7 @@ describe("assign bounty", () => {
     TEST_BOUNTY_ASSIGN_COUNT = bountyAcc.assignCount;
     CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAcc.activityIndex;
 
+    // set up an application to bounty
     console.log(
       "Test applicant public key",
       TEST_APPLICANT_WALLET.publicKey.toString()
@@ -235,7 +236,6 @@ describe("assign bounty", () => {
       bountyActivityAssignAcc.bounty.toString(),
       TEST_BOUNTY_PK.toString()
     );
-    assert.deepEqual(bountyActivityAssignAcc.activityType, { assign: {} });
     assert.equal(
       bountyActivityAssignAcc.activityIndex,
       CURRENT_BOUNTY_ACTIVITY_INDEX
@@ -246,12 +246,16 @@ describe("assign bounty", () => {
       60
     );
     assert.equal(
-      bountyActivityAssignAcc.actorWallet.toString(),
+      bountyActivityAssignAcc.payload.assign.actorWallet.toString(),
       provider.wallet.publicKey // bounty creator
     );
     assert.equal(
-      bountyActivityAssignAcc.targetWallet.toString(),
+      bountyActivityAssignAcc.payload.assign.assigneeWallet.toString(),
       TEST_APPLICANT_WALLET.publicKey.toString()
+    );
+    assert.equal(
+      bountyActivityAssignAcc.payload.assign.submissionIndex,
+      bountySubmissionAcc.submissionIndex
     );
   });
 

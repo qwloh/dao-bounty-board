@@ -327,6 +327,7 @@ export const unassignOverdueBounty = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
   bountyPubkey: PublicKey,
+  bountyActivityIndex: number,
   currentBountySubmissionPubkey: PublicKey,
   assigneeContributorRecordPubkey: PublicKey,
   bountyCreatorContributorRecordPubkey: PublicKey,
@@ -340,6 +341,20 @@ export const unassignOverdueBounty = async (
   const TEST_CONTRIBUTOR_WALLET = bountyCreatorWallet || provider.wallet;
 
   const SIGNERS = bountyCreatorWallet ? [bountyCreatorWallet] : [];
+
+  console.log(
+    "[UnassignOverdueBounty] Current activity index",
+    bountyActivityIndex
+  );
+  const [TEST_BOUNTY_ACTIVITY_UNASSIGN_PDA] = await getBountyActivityAddress(
+    TEST_BOUNTY_PK,
+    bountyActivityIndex
+  );
+  console.log(
+    "Bounty activity (Unassign Overdue) PDA",
+    TEST_BOUNTY_ACTIVITY_UNASSIGN_PDA.toString()
+  );
+
   try {
     const unassignTx = await program.methods
       //@ts-ignore
@@ -349,6 +364,7 @@ export const unassignOverdueBounty = async (
       .accounts({
         bounty: TEST_BOUNTY_PK,
         bountySubmission: TEST_BOUNTY_SUBMISSION_PK,
+        bountyActivity: TEST_BOUNTY_ACTIVITY_UNASSIGN_PDA,
         assigneeContributorRecord: TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK,
         contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
         contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
@@ -364,9 +380,6 @@ export const unassignOverdueBounty = async (
   }
 
   let updatedBountySubmissionAcc;
-  let updatedBountyAcc;
-  let updatedAssigneeContributorRecord;
-
   console.log("--- Bounty Submission Acc (After Unassign) ---");
   try {
     updatedBountySubmissionAcc = await program.account.bountySubmission.fetch(
@@ -383,10 +396,11 @@ export const unassignOverdueBounty = async (
     );
   }
 
+  let bountyAccAfterUnassign;
   console.log("--- Bounty Acc (After Unassign) ---");
   try {
-    updatedBountyAcc = await program.account.bounty.fetch(TEST_BOUNTY_PK);
-    console.log("Found", updatedBountyAcc);
+    bountyAccAfterUnassign = await program.account.bounty.fetch(TEST_BOUNTY_PK);
+    console.log("Found", bountyAccAfterUnassign);
   } catch (err) {
     console.log(
       "Not found. Error",
@@ -397,6 +411,7 @@ export const unassignOverdueBounty = async (
     );
   }
 
+  let updatedAssigneeContributorRecord;
   console.log("--- Assignee Contributor Record (After Unassign) ---");
   if (updatedBountySubmissionAcc) {
     try {
@@ -416,9 +431,49 @@ export const unassignOverdueBounty = async (
     }
   }
 
+  // get created bounty activity acc
+  let bountyActivityUnassignAcc;
+  console.log("--- Bounty Activity (Unassign Overdue) Acc ---");
+  try {
+    bountyActivityUnassignAcc = await program.account.bountyActivity.fetch(
+      TEST_BOUNTY_ACTIVITY_UNASSIGN_PDA
+    );
+    console.log("Found", JSON.parse(JSON.stringify(bountyActivityUnassignAcc)));
+  } catch (err) {
+    console.log("Not found. Error", err.message);
+  }
+
   return {
+    bountyAccAfterUnassign,
     updatedBountySubmissionAcc,
-    updatedBountyAcc,
     updatedAssigneeContributorRecord,
+    bountyActivityUnassignPDA: TEST_BOUNTY_ACTIVITY_UNASSIGN_PDA,
+    bountyActivityUnassignAcc,
   };
+};
+
+export const cleanUpUnassignOverdue = async (
+  provider: AnchorProvider,
+  program: Program<DaoBountyBoard>,
+  bountyActivityUnassignPDA: PublicKey
+) => {
+  // clean up bounty activity: Unassign Overdue
+  try {
+    await program.methods
+      .closeBountyActivity()
+      .accounts({
+        bountyActivity: bountyActivityUnassignPDA,
+        user: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+    console.log(
+      `Bounty activity (Unassign Overdue) acc ${bountyActivityUnassignPDA} closed`
+    );
+  } catch (err) {
+    console.log(
+      `Error clearing bounty activity (unassign Overdue) acc ${bountyActivityUnassignPDA}`,
+      err.message
+    );
+  }
 };
