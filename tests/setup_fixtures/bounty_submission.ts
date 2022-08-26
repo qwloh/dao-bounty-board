@@ -215,8 +215,9 @@ export const cleanUpRequestChangesToSubmission = async (
 export const updateSubmission = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
-  bountySubmissionPubkey: PublicKey,
   bountyPubkey: PublicKey,
+  bountyActivityIndex: number,
+  bountySubmissionPubkey: PublicKey,
   contributorRecordPubkey: PublicKey,
   contributorWallet: Keypair = undefined,
   linkToSubmission: string = ""
@@ -228,6 +229,16 @@ export const updateSubmission = async (
 
   const SIGNERS = contributorWallet ? [contributorWallet] : [];
 
+  console.log("[UpdateSubmission] Current activity index", bountyActivityIndex);
+  const [TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PDA] = await getBountyActivityAddress(
+    TEST_BOUNTY_PK,
+    bountyActivityIndex
+  );
+  console.log(
+    "Bounty activity (Update submission) PDA",
+    TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PDA.toString()
+  );
+
   try {
     const tx = await program.methods
       .updateSubmission({
@@ -236,6 +247,7 @@ export const updateSubmission = async (
       .accounts({
         bounty: TEST_BOUNTY_PK,
         bountySubmission: TEST_BOUNTY_SUBMISSION_PK,
+        bountyActivity: TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PDA,
         contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
         contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
         clock: SYSVAR_CLOCK_PUBKEY,
@@ -250,8 +262,8 @@ export const updateSubmission = async (
     throw err;
   }
 
-  console.log("--- Updated Bounty Submission Acc ---");
   let updatedBountySubmissionAcc;
+  console.log("--- Updated Bounty Submission Acc ---");
   try {
     updatedBountySubmissionAcc = await program.account.bountySubmission.fetch(
       TEST_BOUNTY_SUBMISSION_PK
@@ -262,8 +274,43 @@ export const updateSubmission = async (
     return;
   }
 
+  // get created bounty activity acc
+  let bountyActivityUpdateSubAcc;
+  console.log("--- Bounty Activity (Update Submission) Acc ---");
+  try {
+    bountyActivityUpdateSubAcc = await program.account.bountyActivity.fetch(
+      TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PDA
+    );
+    console.log(
+      "Found",
+      JSON.parse(JSON.stringify(bountyActivityUpdateSubAcc))
+    );
+  } catch (err) {
+    console.log("Not found. Error", err.message);
+  }
+
+  let bountyAccAfterUpdateSubmission;
+  console.log("--- Bounty Acc (After Update Submission) ---");
+  try {
+    bountyAccAfterUpdateSubmission = await program.account.bounty.fetch(
+      TEST_BOUNTY_PK
+    );
+    console.log("Found", bountyAccAfterUpdateSubmission);
+  } catch (err) {
+    console.log(
+      "Not found. Error",
+      err.name,
+      "for",
+      TEST_BOUNTY_PK.toString(),
+      err
+    );
+  }
+
   return {
+    bountyAccAfterUpdateSubmission,
     updatedBountySubmissionAcc,
+    bountyActivityUpdateSubPDA: TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PDA,
+    bountyActivityUpdateSubAcc,
   };
 };
 
