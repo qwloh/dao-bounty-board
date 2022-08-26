@@ -25,6 +25,7 @@ import {
   cleanUpContributorRecord,
   setupContributorRecord,
 } from "./setup_fixtures/contributor_record";
+import { sleep } from "./utils/common";
 
 describe("create bounty", () => {
   // Configure the client to use the local cluster.
@@ -69,6 +70,9 @@ describe("create bounty", () => {
   let TEST_BOUNTY_BOARD_BOUNTY_INDEX;
 
   beforeEach(async () => {
+    await sleep(500); // delay 500ms between each test
+    console.log("-----------------------------");
+
     console.log("Test realm public key", TEST_REALM_PK.toString());
     const { bountyBoardPDA, bountyBoardVaultPDA, bountyBoardAcc } =
       await setupBountyBoard(provider, program, TEST_REALM_PK);

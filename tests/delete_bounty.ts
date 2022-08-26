@@ -32,6 +32,7 @@ import {
   setupContributorRecord,
 } from "./setup_fixtures/contributor_record";
 import { assertFulfilled, assertReject } from "./utils/assert-promise-utils";
+import { sleep } from "./utils/common";
 
 describe("delete bounty", () => {
   // Configure the client to use the local cluster.
@@ -92,6 +93,9 @@ describe("delete bounty", () => {
   let CURRENT_BOUNTY_ACTIVITY_INDEX;
 
   beforeEach(async () => {
+    await sleep(500); // delay 500ms between each test
+    console.log("-----------------------------");
+
     console.log("Test realm public key", TEST_REALM_PK.toString());
     // set up bounty board
     const { bountyBoardPDA, bountyBoardVaultPDA } = await setupBountyBoard(

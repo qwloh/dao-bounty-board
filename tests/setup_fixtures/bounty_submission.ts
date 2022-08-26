@@ -131,8 +131,9 @@ export const cleanUpSubmitToBlankSubmission = async (
 export const requestChangesToSubmission = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
-  bountySubmissionPubkey: PublicKey,
   bountyPubkey: PublicKey,
+  bountyActivityIndex: number,
+  bountySubmissionPubkey: PublicKey,
   contributorRecordPubkey: PublicKey,
   contributorWallet: Keypair = undefined,
   comment: string = ""
@@ -144,6 +145,19 @@ export const requestChangesToSubmission = async (
 
   const SIGNERS = contributorWallet ? [contributorWallet] : [];
 
+  console.log(
+    "[RequestChangeToSubmission] Current activity index",
+    bountyActivityIndex
+  );
+  const [TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PDA] = await getBountyActivityAddress(
+    TEST_BOUNTY_PK,
+    bountyActivityIndex
+  );
+  console.log(
+    "Bounty activity (Request Change) PDA",
+    TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PDA.toString()
+  );
+
   try {
     const tx = await program.methods
       .requestChangesToSubmission({
@@ -152,15 +166,17 @@ export const requestChangesToSubmission = async (
       .accounts({
         bounty: TEST_BOUNTY_PK,
         bountySubmission: TEST_BOUNTY_SUBMISSION_PK,
+        // bountyActivity: TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PDA,
         contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
         contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
+        systemProgram: SystemProgram.programId,
         clock: SYSVAR_CLOCK_PUBKEY,
       })
       .signers(SIGNERS)
       .rpc();
 
     console.log("Request change to submission successfully.");
-    console.log("Your transaction signature", tx);
+    console.log("[RequestChange] Your transaction signature", tx);
   } catch (err) {
     console.log(
       "[RequestChangesToSubmission] Transaction / Simulation fail.",
@@ -181,8 +197,35 @@ export const requestChangesToSubmission = async (
     return;
   }
 
+  let bountyActivityReqChangeAcc;
+  console.log("--- Bounty Activity (Request Change) Acc ---");
+  try {
+    bountyActivityReqChangeAcc = await program.account.bountyActivity.fetch(
+      TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PDA
+    );
+    console.log("Found", bountyActivityReqChangeAcc);
+  } catch (err) {
+    console.log("Not found. Error", err.message, err);
+    return;
+  }
+
+  let bountyAccAfterReqChange;
+  console.log("--- Bounty Acc (After Request Change) ---");
+  try {
+    bountyAccAfterReqChange = await program.account.bounty.fetch(
+      TEST_BOUNTY_PK
+    );
+    console.log("Found", bountyAccAfterReqChange);
+  } catch (err) {
+    console.log("Not found. Error", err.message, err);
+    return;
+  }
+
   return {
+    bountyAccAfterReqChange,
     updatedBountySubmissionAcc,
+    bountyActivityReqChangePDA: TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PDA,
+    bountyActivityReqChangeAcc,
   };
 };
 
@@ -437,6 +480,7 @@ export const rejectStaleSubmission = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
   bountyPubkey: PublicKey,
+  bountyActivityIndex: number,
   bountySubmissionPubkey: PublicKey,
   assigneeContributorRecordPubkey: PublicKey,
   contributorRecordPubkey: PublicKey,
@@ -450,6 +494,20 @@ export const rejectStaleSubmission = async (
   const TEST_CONTRIBUTOR_WALLET = contributorWallet || provider.wallet;
 
   const SIGNERS = contributorWallet ? [contributorWallet] : [];
+
+  console.log(
+    "[RejectStaleSubmission] Current activity index",
+    bountyActivityIndex
+  );
+  const [TEST_BOUNTY_ACTIVITY_REJ_STALE_PDA] = await getBountyActivityAddress(
+    TEST_BOUNTY_PK,
+    bountyActivityIndex
+  );
+  console.log(
+    "Bounty activity (Reject Stale) PDA",
+    TEST_BOUNTY_ACTIVITY_REJ_STALE_PDA.toString()
+  );
+
   try {
     const tx = await program.methods
       .rejectStaleSubmission({
@@ -458,25 +516,24 @@ export const rejectStaleSubmission = async (
       .accounts({
         bounty: TEST_BOUNTY_PK,
         bountySubmission: TEST_BOUNTY_SUBMISSION_PK,
+        bountyActivity: TEST_BOUNTY_ACTIVITY_REJ_STALE_PDA,
         assigneeContributorRecord: TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK,
         contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
         contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
+        systemProgram: SystemProgram.programId,
         clock: SYSVAR_CLOCK_PUBKEY,
       })
       .signers(SIGNERS)
       .rpc();
 
     console.log("Submission updated successfully.");
-    console.log("Your transaction signature", tx);
+    console.log("[RejectStale] Your transaction signature", tx);
   } catch (err) {
     console.log("[RejectStaleSubmission] Transaction / Simulation fail.", err);
     throw err;
   }
 
   let updatedBountySubmissionAcc;
-  let updatedBountyAcc;
-  let updatedAssigneeContributorRecord;
-
   console.log("--- Updated Bounty Submission Acc (After reject stale) ---");
   try {
     updatedBountySubmissionAcc = await program.account.bountySubmission.fetch(
@@ -488,15 +545,19 @@ export const rejectStaleSubmission = async (
     return;
   }
 
+  let bountyAccAfterRejectStale;
   console.log("--- Updated Bounty Acc (After reject stale) ---");
   try {
-    updatedBountyAcc = await program.account.bounty.fetch(TEST_BOUNTY_PK);
-    console.log("Found", updatedBountyAcc);
+    bountyAccAfterRejectStale = await program.account.bounty.fetch(
+      TEST_BOUNTY_PK
+    );
+    console.log("Found", bountyAccAfterRejectStale);
   } catch (err) {
     console.log("Not found. Error", err.message, err);
     return;
   }
 
+  let updatedAssigneeContributorRecord;
   console.log("--- Assignee Contributor Record (After reject stale) ---");
   if (updatedBountySubmissionAcc) {
     try {
@@ -516,10 +577,24 @@ export const rejectStaleSubmission = async (
     }
   }
 
+  let bountyActivityRejStaleAcc;
+  console.log("--- Bounty Activity (Reject Stale) Acc ---");
+  try {
+    bountyActivityRejStaleAcc = await program.account.bountyActivity.fetch(
+      TEST_BOUNTY_ACTIVITY_REJ_STALE_PDA
+    );
+    console.log("Found", bountyActivityRejStaleAcc);
+  } catch (err) {
+    console.log("Not found. Error", err.message, err);
+    return;
+  }
+
   return {
+    bountyAccAfterRejectStale,
     updatedBountySubmissionAcc,
-    updatedBountyAcc,
     updatedAssigneeContributorRecord,
+    bountyActivityRejectStalePDA: TEST_BOUNTY_ACTIVITY_REJ_STALE_PDA,
+    bountyActivityRejStaleAcc,
   };
 };
 

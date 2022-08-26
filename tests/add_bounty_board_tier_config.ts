@@ -17,6 +17,7 @@ import {
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
 import { assertReject } from "./utils/assert-promise-utils";
+import { sleep } from "./utils/common";
 
 describe("add bounty board tier config", () => {
   // Configure the client to use the local cluster.
@@ -52,6 +53,9 @@ describe("add bounty board tier config", () => {
    */
 
   beforeEach(async () => {
+    await sleep(500); // delay 500ms between each test
+    console.log("-----------------------------");
+
     console.log("Test realm public key", TEST_REALM_PK.toString());
     // set up bounty board
     const { bountyBoardPDA, bountyBoardVaultPDA, realmGovernancePk } =

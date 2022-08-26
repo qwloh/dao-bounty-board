@@ -12,6 +12,7 @@ import {
   cleanUpContributorRecord,
   setupContributorRecord,
 } from "./setup_fixtures/contributor_record";
+import { sleep } from "./utils/common";
 
 describe("add contributor with role", () => {
   // Configure the client to use the local cluster.
@@ -45,6 +46,9 @@ describe("add contributor with role", () => {
   // Contributor record PDA 6pks4WpJu41j9RcaySmQkm6o3i66yzwdmw87SANMNqEW
 
   beforeEach(async () => {
+    await sleep(500); // delay 500ms between each test
+    console.log("-----------------------------");
+
     console.log("Test realm public key", TEST_REALM_PK.toString());
     const { bountyBoardPDA, bountyBoardVaultPDA } = await setupBountyBoard(
       provider,
