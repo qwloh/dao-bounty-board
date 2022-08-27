@@ -6,6 +6,7 @@ import {
   SYSVAR_CLOCK_PUBKEY,
 } from "@solana/web3.js";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
+import { sleep } from "../utils/common";
 import { getBountyActivityAddress } from "../utils/get_addresses";
 
 export const submitToBlankSubmission = async (
@@ -59,6 +60,8 @@ export const submitToBlankSubmission = async (
     );
     throw err;
   }
+
+  await sleep(800); // give time for the network to respond
 
   let updatedBountySubmissionAcc;
   console.log("--- Bounty Submission Acc (After First Submit) ---");
@@ -166,7 +169,7 @@ export const requestChangesToSubmission = async (
       .accounts({
         bounty: TEST_BOUNTY_PK,
         bountySubmission: TEST_BOUNTY_SUBMISSION_PK,
-        // bountyActivity: TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PDA,
+        bountyActivity: TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PDA,
         contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
         contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
         systemProgram: SystemProgram.programId,
@@ -184,6 +187,8 @@ export const requestChangesToSubmission = async (
     );
     throw err;
   }
+
+  await sleep(800); // give time for the network to respond
 
   console.log("--- Updated Bounty Submission Acc ---");
   let updatedBountySubmissionAcc;
@@ -305,6 +310,8 @@ export const updateSubmission = async (
     throw err;
   }
 
+  await sleep(800); // give time for the network to respond
+
   let updatedBountySubmissionAcc;
   console.log("--- Updated Bounty Submission Acc ---");
   try {
@@ -386,8 +393,9 @@ export const cleanUpUpdateSubmission = async (
 export const rejectSubmission = async (
   provider: AnchorProvider,
   program: Program<DaoBountyBoard>,
-  bountySubmissionPubkey: PublicKey,
   bountyPubkey: PublicKey,
+  bountyActivityIndex: number,
+  bountySubmissionPubkey: PublicKey,
   contributorRecordPubkey: PublicKey,
   contributorWallet: Keypair = undefined,
   comment: string = ""
@@ -399,6 +407,16 @@ export const rejectSubmission = async (
 
   const SIGNERS = contributorWallet ? [contributorWallet] : [];
 
+  console.log("[RejectSubmission] Current activity index", bountyActivityIndex);
+  const [TEST_BOUNTY_ACTIVITY_REJECT_PDA] = await getBountyActivityAddress(
+    TEST_BOUNTY_PK,
+    bountyActivityIndex
+  );
+  console.log(
+    "Bounty activity (Reject submission) PDA",
+    TEST_BOUNTY_ACTIVITY_REJECT_PDA.toString()
+  );
+
   try {
     const tx = await program.methods
       .rejectSubmission({
@@ -407,6 +425,7 @@ export const rejectSubmission = async (
       .accounts({
         bounty: TEST_BOUNTY_PK,
         bountySubmission: TEST_BOUNTY_SUBMISSION_PK,
+        bountyActivity: TEST_BOUNTY_ACTIVITY_REJECT_PDA,
         contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
         contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
         clock: SYSVAR_CLOCK_PUBKEY,
@@ -415,15 +434,15 @@ export const rejectSubmission = async (
       .rpc();
 
     console.log("Submission updated successfully.");
-    console.log("Your transaction signature", tx);
+    console.log("[RejectSubmission] Your transaction signature", tx);
   } catch (err) {
     console.log("[RejectSubmission] Transaction / Simulation fail.", err);
     throw err;
   }
 
-  let updatedBountySubmissionAcc;
-  let updatedBountyAcc;
+  await sleep(800); // give time for the network to respond
 
+  let updatedBountySubmissionAcc;
   console.log("--- Updated Bounty Submission Acc (After reject) ---");
   try {
     updatedBountySubmissionAcc = await program.account.bountySubmission.fetch(
@@ -435,10 +454,23 @@ export const rejectSubmission = async (
     return;
   }
 
+  // get created bounty activity acc
+  let bountyActivityRejectAcc;
+  console.log("--- Bounty Activity (Reject) Acc ---");
+  try {
+    bountyActivityRejectAcc = await program.account.bountyActivity.fetch(
+      TEST_BOUNTY_ACTIVITY_REJECT_PDA
+    );
+    console.log("Found", JSON.parse(JSON.stringify(bountyActivityRejectAcc)));
+  } catch (err) {
+    console.log("Not found. Error", err.message);
+  }
+
+  let bountyAccAfterReject;
   console.log("--- Updated Bounty Acc (After reject) ---");
   try {
-    updatedBountyAcc = await program.account.bounty.fetch(TEST_BOUNTY_PK);
-    console.log("Found", updatedBountyAcc);
+    bountyAccAfterReject = await program.account.bounty.fetch(TEST_BOUNTY_PK);
+    console.log("Found", bountyAccAfterReject);
   } catch (err) {
     console.log("Not found. Error", err.message, err);
     return;
@@ -446,7 +478,9 @@ export const rejectSubmission = async (
 
   return {
     updatedBountySubmissionAcc,
-    updatedBountyAcc,
+    bountyAccAfterReject,
+    bountyActivityRejectPDA: TEST_BOUNTY_ACTIVITY_REJECT_PDA,
+    bountyActivityRejectAcc,
   };
 };
 
@@ -532,6 +566,8 @@ export const rejectStaleSubmission = async (
     console.log("[RejectStaleSubmission] Transaction / Simulation fail.", err);
     throw err;
   }
+
+  await sleep(800); // give time for the network to respond
 
   let updatedBountySubmissionAcc;
   console.log("--- Updated Bounty Submission Acc (After reject stale) ---");

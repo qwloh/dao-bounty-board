@@ -26,6 +26,7 @@ import {
 } from "./setup_fixtures/bounty_board";
 import {
   cleanUpRejectStaleSubmission,
+  cleanUpRequestChangesToSubmission,
   cleanUpSubmitToBlankSubmission,
   cleanUpUpdateSubmission,
   rejectStaleSubmission,
@@ -83,10 +84,10 @@ describe("reject stale submission", () => {
   let TEST_BOUNTY_ACTIVITY_ASSIGN_PK;
 
   let TEST_BOUNTY_ACTIVITY_SUBMIT_PK;
-  // let TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PK;
-  let TEST_BOUNTY_ACTIVITY_REJ_STALE_PK;
+  let TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PKS = [];
+  let TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PKS = [];
 
-  let TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PK;
+  let TEST_BOUNTY_ACTIVITY_REJ_STALE_PK;
 
   // Test realm public key D7uqCFCYxPQr19ve7hL3x3gUhwtaV45eoRN7iotyeo9U
   // Test realm governance public key 3DqNuhEXXUj531shswW8RxFq6WDmNf3rgSW6TzCDU9oY
@@ -199,19 +200,22 @@ describe("reject stale submission", () => {
     CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterSubmit.activityIndex;
 
     // request change to submission
-    await requestChangesToSubmission(
-      provider,
-      program,
-      TEST_BOUNTY_PK,
-      CURRENT_BOUNTY_ACTIVITY_INDEX,
-      TEST_BOUNTY_SUBMISSION_PK,
-      TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
-      undefined // sign with provider.wallet
-    );
+    const { bountyAccAfterReqChange, bountyActivityReqChangePDA } =
+      await requestChangesToSubmission(
+        provider,
+        program,
+        TEST_BOUNTY_PK,
+        CURRENT_BOUNTY_ACTIVITY_INDEX,
+        TEST_BOUNTY_SUBMISSION_PK,
+        TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
+        undefined // use provider's wallet to sign
+      );
+    TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PKS.push(bountyActivityReqChangePDA);
+    CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterReqChange.activityIndex;
   };
 
   beforeEach(async () => {
-    await sleep(500); // delay 500ms between each test
+    await sleep(800); // delay 800ms between each test
     console.log("-----------------------------");
 
     console.log("Test realm public key", TEST_REALM_PK.toString());
@@ -399,7 +403,7 @@ describe("reject stale submission", () => {
         TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
         TEST_APPLICANT_WALLET
       );
-    TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PK = bountyActivityUpdateSubPDA;
+    TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PKS.push(bountyActivityUpdateSubPDA);
     CURRENT_BOUNTY_ACTIVITY_INDEX =
       bountyAccAfterUpdateSubmission.activityIndex;
 
@@ -433,17 +437,34 @@ describe("reject stale submission", () => {
       );
       TEST_BOUNTY_ACTIVITY_REJ_STALE_PK = undefined;
     }
-    // clean up bounty activity from updating submission
-    if (TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PK) {
-      await cleanUpUpdateSubmission(
-        provider,
-        program,
-        TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PK
+    // clean up every bounty activity created from update submission
+    if (TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PKS.length) {
+      console.log(
+        `Clearing ${TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PKS.length} Bounty Activity (Update Submission) Acc`
       );
-      TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PK = undefined;
+      for (const bountyActivityUpdateSubPK of TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PKS) {
+        await cleanUpUpdateSubmission(
+          provider,
+          program,
+          bountyActivityUpdateSubPK
+        );
+      }
+      TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PKS.length = 0;
     }
-    // clean up bounty activity from request change
-    // TO ADD
+    // clean up every bounty activity created from req changes
+    if (TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PKS.length) {
+      console.log(
+        `Clearing ${TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PKS.length} Bounty Activity (Request Change) Acc`
+      );
+      for (const bountyActivityReqChangePK of TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PKS) {
+        await cleanUpRequestChangesToSubmission(
+          provider,
+          program,
+          bountyActivityReqChangePK
+        );
+      }
+      TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PKS.length = 0;
+    }
     // clean up bounty activity created from submit
     if (TEST_BOUNTY_ACTIVITY_SUBMIT_PK) {
       await cleanUpSubmitToBlankSubmission(

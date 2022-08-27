@@ -93,7 +93,7 @@ describe("delete bounty", () => {
   let CURRENT_BOUNTY_ACTIVITY_INDEX;
 
   beforeEach(async () => {
-    await sleep(500); // delay 500ms between each test
+    await sleep(800); // delay 800ms between each test
     console.log("-----------------------------");
 
     console.log("Test realm public key", TEST_REALM_PK.toString());

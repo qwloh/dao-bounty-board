@@ -22,6 +22,9 @@ import {
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
 import {
+  cleanUpRequestChangesToSubmission,
+  cleanUpSubmitToBlankSubmission,
+  cleanUpUpdateSubmission,
   requestChangesToSubmission,
   submitToBlankSubmission,
   updateSubmission,
@@ -31,6 +34,7 @@ import {
   setupContributorRecord,
 } from "./setup_fixtures/contributor_record";
 import { assertReject } from "./utils/assert-promise-utils";
+import { sleep } from "./utils/common";
 
 describe("request changes to submission", () => {
   // Configure the client to use the local cluster.
@@ -74,6 +78,10 @@ describe("request changes to submission", () => {
   let TEST_BOUNTY_SUBMISSION_PK;
   let TEST_BOUNTY_ACTIVITY_ASSIGN_PK;
 
+  let TEST_BOUNTY_ACTIVITY_SUBMIT_PK;
+  const TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PKS = [];
+  const TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PKS = [];
+
   // Test realm public key 3YRjL7fVXahX8zS7cKmtb5ZTARdCzXtsaFmtxKwdAWDP
   // Test realm governance public key DdzNtH4aXz1ZdMGnuj9UEbMuoszoq5EQeEFyF4tG1EXm
   // Bounty board PDA FZkX7TDas96pjR5wm2QnTeAWzcs6fYL8mx8QMmGva27u
@@ -91,30 +99,48 @@ describe("request changes to submission", () => {
   // acc level fields involved in this test
   let TEST_BOUNTY_ASSIGN_COUNT;
   let CURRENT_BOUNTY_ACTIVITY_INDEX;
+  let TEST_SUBMISSION_SUBMISSION_INDEX;
 
   // test specific setup fn
   const accelerateIteration = async (iterationCount: number) => {
     for (let i = 0; i < iterationCount; i++) {
-      await requestChangesToSubmission(
-        provider,
-        program,
-        TEST_BOUNTY_SUBMISSION_PK,
-        TEST_BOUNTY_PK,
-        TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
-        undefined // sign with provider.wallet
-      );
-      await updateSubmission(
-        provider,
-        program,
-        TEST_BOUNTY_SUBMISSION_PK,
-        TEST_BOUNTY_PK,
-        TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
-        TEST_APPLICANT_WALLET
-      );
+      await sleep(800); // sprinkle in waits to give time for the network to respond
+
+      const { bountyAccAfterReqChange, bountyActivityReqChangePDA } =
+        await requestChangesToSubmission(
+          provider,
+          program,
+          TEST_BOUNTY_PK,
+          CURRENT_BOUNTY_ACTIVITY_INDEX,
+          TEST_BOUNTY_SUBMISSION_PK,
+          TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
+          undefined // sign with provider.wallet
+        );
+      TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PKS.push(bountyActivityReqChangePDA);
+      CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterReqChange.activityIndex;
+
+      await sleep(800); // sprinkle in waits to give time for the network to respond
+
+      const { bountyAccAfterUpdateSubmission, bountyActivityUpdateSubPDA } =
+        await updateSubmission(
+          provider,
+          program,
+          TEST_BOUNTY_PK,
+          CURRENT_BOUNTY_ACTIVITY_INDEX,
+          TEST_BOUNTY_SUBMISSION_PK,
+          TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+          TEST_APPLICANT_WALLET
+        );
+      TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PKS.push(bountyActivityUpdateSubPDA);
+      CURRENT_BOUNTY_ACTIVITY_INDEX =
+        bountyAccAfterUpdateSubmission.activityIndex;
     }
   };
 
   beforeEach(async () => {
+    await sleep(800); // delay 800ms between each test
+    console.log("-----------------------------");
+
     console.log("Test realm public key", TEST_REALM_PK.toString());
     // set up bounty board
     const { bountyBoardPDA, bountyBoardVaultPDA } = await setupBountyBoard(
@@ -197,6 +223,7 @@ describe("request changes to submission", () => {
     const {
       bountyAccAfterAssign,
       bountySubmissionPDA,
+      bountySubmissionAcc,
       bountyActivityAssignPDA,
     } = await assignBounty(
       provider,
@@ -209,31 +236,45 @@ describe("request changes to submission", () => {
     TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPDA;
     TEST_BOUNTY_ACTIVITY_ASSIGN_PK = bountyActivityAssignPDA;
     CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterAssign.activityIndex;
+    TEST_SUBMISSION_SUBMISSION_INDEX = bountySubmissionAcc.submissionIndex;
   });
 
   it("update state of bounty submission acc correctly", async () => {
     // submit work to the blank submission to change state of submission to PendingReview
-    await submitToBlankSubmission(
-      provider,
-      program,
-      TEST_BOUNTY_PK,
-      TEST_BOUNTY_SUBMISSION_PK,
-      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
-      TEST_APPLICANT_WALLET
-    );
+    const { bountyAccAfterSubmit, bountyActivitySubmitPDA } =
+      await submitToBlankSubmission(
+        provider,
+        program,
+        TEST_BOUNTY_PK,
+        CURRENT_BOUNTY_ACTIVITY_INDEX,
+        TEST_BOUNTY_SUBMISSION_PK,
+        TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+        TEST_APPLICANT_WALLET
+      );
+    TEST_BOUNTY_ACTIVITY_SUBMIT_PK = bountyActivitySubmitPDA;
+    CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterSubmit.activityIndex;
 
     const COMMENT = "Please redo.";
 
-    const { updatedBountySubmissionAcc } = await requestChangesToSubmission(
+    const {
+      bountyAccAfterReqChange,
+      updatedBountySubmissionAcc,
+      bountyActivityReqChangePDA,
+      bountyActivityReqChangeAcc,
+    } = await requestChangesToSubmission(
       provider,
       program,
-      TEST_BOUNTY_SUBMISSION_PK,
       TEST_BOUNTY_PK,
+      CURRENT_BOUNTY_ACTIVITY_INDEX,
+      TEST_BOUNTY_SUBMISSION_PK,
       TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
       undefined, // use provider's wallet to sign
       COMMENT
     );
+    TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PKS.push(bountyActivityReqChangePDA);
+    // DON't update current_bounty_activity_index after actual test (^)
 
+    // assert `bounty_submission` updated correctly
     assert.deepEqual(updatedBountySubmissionAcc.state, { changeRequested: {} });
     assert.closeTo(
       updatedBountySubmissionAcc.changeRequestedAt.toNumber(),
@@ -242,27 +283,63 @@ describe("request changes to submission", () => {
     );
     assert.equal(updatedBountySubmissionAcc.requestChangeCount, 1);
 
-    // assert bounty activity
+    // assert `bounty_activity` created correctly
+    assert.equal(
+      bountyActivityReqChangeAcc.bounty.toString(),
+      TEST_BOUNTY_PK.toString()
+    );
+    assert.equal(
+      bountyActivityReqChangeAcc.activityIndex,
+      CURRENT_BOUNTY_ACTIVITY_INDEX
+    );
+    assert.closeTo(
+      bountyActivityReqChangeAcc.timestamp.toNumber(),
+      new Date().getTime() / 1000,
+      60
+    );
+    assert.equal(
+      bountyActivityReqChangeAcc.payload.requestChange.actorWallet.toString(),
+      provider.wallet.publicKey.toString() // bounty creator wallet
+    );
+    assert.equal(
+      bountyActivityReqChangeAcc.payload.requestChange.submissionIndex,
+      TEST_SUBMISSION_SUBMISSION_INDEX
+    );
+    assert.equal(
+      bountyActivityReqChangeAcc.payload.requestChange.comment,
+      COMMENT
+    );
+
+    // assert `activity_index` on `bounty` incremented
+    assert.equal(
+      bountyAccAfterReqChange.activityIndex,
+      CURRENT_BOUNTY_ACTIVITY_INDEX + 1
+    );
   });
 
   it("should not let non-creator request changes", async () => {
     // submit work to the blank submission to change state of submission to PendingReview
-    await submitToBlankSubmission(
-      provider,
-      program,
-      TEST_BOUNTY_PK,
-      TEST_BOUNTY_SUBMISSION_PK,
-      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
-      TEST_APPLICANT_WALLET
-    );
+    const { bountyAccAfterSubmit, bountyActivitySubmitPDA } =
+      await submitToBlankSubmission(
+        provider,
+        program,
+        TEST_BOUNTY_PK,
+        CURRENT_BOUNTY_ACTIVITY_INDEX,
+        TEST_BOUNTY_SUBMISSION_PK,
+        TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+        TEST_APPLICANT_WALLET
+      );
+    TEST_BOUNTY_ACTIVITY_SUBMIT_PK = bountyActivitySubmitPDA;
+    CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterSubmit.activityIndex;
 
     await assertReject(
       () =>
         requestChangesToSubmission(
           provider,
           program,
-          TEST_BOUNTY_SUBMISSION_PK,
           TEST_BOUNTY_PK,
+          CURRENT_BOUNTY_ACTIVITY_INDEX,
+          TEST_BOUNTY_SUBMISSION_PK,
           TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
           TEST_APPLICANT_WALLET
         ),
@@ -277,8 +354,9 @@ describe("request changes to submission", () => {
         requestChangesToSubmission(
           provider,
           program,
-          TEST_BOUNTY_SUBMISSION_PK,
           TEST_BOUNTY_PK,
+          CURRENT_BOUNTY_ACTIVITY_INDEX,
+          TEST_BOUNTY_SUBMISSION_PK,
           TEST_CREATOR_CONTRIBUTOR_RECORD_PK
         ),
       /NotPendingReview/
@@ -287,15 +365,19 @@ describe("request changes to submission", () => {
 
   it("should throw if change request has already been made 3 times prior", async () => {
     // submit work to the blank submission to change state of submission to PendingReview
-    await submitToBlankSubmission(
-      provider,
-      program,
-      TEST_BOUNTY_PK,
-      TEST_BOUNTY_SUBMISSION_PK,
-      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
-      TEST_APPLICANT_WALLET
-    );
-    // accelerate request_change_count to 3
+    const { bountyAccAfterSubmit, bountyActivitySubmitPDA } =
+      await submitToBlankSubmission(
+        provider,
+        program,
+        TEST_BOUNTY_PK,
+        CURRENT_BOUNTY_ACTIVITY_INDEX,
+        TEST_BOUNTY_SUBMISSION_PK,
+        TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+        TEST_APPLICANT_WALLET
+      );
+    TEST_BOUNTY_ACTIVITY_SUBMIT_PK = bountyActivitySubmitPDA;
+    CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterSubmit.activityIndex; // accelerate request_change_count to 3
+
     await accelerateIteration(3);
 
     // request changes for the 4th time
@@ -304,8 +386,9 @@ describe("request changes to submission", () => {
         requestChangesToSubmission(
           provider,
           program,
-          TEST_BOUNTY_SUBMISSION_PK,
           TEST_BOUNTY_PK,
+          CURRENT_BOUNTY_ACTIVITY_INDEX,
+          TEST_BOUNTY_SUBMISSION_PK,
           TEST_CREATOR_CONTRIBUTOR_RECORD_PK
         ),
       /ChangeRequestQuotaReached/
@@ -314,42 +397,103 @@ describe("request changes to submission", () => {
 
   afterEach(async () => {
     console.log("--- Cleanup logs ---");
+    // clean up every bounty activity created from update submission
+    if (TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PKS.length) {
+      console.log(
+        `Clearing ${TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PKS.length} Bounty Activity (Update Submission) Acc`
+      );
+      for (const bountyActivityUpdateSubPK of TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PKS) {
+        await cleanUpUpdateSubmission(
+          provider,
+          program,
+          bountyActivityUpdateSubPK
+        );
+      }
+      TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PKS.length = 0;
+    }
+    // clean up every bounty activity created from req changes
+    if (TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PKS.length) {
+      console.log(
+        `Clearing ${TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PKS.length} Bounty Activity (Request Change) Acc`
+      );
+      for (const bountyActivityReqChangePK of TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PKS) {
+        await cleanUpRequestChangesToSubmission(
+          provider,
+          program,
+          bountyActivityReqChangePK
+        );
+      }
+      TEST_BOUNTY_ACTIVITY_REQ_CHANGE_PKS.length = 0;
+    }
+    // clean up bounty activity created from submit
+    if (TEST_BOUNTY_ACTIVITY_SUBMIT_PK) {
+      await cleanUpSubmitToBlankSubmission(
+        provider,
+        program,
+        TEST_BOUNTY_ACTIVITY_SUBMIT_PK
+      );
+      TEST_BOUNTY_ACTIVITY_SUBMIT_PK = undefined;
+    }
     // clean up accounts created from assign
-    await cleanUpAssignBounty(
-      provider,
-      program,
-      TEST_BOUNTY_ACTIVITY_ASSIGN_PK,
-      TEST_BOUNTY_SUBMISSION_PK
-    );
+    if (TEST_BOUNTY_ACTIVITY_ASSIGN_PK || TEST_BOUNTY_SUBMISSION_PK) {
+      await cleanUpAssignBounty(
+        provider,
+        program,
+        TEST_BOUNTY_ACTIVITY_ASSIGN_PK,
+        TEST_BOUNTY_SUBMISSION_PK
+      );
+      TEST_BOUNTY_ACTIVITY_ASSIGN_PK = undefined;
+      TEST_BOUNTY_SUBMISSION_PK = undefined;
+    }
     // clean up bounty application created
-    await cleanUpApplyToBounty(
-      provider,
-      program,
-      TEST_BOUNTY_APPLICATION_PK,
-      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+    if (
+      TEST_BOUNTY_APPLICATION_PK ||
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK ||
       TEST_BOUNTY_ACTIVITY_APPLY_PK
-    );
+    ) {
+      await cleanUpApplyToBounty(
+        provider,
+        program,
+        TEST_BOUNTY_APPLICATION_PK,
+        TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+        TEST_BOUNTY_ACTIVITY_APPLY_PK
+      );
+      TEST_BOUNTY_APPLICATION_PK = undefined;
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK = undefined;
+      TEST_BOUNTY_ACTIVITY_APPLY_PK = undefined;
+    }
     // clean up bounty-related accounts
-    await cleanUpCreateBounty(
-      provider,
-      program,
-      TEST_BOUNTY_PK,
-      TEST_BOUNTY_ESCROW_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK
-    );
+    if (TEST_BOUNTY_PK || TEST_BOUNTY_ESCROW_PK) {
+      await cleanUpCreateBounty(
+        provider,
+        program,
+        TEST_BOUNTY_PK,
+        TEST_BOUNTY_ESCROW_PK,
+        TEST_BOUNTY_BOARD_VAULT_PK
+      );
+      TEST_BOUNTY_PK = undefined;
+      TEST_BOUNTY_ESCROW_PK = undefined;
+    }
     // clean up creator contributor record
-    await cleanUpContributorRecord(
-      provider,
-      program,
-      TEST_CREATOR_CONTRIBUTOR_RECORD_PK
-    );
+    if (TEST_CREATOR_CONTRIBUTOR_RECORD_PK) {
+      await cleanUpContributorRecord(
+        provider,
+        program,
+        TEST_CREATOR_CONTRIBUTOR_RECORD_PK
+      );
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK = undefined;
+    }
     // clean up bounty board-related accounts
-    await cleanUpBountyBoard(
-      provider,
-      program,
-      TEST_BOUNTY_BOARD_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK,
-      TEST_REALM_TREASURY_USDC_ATA
-    );
+    if (TEST_BOUNTY_BOARD_PK || TEST_BOUNTY_BOARD_VAULT_PK) {
+      await cleanUpBountyBoard(
+        provider,
+        program,
+        TEST_BOUNTY_BOARD_PK,
+        TEST_BOUNTY_BOARD_VAULT_PK,
+        TEST_REALM_TREASURY_USDC_ATA
+      );
+      TEST_BOUNTY_BOARD_PK = undefined;
+      TEST_BOUNTY_BOARD_VAULT_PK = undefined;
+    }
   });
 });

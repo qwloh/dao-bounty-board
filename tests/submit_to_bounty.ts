@@ -110,7 +110,7 @@ describe("submit to bounty", () => {
     "https://assets.reedpopcdn.com/shiny-bulbasaur-evolution-perfect-iv-stats-walrein-best-moveset-pokemon-go-9004-1642763882514.jpg/BROK/resize/690%3E/format/jpg/quality/75/shiny-bulbasaur-evolution-perfect-iv-stats-walrein-best-moveset-pokemon-go-9004-1642763882514.jpg";
 
   beforeEach(async () => {
-    await sleep(500); // delay 500ms between each test
+    await sleep(800); // delay 800ms between each test
     console.log("-----------------------------");
 
     console.log("Test realm public key", TEST_REALM_PK.toString());

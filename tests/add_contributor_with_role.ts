@@ -46,7 +46,7 @@ describe("add contributor with role", () => {
   // Contributor record PDA 6pks4WpJu41j9RcaySmQkm6o3i66yzwdmw87SANMNqEW
 
   beforeEach(async () => {
-    await sleep(500); // delay 500ms between each test
+    await sleep(800); // delay 800ms between each test
     console.log("-----------------------------");
 
     console.log("Test realm public key", TEST_REALM_PK.toString());
