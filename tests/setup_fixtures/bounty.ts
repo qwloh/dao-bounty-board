@@ -14,7 +14,7 @@ import {
 } from "@solana/web3.js";
 import { DUMMY_MINT_PK } from "../../app/api/constants";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
-import { readableTokenAcc } from "../utils/common";
+import { readableTokenAcc, sleep } from "../utils/common";
 import {
   getBountyActivityAddress,
   getBountyAddress,
@@ -88,8 +88,9 @@ export const createBounty = async (
     console.log("Transaction / Simulation fail.", err);
   }
 
+  await sleep(800); // give time for the network to respond
+
   let bountyAcc;
-  let bountyEscrowAcc: Account;
   console.log("--- Bounty Acc ---");
   try {
     bountyAcc = await program.account.bounty.fetch(BOUNTY_PDA);
@@ -98,6 +99,7 @@ export const createBounty = async (
     console.log("Not found. Error", err.message);
   }
 
+  let bountyEscrowAcc: Account;
   console.log("--- Bounty Escrow Acc ---");
   try {
     bountyEscrowAcc = await getAccount(
@@ -219,6 +221,8 @@ export const assignBounty = async (
     console.log("Transaction / Simulation fail.", err);
     throw err;
   }
+
+  await sleep(800); // give time for the network to respond
 
   // get updated bounty acc
   let bountyAccAfterAssign;
@@ -378,6 +382,8 @@ export const unassignOverdueBounty = async (
     console.log("[UnassignOverdueBounty] Transaction / Simulation fail.", err);
     throw err;
   }
+
+  await sleep(800); // give time for the network to respond
 
   let updatedBountySubmissionAcc;
   console.log("--- Bounty Submission Acc (After Unassign) ---");

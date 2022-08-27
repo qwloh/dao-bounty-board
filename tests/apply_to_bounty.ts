@@ -294,34 +294,54 @@ describe("apply to bounty", () => {
   afterEach(async () => {
     console.log("--- Cleanup logs ---");
     // clean up bounty application created
-    await cleanUpApplyToBounty(
-      provider,
-      program,
-      TEST_BOUNTY_APPLICATION_PDA,
-      TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA,
+    if (
+      TEST_BOUNTY_APPLICATION_PDA ||
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA ||
       TEST_BOUNTY_ACTIVITY_APPLY_PDA
-    );
+    ) {
+      await cleanUpApplyToBounty(
+        provider,
+        program,
+        TEST_BOUNTY_APPLICATION_PDA,
+        TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA,
+        TEST_BOUNTY_ACTIVITY_APPLY_PDA
+      );
+      TEST_BOUNTY_APPLICATION_PDA = undefined;
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PDA = undefined;
+      TEST_BOUNTY_ACTIVITY_APPLY_PDA = undefined;
+    }
     // clean up bounty-related accounts
-    await cleanUpCreateBounty(
-      provider,
-      program,
-      TEST_BOUNTY_PK,
-      TEST_BOUNTY_ESCROW_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK
-    );
+    if (TEST_BOUNTY_PK || TEST_BOUNTY_ESCROW_PK) {
+      await cleanUpCreateBounty(
+        provider,
+        program,
+        TEST_BOUNTY_PK,
+        TEST_BOUNTY_ESCROW_PK,
+        TEST_BOUNTY_BOARD_VAULT_PK
+      );
+      TEST_BOUNTY_PK = undefined;
+      TEST_BOUNTY_ESCROW_PK = undefined;
+    }
     // clean up creator contributor record
-    await cleanUpContributorRecord(
-      provider,
-      program,
-      TEST_CREATOR_CONTRIBUTOR_RECORD_PK
-    );
+    if (TEST_CREATOR_CONTRIBUTOR_RECORD_PK) {
+      await cleanUpContributorRecord(
+        provider,
+        program,
+        TEST_CREATOR_CONTRIBUTOR_RECORD_PK
+      );
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK = undefined;
+    }
     // clean up bounty board-related accounts
-    await cleanUpBountyBoard(
-      provider,
-      program,
-      TEST_BOUNTY_BOARD_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK,
-      TEST_REALM_TREASURY_USDC_ATA
-    );
+    if (TEST_BOUNTY_BOARD_PK || TEST_BOUNTY_BOARD_VAULT_PK) {
+      await cleanUpBountyBoard(
+        provider,
+        program,
+        TEST_BOUNTY_BOARD_PK,
+        TEST_BOUNTY_BOARD_VAULT_PK,
+        TEST_REALM_TREASURY_USDC_ATA
+      );
+      TEST_BOUNTY_BOARD_PK = undefined;
+      TEST_BOUNTY_BOARD_VAULT_PK = undefined;
+    }
   });
 });

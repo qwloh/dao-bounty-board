@@ -26,7 +26,10 @@ import {
   seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
-import { submitToBlankSubmission } from "./setup_fixtures/bounty_submission";
+import {
+  cleanUpSubmitToBlankSubmission,
+  submitToBlankSubmission,
+} from "./setup_fixtures/bounty_submission";
 import {
   cleanUpContributorRecord,
   setupContributorRecord,
@@ -78,6 +81,8 @@ describe("unassign overdue bounty", () => {
   let TEST_BOUNTY_ACTIVITY_ASSIGN_PK;
 
   let TEST_BOUNTY_ACTIVITY_UNASSIGN_PK;
+
+  let TEST_BOUNTY_ACTIVITY_SUBMIT_PK;
 
   // Test realm public key DgmX5b4tG3foyTQ318iBmyH2kGLwemayyYRERJeJexRV
   // Test realm governance public key 5hvuXjmDGzepp3BcRgzVbLFQjv168fBrP3QUbqZL6jMv
@@ -225,8 +230,6 @@ describe("unassign overdue bounty", () => {
   });
 
   it("unassign bounty correctly", async () => {
-    const COMMENT = "";
-
     await setupAssignedBountyWithVaryingTier("Entry"); // 1 sec for quick overdue
     await sleep(2000); // sleep 2s to ensure duration rlly overdue
     const TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK =
@@ -356,15 +359,19 @@ describe("unassign overdue bounty", () => {
     await setupAssignedBountyWithVaryingTier("Entry"); // should throw even if time is after deadline
     await sleep(2000);
     // create submission
-    await submitToBlankSubmission(
-      provider,
-      program,
-      TEST_BOUNTY_PK,
-      CURRENT_BOUNTY_ACTIVITY_INDEX,
-      TEST_BOUNTY_SUBMISSION_PK,
-      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
-      TEST_APPLICANT_WALLET
-    );
+    const { bountyAccAfterSubmit, bountyActivitySubmitPDA } =
+      await submitToBlankSubmission(
+        provider,
+        program,
+        TEST_BOUNTY_PK,
+        CURRENT_BOUNTY_ACTIVITY_INDEX,
+        TEST_BOUNTY_SUBMISSION_PK,
+        TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+        TEST_APPLICANT_WALLET
+      );
+    TEST_BOUNTY_ACTIVITY_SUBMIT_PK = bountyActivitySubmitPDA;
+    CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterSubmit.activityIndex;
+
     const TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK =
       TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
     await assertReject(
@@ -393,6 +400,15 @@ describe("unassign overdue bounty", () => {
         TEST_BOUNTY_ACTIVITY_UNASSIGN_PK
       );
       TEST_BOUNTY_ACTIVITY_UNASSIGN_PK = undefined;
+    }
+    // clean up bounty activity created from submit
+    if (TEST_BOUNTY_ACTIVITY_SUBMIT_PK) {
+      await cleanUpSubmitToBlankSubmission(
+        provider,
+        program,
+        TEST_BOUNTY_ACTIVITY_SUBMIT_PK
+      );
+      TEST_BOUNTY_ACTIVITY_SUBMIT_PK = undefined;
     }
     // clean up accounts created from assign
     if (TEST_BOUNTY_ACTIVITY_ASSIGN_PK || TEST_BOUNTY_SUBMISSION_PK) {

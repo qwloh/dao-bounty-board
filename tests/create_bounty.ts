@@ -203,25 +203,39 @@ describe("create bounty", () => {
 
   afterEach(async () => {
     console.log("--- Cleanup logs ---");
-    await cleanUpCreateBounty(
-      provider,
-      program,
-      TEST_BOUNTY_PDA,
-      TEST_BOUNTY_ESCROW_PDA,
-      TEST_BOUNTY_BOARD_VAULT_PK
-    );
-    await cleanUpContributorRecord(
-      provider,
-      program,
-      TEST_CONTRIBUTOR_RECORD_PK
-    );
-    await cleanUpBountyBoard(
-      provider,
-      program,
-      TEST_BOUNTY_BOARD_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK,
-      TEST_REALM_TREASURY_USDC_ATA
-    );
+    // clean up bounty-related accounts
+    if (TEST_BOUNTY_PDA || TEST_BOUNTY_ESCROW_PDA) {
+      await cleanUpCreateBounty(
+        provider,
+        program,
+        TEST_BOUNTY_PDA,
+        TEST_BOUNTY_ESCROW_PDA,
+        TEST_BOUNTY_BOARD_VAULT_PK
+      );
+      TEST_BOUNTY_PDA = undefined;
+      TEST_BOUNTY_ESCROW_PDA = undefined;
+    }
+    // clean up creator contributor record
+    if (TEST_CONTRIBUTOR_RECORD_PK) {
+      await cleanUpContributorRecord(
+        provider,
+        program,
+        TEST_CONTRIBUTOR_RECORD_PK
+      );
+      TEST_CONTRIBUTOR_RECORD_PK = undefined;
+    }
+    // clean up bounty board-related accounts
+    if (TEST_BOUNTY_BOARD_PK || TEST_BOUNTY_BOARD_VAULT_PK) {
+      await cleanUpBountyBoard(
+        provider,
+        program,
+        TEST_BOUNTY_BOARD_PK,
+        TEST_BOUNTY_BOARD_VAULT_PK,
+        TEST_REALM_TREASURY_USDC_ATA
+      );
+      TEST_BOUNTY_BOARD_PK = undefined;
+      TEST_BOUNTY_BOARD_VAULT_PK = undefined;
+    }
   });
 });
 

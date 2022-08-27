@@ -77,12 +77,17 @@ describe("init bounty board", () => {
 
   afterEach(async () => {
     console.log("--- Cleanup logs ---");
-    await cleanUpBountyBoard(
-      provider,
-      program,
-      TEST_BOUNTY_BOARD_PDA,
-      TEST_BOUNTY_BOARD_VAULT_PDA,
-      TEST_REALM_TREASURY_USDC_ATA
-    );
+    // clean up bounty board-related accounts
+    if (TEST_BOUNTY_BOARD_PDA || TEST_BOUNTY_BOARD_VAULT_PDA) {
+      await cleanUpBountyBoard(
+        provider,
+        program,
+        TEST_BOUNTY_BOARD_PDA,
+        TEST_BOUNTY_BOARD_VAULT_PDA,
+        TEST_REALM_TREASURY_USDC_ATA
+      );
+      TEST_BOUNTY_BOARD_PDA = undefined;
+      TEST_BOUNTY_BOARD_VAULT_PDA = undefined;
+    }
   });
 });
