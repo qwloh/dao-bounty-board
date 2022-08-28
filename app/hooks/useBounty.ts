@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { useQuery } from "react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   createBounty as _createBounty,
   deleteBounty as _deleteBounty,

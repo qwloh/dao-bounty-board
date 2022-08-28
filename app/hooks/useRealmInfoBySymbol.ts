@@ -1,6 +1,6 @@
-import { useQuery } from 'react-query';
+import { useQuery } from "@tanstack/react-query";
 
-import { useRealmInfos } from './useRealmInfos';
+import { useRealmInfos } from "./useRealmInfos";
 
 export const useRealmInfoBySymbol = (symbol: string) => {
   const { realmInfos } = useRealmInfos();

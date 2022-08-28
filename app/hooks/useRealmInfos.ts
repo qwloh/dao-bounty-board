@@ -1,7 +1,7 @@
-import { useQuery } from 'react-query';
+import { useQuery } from "@tanstack/react-query";
 
-import { getCertifiedRealmInfos } from '../api';
-import { useAnchorContext } from './useAnchorContext';
+import { getCertifiedRealmInfos } from "../api";
+import { useAnchorContext } from "./useAnchorContext";
 
 export const useRealmInfos = () => {
   const { provider } = useAnchorContext();

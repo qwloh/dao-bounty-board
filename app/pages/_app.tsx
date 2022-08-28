@@ -18,7 +18,7 @@ import {
 import { clusterApiUrl } from "@solana/web3.js";
 import { ThemeProvider } from "next-themes";
 import { useMemo } from "react";
-import { QueryClientProvider } from "react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 
 import { Background } from "../components/Background";
 import { Footer } from "../components/Footer";
@@ -26,7 +26,7 @@ import { Header } from "../components/Header";
 import { Main } from "../components/Main";
 import AnchorContextProvider from "../context/AnchorContextProvider";
 import { queryClient } from "../queryClient";
-import { ReactQueryDevtools } from "react-query/devtools";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 import type { AppProps } from "next/app";
 import type { FC } from "react";

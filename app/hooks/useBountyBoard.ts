@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { useEffect, useState } from "react";
-import { useQuery } from "react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   getActiveBountyBoardProposal,
   getBountyBoard,
