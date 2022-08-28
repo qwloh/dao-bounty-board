@@ -9,16 +9,30 @@ pub enum BountyBoardError {
     NotAuthorizedToCreateBounty,
     // apply to bounty
     NoDefaultRoleConfigured,
+    InsufficientReputation,
+    InsufficientSkillsPt,
     // assign bounty
     BountyApplicationExpired,
     // assign or delete bounty
     BountyAlreadyAssigned,
     // submit to bounty
     NotAssignee,
-    // request change to submission
-    NotAuthorizedToReviewSubmission,
+    #[msg("Non blank submission. Do you meant to call update_submission instead?")]
+    NonBlankSubmission,
     // update submission
     SubmissionAlreadyConcluded,
+    // request change to submission
+    NotAuthorizedToReviewSubmission,
+    ChangeRequestQuotaReached,
+    // unassign overdue
+    NotAuthorizedToUnassignBounty,
+    NotOverdue,
     // reject submission
+    NotAuthorizedToRejectSubmission,
+    MinIterationCountNotReached,
+    // reject stale submission
+    SubmissionNotStale,
     MinWaitTimeNotReached,
+    // request change / reject / approve submission,
+    NotPendingReview,
 }

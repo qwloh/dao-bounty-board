@@ -12,19 +12,20 @@ import { BOUNTY_BOARD_PROGRAM_ID, DUMMY_MINT_PK } from "../app/api/constants";
 import {
   addBountyBoardTierConfig,
   cleanUpBountyBoard,
+  getTiersInVec,
   seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
 import {
-  cleanUpBounty,
+  cleanUpCreateBounty,
   DEFAULT_BOUNTY_DETAILS,
-  setupBounty,
+  createBounty,
 } from "./setup_fixtures/bounty";
 import {
   cleanUpContributorRecord,
   setupContributorRecord,
 } from "./setup_fixtures/contributor_record";
-import { getTiersInVec } from "../app/api/utils";
+import { sleep } from "./utils/common";
 
 describe("create bounty", () => {
   // Configure the client to use the local cluster.
@@ -65,15 +66,19 @@ describe("create bounty", () => {
   // Bounty PDA 5xT7816aQ8kpJzVNWDBaMYS8GTmcF3qd4zN1tC3njaXM
   // Bounty Escrow PDA 77ByK52JEothrMCFu4HRiPhobXWHbPH9P2uKKmMqL7uj
 
+  // data to help assertion
+  let TEST_BOUNTY_BOARD_BOUNTY_INDEX;
+
   beforeEach(async () => {
+    await sleep(800); // delay 800ms between each test
+    console.log("-----------------------------");
+
     console.log("Test realm public key", TEST_REALM_PK.toString());
-    const { bountyBoardPDA, bountyBoardVaultPDA } = await setupBountyBoard(
-      provider,
-      program,
-      TEST_REALM_PK
-    );
+    const { bountyBoardPDA, bountyBoardVaultPDA, bountyBoardAcc } =
+      await setupBountyBoard(provider, program, TEST_REALM_PK);
     TEST_BOUNTY_BOARD_PK = bountyBoardPDA;
     TEST_BOUNTY_BOARD_VAULT_PK = bountyBoardVaultPDA;
+    TEST_BOUNTY_BOARD_BOUNTY_INDEX = bountyBoardAcc.bountyIndex;
 
     // add tiers config
     await addBountyBoardTierConfig(
@@ -105,7 +110,7 @@ describe("create bounty", () => {
 
   it("should create bounty PDA with correct data", async () => {
     const { bountyAcc, bountyPDA, bountyEscrowAcc, bountyEscrowPDA } =
-      await setupBounty(
+      await createBounty(
         provider,
         program,
         TEST_BOUNTY_BOARD_PK,
@@ -121,42 +126,71 @@ describe("create bounty", () => {
       bountyAcc.bountyBoard.toString(),
       TEST_BOUNTY_BOARD_PK.toString()
     );
+    assert.equal(
+      bountyAcc.bountyIndex.toNumber(),
+      TEST_BOUNTY_BOARD_BOUNTY_INDEX.toNumber()
+    );
+
     assert.deepEqual(bountyAcc.state, { open: {} });
-    assert.deepEqual(bountyAcc.skill, DEFAULT_BOUNTY_DETAILS.skill);
+
     assert.equal(
       bountyAcc.creator.toString(),
       TEST_CONTRIBUTOR_RECORD_PK.toString()
     );
-    assert.equal(bountyAcc.tier, DEFAULT_BOUNTY_DETAILS.tier);
+
     assert.equal(bountyAcc.title, DEFAULT_BOUNTY_DETAILS.title);
     assert.equal(bountyAcc.description, DEFAULT_BOUNTY_DETAILS.description);
+    assert.deepEqual(bountyAcc.skill, DEFAULT_BOUNTY_DETAILS.skill);
+    assert.equal(bountyAcc.tier, DEFAULT_BOUNTY_DETAILS.tier);
 
     const defaultTiers = getTiersInVec(new PublicKey(DUMMY_MINT_PK.USDC));
-    const rewardTier = defaultTiers.find(
+    const tierConfig = defaultTiers.find(
       (t) => t.tierName === DEFAULT_BOUNTY_DETAILS.tier
     );
     assert.equal(
+      bountyAcc.taskSubmissionWindow,
+      tierConfig.taskSubmissionWindow
+    );
+    assert.equal(
+      bountyAcc.submissionReviewWindow,
+      tierConfig.submissionReviewWindow
+    );
+    assert.equal(
+      bountyAcc.addressChangeReqWindow,
+      tierConfig.addressChangeReqWindow
+    );
+    assert.equal(
       bountyAcc.rewardMint.toString(),
-      rewardTier.payoutMint.toString()
+      tierConfig.payoutMint.toString()
     );
     assert.equal(
       bountyAcc.rewardPayout.toNumber(),
-      rewardTier.payoutReward.toNumber()
-    );
-    assert.equal(
-      bountyAcc.rewardReputation.toNumber(),
-      rewardTier.reputationReward.toNumber()
+      tierConfig.payoutReward.toNumber()
     );
     assert.equal(
       bountyAcc.rewardSkillPt.toNumber(),
-      rewardTier.skillsPtReward.toNumber()
+      tierConfig.skillsPtReward.toNumber()
     );
+    assert.equal(bountyAcc.rewardReputation, tierConfig.reputationReward);
+    assert.equal(
+      bountyAcc.minRequiredReputation,
+      tierConfig.minRequiredReputation
+    );
+    assert.equal(
+      bountyAcc.minRequiredSkillsPt.toNumber(),
+      tierConfig.minRequiredSkillsPt.toNumber()
+    );
+
+    assert.equal(bountyAcc.assignCount, 0);
+    assert.equal(bountyAcc.unassignCount, 0);
+    assert.equal(bountyAcc.activityIndex, 0);
+    assert.isNull(bountyAcc.completedAt);
 
     // test bounty escrow acc created and funded
     assert.equal(bountyEscrowAcc.owner.toString(), TEST_BOUNTY_PDA.toString());
     assert.equal(
       Number(bountyEscrowAcc.amount),
-      rewardTier.payoutReward.toNumber()
+      tierConfig.payoutReward.toNumber()
     );
 
     // test bounty board account bounty_count updated
@@ -169,25 +203,39 @@ describe("create bounty", () => {
 
   afterEach(async () => {
     console.log("--- Cleanup logs ---");
-    await cleanUpBounty(
-      provider,
-      program,
-      TEST_BOUNTY_PDA,
-      TEST_BOUNTY_ESCROW_PDA,
-      TEST_BOUNTY_BOARD_VAULT_PK
-    );
-    await cleanUpContributorRecord(
-      provider,
-      program,
-      TEST_CONTRIBUTOR_RECORD_PK
-    );
-    await cleanUpBountyBoard(
-      provider,
-      program,
-      TEST_BOUNTY_BOARD_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK,
-      TEST_REALM_TREASURY_USDC_ATA
-    );
+    // clean up bounty-related accounts
+    if (TEST_BOUNTY_PDA || TEST_BOUNTY_ESCROW_PDA) {
+      await cleanUpCreateBounty(
+        provider,
+        program,
+        TEST_BOUNTY_PDA,
+        TEST_BOUNTY_ESCROW_PDA,
+        TEST_BOUNTY_BOARD_VAULT_PK
+      );
+      TEST_BOUNTY_PDA = undefined;
+      TEST_BOUNTY_ESCROW_PDA = undefined;
+    }
+    // clean up creator contributor record
+    if (TEST_CONTRIBUTOR_RECORD_PK) {
+      await cleanUpContributorRecord(
+        provider,
+        program,
+        TEST_CONTRIBUTOR_RECORD_PK
+      );
+      TEST_CONTRIBUTOR_RECORD_PK = undefined;
+    }
+    // clean up bounty board-related accounts
+    if (TEST_BOUNTY_BOARD_PK || TEST_BOUNTY_BOARD_VAULT_PK) {
+      await cleanUpBountyBoard(
+        provider,
+        program,
+        TEST_BOUNTY_BOARD_PK,
+        TEST_BOUNTY_BOARD_VAULT_PK,
+        TEST_REALM_TREASURY_USDC_ATA
+      );
+      TEST_BOUNTY_BOARD_PK = undefined;
+      TEST_BOUNTY_BOARD_VAULT_PK = undefined;
+    }
   });
 });
 

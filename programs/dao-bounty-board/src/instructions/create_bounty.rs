@@ -19,7 +19,6 @@ pub fn create_bounty(ctx: Context<CreateBounty>, data: BountyVM) -> Result<()> {
     let bounty_escrow = &ctx.accounts.bounty_escrow;
     let contributor_record = &ctx.accounts.contributor_record;
 
-    let sender = &mut ctx.accounts.user;
     let token_program = &ctx.accounts.token_program;
     let clock = &ctx.accounts.clock;
 
@@ -38,29 +37,36 @@ pub fn create_bounty(ctx: Context<CreateBounty>, data: BountyVM) -> Result<()> {
         BountyBoardError::NotAuthorizedToCreateBounty
     );
 
+    // 1. populate data on bounty account
+    bounty.bounty_board = data.bounty_board;
     msg!("Current bounty count: {}", bounty_board.bounty_index);
     bounty.bounty_index = bounty_board.bounty_index;
 
-    // 1. populate data on bounty account
-    bounty.title = data.title;
-    bounty.description = data.description;
-    bounty.bounty_board = data.bounty_board;
     bounty.state = BountyState::Open;
+
     bounty.creator = contributor_record.key();
     bounty.created_at = clock.unix_timestamp;
+
+    bounty.title = data.title;
+    bounty.description = data.description;
     bounty.skill = data.skill;
     bounty.tier = data.tier;
-    let tier_reward_config = bounty_board
+
+    let tier_config = bounty_board
         .config
         .tiers
         .iter()
         .find(|t| t.tier_name == bounty.tier)
         .unwrap();
-
-    bounty.reward_payout = tier_reward_config.payout_reward;
-    bounty.reward_mint = tier_reward_config.payout_mint;
-    bounty.reward_skill_pt = tier_reward_config.skills_pt_reward;
-    bounty.reward_reputation = tier_reward_config.reputation_reward;
+    bounty.task_submission_window = tier_config.task_submission_window;
+    bounty.submission_review_window = tier_config.submission_review_window;
+    bounty.address_change_req_window = tier_config.address_change_req_window;
+    bounty.reward_mint = tier_config.payout_mint;
+    bounty.reward_payout = tier_config.payout_reward;
+    bounty.reward_skill_pt = tier_config.skills_pt_reward;
+    bounty.reward_reputation = tier_config.reputation_reward;
+    bounty.min_required_reputation = tier_config.min_required_reputation;
+    bounty.min_required_skills_pt = tier_config.min_required_skills_pt;
 
     // 2. update bounty_index on bounty_board
     bounty_board.bounty_index += 1;
@@ -146,9 +152,9 @@ pub struct CreateBounty<'info> {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub struct BountyVM {
+    pub bounty_board: Pubkey,
     pub title: String,
     pub description: String,
-    pub bounty_board: Pubkey,
     pub tier: String,
     pub skill: Skill,
 }

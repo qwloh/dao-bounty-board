@@ -54,6 +54,13 @@ pub mod dao_bounty_board {
         instructions::assign_bounty(ctx)
     }
 
+    pub fn unassign_overdue_bounty(
+        ctx: Context<UnassignOverdueBounty>,
+        data: UnassignOverdueBountyVM,
+    ) -> Result<()> {
+        instructions::unassign_overdue_bounty(ctx, data)
+    }
+
     pub fn delete_bounty(ctx: Context<DeleteBounty>) -> Result<()> {
         instructions::delete_bounty(ctx)
     }
@@ -77,6 +84,13 @@ pub mod dao_bounty_board {
         data: RejectSubmissionVM,
     ) -> Result<()> {
         instructions::reject_submission(ctx, data)
+    }
+
+    pub fn reject_stale_submission(
+        ctx: Context<RejectStaleSubmission>,
+        data: RejectStaleSubmissionVM,
+    ) -> Result<()> {
+        instructions::reject_stale_submission(ctx, data)
     }
 
     // "contributor fn"

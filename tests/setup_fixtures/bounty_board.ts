@@ -32,46 +32,58 @@ export enum Permission {
   RejectSubmission = "rejectSubmission",
 }
 
-const getTiersInVec = (PAYOUT_MINT: PublicKey) => [
+export const getTiersInVec = (PAYOUT_MINT: PublicKey) => [
   {
     tierName: "Entry",
     difficultyLevel: "First contribution",
-    minRequiredReputation: new BN(0),
+    minRequiredReputation: 0,
     minRequiredSkillsPt: new BN(0),
-    reputationReward: new BN(10),
+    reputationReward: 10,
     skillsPtReward: new BN(10),
     payoutReward: new BN(50),
     payoutMint: PAYOUT_MINT,
+    taskSubmissionWindow: 7 * 24 * 3600, // 7 days
+    submissionReviewWindow: 3 * 24 * 3600, // 3 days
+    addressChangeReqWindow: 3 * 24 * 3600, // 3 days
   },
   {
     tierName: "A",
     difficultyLevel: "Easy",
-    minRequiredReputation: new BN(50),
+    minRequiredReputation: 50,
     minRequiredSkillsPt: new BN(50),
-    reputationReward: new BN(20),
+    reputationReward: 20,
     skillsPtReward: new BN(20),
     payoutReward: new BN(200),
     payoutMint: PAYOUT_MINT,
+    taskSubmissionWindow: 14 * 24 * 3600, // 14 days
+    submissionReviewWindow: 7 * 24 * 3600, // 7 days
+    addressChangeReqWindow: 7 * 24 * 3600, // 7 days
   },
   {
     tierName: "AA",
     difficultyLevel: "Moderate",
-    minRequiredReputation: new BN(100),
+    minRequiredReputation: 100,
     minRequiredSkillsPt: new BN(100),
-    reputationReward: new BN(50),
+    reputationReward: 50,
     skillsPtReward: new BN(50),
     payoutReward: new BN(500),
     payoutMint: PAYOUT_MINT,
+    taskSubmissionWindow: 30 * 24 * 3600, // 30 days
+    submissionReviewWindow: 7 * 24 * 3600, // 7 days
+    addressChangeReqWindow: 7 * 24 * 3600, // 7 days
   },
   {
     tierName: "S",
     difficultyLevel: "Complex",
-    minRequiredReputation: new BN(500),
+    minRequiredReputation: 500,
     minRequiredSkillsPt: new BN(500),
-    reputationReward: new BN(100),
+    reputationReward: 100,
     skillsPtReward: new BN(100),
     payoutReward: new BN(2000),
     payoutMint: PAYOUT_MINT,
+    taskSubmissionWindow: 60 * 24 * 3600, // 60 days
+    submissionReviewWindow: 14 * 24 * 3600, // 14 days
+    addressChangeReqWindow: 14 * 24 * 3600, // 14 days
   },
 ];
 

@@ -1,15 +1,19 @@
 import { AnchorProvider, Program, setProvider } from "@project-serum/anchor";
 import { bs58 } from "@project-serum/anchor/dist/cjs/utils/bytes";
 import { Keypair, PublicKey } from "@solana/web3.js";
+import { BN } from "bn.js";
 import { assert } from "chai";
-import { BOUNTY_BOARD_PROGRAM_ID } from "../app/api/constants";
+import { BOUNTY_BOARD_PROGRAM_ID, DUMMY_MINT_PK } from "../app/api/constants";
 import idl from "../target/idl/dao_bounty_board.json";
 import { DaoBountyBoard } from "../target/types/dao_bounty_board";
 import {
   assignBounty,
-  cleanUpAssignBounty,
   cleanUpCreateBounty,
+  DEFAULT_BOUNTY_DETAILS,
   createBounty,
+  unassignOverdueBounty,
+  cleanUpAssignBounty,
+  cleanUpUnassignOverdue,
 } from "./setup_fixtures/bounty";
 import {
   cleanUpApplyToBounty,
@@ -18,6 +22,7 @@ import {
 import {
   addBountyBoardTierConfig,
   cleanUpBountyBoard,
+  getTiersInVec,
   seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
@@ -32,7 +37,7 @@ import {
 import { assertReject } from "./utils/assert-promise-utils";
 import { sleep } from "./utils/common";
 
-describe("submit to bounty", () => {
+describe("unassign overdue bounty", () => {
   // Configure the client to use the local cluster.
   const provider = AnchorProvider.env();
   setProvider(provider);
@@ -48,12 +53,13 @@ describe("submit to bounty", () => {
 
   // accounts involved in this test
   let TEST_REALM_PK = new PublicKey(
-    "9sTn6o4KYpgAFoDgpHTBUXAq7KKyjggn6UUxGqWG4Jnm"
+    "DgmX5b4tG3foyTQ318iBmyH2kGLwemayyYRERJeJexRV"
   );
   let TEST_REALM_GOVERNANCE = Keypair.fromSeed(TEST_REALM_PK.toBytes());
   const TEST_REALM_TREASURY_USDC_ATA = new PublicKey(
     "EoCo8zx6fZiAmwNxG1xqLKHYtsQapNx39wWTJvGZaZwq"
   ); // my own ATA for the mint
+  // accounts to cleanup
 
   let TEST_BOUNTY_BOARD_PK;
   let TEST_BOUNTY_BOARD_VAULT_PK;
@@ -64,7 +70,7 @@ describe("submit to bounty", () => {
 
   let TEST_APPLICANT_WALLET = Keypair.fromSecretKey(
     bs58.decode(
-      "65KGK8pxZ3a9JEKDJjmGZ24ZNnSDe7Yd4FfzqciSkKDrgyGXFSvMvmz4NXQkTADevNAApASAHBWLXokYgGthrtRQ"
+      "5VqP3B2tf9k4ftpKGxGa76HjcG6XwgVnuQFSq1rkMhz3Z8SYNZTjb1R7Nh317iWoWAaMZ2uBbpJrPuYoRhjDfLN2"
     )
   );
   let TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
@@ -74,81 +80,34 @@ describe("submit to bounty", () => {
   let TEST_BOUNTY_SUBMISSION_PK;
   let TEST_BOUNTY_ACTIVITY_ASSIGN_PK;
 
+  let TEST_BOUNTY_ACTIVITY_UNASSIGN_PK;
+
   let TEST_BOUNTY_ACTIVITY_SUBMIT_PK;
 
-  let TEST_2ND_APPLICANT_WALLET = Keypair.fromSecretKey(
-    bs58.decode(
-      "4ceNMUZaYGKgGnmC5g7bgLEBHhNcCBJBEnhPPheb6x3vQnVTDHpbbjtV36G3y54Lapjfrjj9sF2QiMNybjGG47oF"
-    )
-  );
-  let TEST_2ND_APPLICANT_CONTRIBUTOR_RECORD_PK;
-
-  // Test realm public key 9sTn6o4KYpgAFoDgpHTBUXAq7KKyjggn6UUxGqWG4Jnm
-  // Test realm governance public key AmK8iLzxdvfRyxEM5ozYka1oF3uKtsH8sgTUXgGqNAAj
-  // Bounty board PDA cvXhbpzDQtbth37nnzQDCEnHBfC4L7wFoZbVY3ssqLh
-  // Bounty board vault PDA GeGbZQT4URWbZw8DEKUCqUktKAaU94Um717ZbTRbmaCx
-  // Contributor record PDA EP8D1YNybZ2xJ4AoD3KbPqCn8NfWG4H8vs24jx4W6F54
-  // Bounty PDA 7esffNtntzaHgpMAU7hysccrkksjC3VQnCH8Fi8oXJ1r
-  // Bounty Escrow PDA EHP95GNYUPNWWsdjWUKocyNhpWArinowYBMe7qWL7NVC
-  // Test applicant public key GvJT4nCmfm77PW1PVBTtE2tDNpR5Cmw3LnsfuuocBMS2
-  // Test applicant contributor record PDA 4ufgBtgPMCso8VzWkZtYxFb9gZMjRBU8n52WRaJEuFFe
-  // Bounty application PDA 5Tw8WVmJKiXcuEVhgnWrxP9MjgVoWnQ6HG3rHszC4KJs
-  // Bounty activity (Apply) PDA 7mW2f2rvxj5FSSDp3Jkjq2by7rRMmzjq9Xc31Z54kigD
-  // Test Bounty submission PDA CQw291Fuqtoq8zsBcpGe6heABeGE8MYYVo3Z9JST1QBa
-  // Bounty activity (Assign) PDA 7qiShJ8U4Wkwqhjvhfe2L7W8EZMt3zi4CWvbCEM6iWwT
-  // Bounty activity (Submit) PDA 2zqQbTSPu5Ke2zWAgkJHLw875z1Da3yXoV9y3SrpGRc1
-  // Test 2nd applicant public key B6mH2BRDNguBJ9pVp41m7Nnj4jpN3xj6rJQ98iuCMfYm
-  // Test 2nd applicant contributor record PDA 7g1XfEuLM9vQVk3RhbqcK4xBSKZ8fRmtSKep7NHJDbta
+  // Test realm public key DgmX5b4tG3foyTQ318iBmyH2kGLwemayyYRERJeJexRV
+  // Test realm governance public key 5hvuXjmDGzepp3BcRgzVbLFQjv168fBrP3QUbqZL6jMv
+  // Bounty board PDA 3SkMwBmibrVBxMtc3vGKRn4bGbVuMFAe2sbjM9aC3Laf
+  // Bounty board vault PDA A94aEtcetRDSTjjKLGJtFUTsTX7JTwckA7LhKT24guPR
+  // Test creator contributor record PDA FQvWf2Fsmvz7zdj9jnrneDaAPyhatWRELPGFJK893pht
+  // Bounty PDA nJs4at2ANw4EuUHEhiD65WG6fWrcpYAJzbcaLPrPMDT
+  // Bounty Escrow PDA BwtsaqasLGHhCLeY1zK4UnLdYKebCvAwCsqar3Md5zcZ
+  // Test applicant public key 316N9TnNT8sfQS21SGVyAPyufQsZScFHjjbYMaSw3G46
+  // Test applicant secret key 5VqP3B2tf9k4ftpKGxGa76HjcG6XwgVnuQFSq1rkMhz3Z8SYNZTjb1R7Nh317iWoWAaMZ2uBbpJrPuYoRhjDfLN2
+  // Applicant contributor record PDA G2bMUHDS48sHtKke5LCTmk9Ux95XkDV1UgkhnwMUCcf8
+  // Bounty application PDA 9XfGA6ubGxtPLHKxi1Sc3uJGETYDXkLjyCXBGnYZ8mWN
+  // Bounty activity (Apply) PDA Eb2T9fWQzT6GUPkStF8fPofAXS11qVxXzNK1H45MrG1Q
+  // Bounty submission PDA HdAjvib6M2JhBAtQb2nuMELisefzQGiUm1RofNov3DHE
+  // Bounty activity (Assign) PDA Bxv9GGvPPhyinw5GNyiVraDCCfMFGKbSd7DDWbZMwifG
+  // Bounty activity (Unassign overdue) PDA 53ttHZto1QQtBYa1uYXoAkYmDsaMjfgQA1JfzA3NXKnZ
 
   // acc level fields involved in this test
   let TEST_BOUNTY_ASSIGN_COUNT;
   let CURRENT_BOUNTY_ACTIVITY_INDEX;
   let TEST_SUBMISSION_SUBMISSION_INDEX;
 
-  // data for assertion
-  const LINK_TO_SUBMISSION =
-    "https://assets.reedpopcdn.com/shiny-bulbasaur-evolution-perfect-iv-stats-walrein-best-moveset-pokemon-go-9004-1642763882514.jpg/BROK/resize/690%3E/format/jpg/quality/75/shiny-bulbasaur-evolution-perfect-iv-stats-walrein-best-moveset-pokemon-go-9004-1642763882514.jpg";
-
-  beforeEach(async () => {
-    await sleep(800); // delay 800ms between each test
-    console.log("-----------------------------");
-
-    console.log("Test realm public key", TEST_REALM_PK.toString());
-    // set up bounty board
-    const { bountyBoardPDA, bountyBoardVaultPDA } = await setupBountyBoard(
-      provider,
-      program,
-      TEST_REALM_PK
-    );
-    TEST_BOUNTY_BOARD_PK = bountyBoardPDA;
-    TEST_BOUNTY_BOARD_VAULT_PK = bountyBoardVaultPDA;
-
-    // add tiers config
-    await addBountyBoardTierConfig(
-      provider,
-      program,
-      TEST_BOUNTY_BOARD_PK,
-      TEST_REALM_GOVERNANCE
-    );
-
-    // seed bounty board vault
-    await seedBountyBoardVault(
-      provider,
-      bountyBoardVaultPDA,
-      TEST_REALM_TREASURY_USDC_ATA,
-      provider.wallet.publicKey
-    );
-
-    // set up contributor record
-    const { contributorRecordPDA } = await setupContributorRecord(
-      provider,
-      program,
-      bountyBoardPDA,
-      provider.wallet.publicKey,
-      TEST_REALM_GOVERNANCE,
-      "Core"
-    );
-    TEST_CREATOR_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
+  // test specific setup fn
+  const setupAssignedBountyWithVaryingTier = async (tierName: string) => {
+    // in this test, Entry tier bounty is set to have task submission window of 1 s to facilitate testing
 
     // set up bounty
     const { bountyPDA, bountyEscrowPDA, bountyAcc } = await createBounty(
@@ -156,13 +115,18 @@ describe("submit to bounty", () => {
       program,
       TEST_BOUNTY_BOARD_PK,
       TEST_BOUNTY_BOARD_VAULT_PK,
-      TEST_CREATOR_CONTRIBUTOR_RECORD_PK
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
+      {
+        ...DEFAULT_BOUNTY_DETAILS,
+        tier: tierName,
+      }
     );
     TEST_BOUNTY_PK = bountyPDA;
     TEST_BOUNTY_ESCROW_PK = bountyEscrowPDA;
     TEST_BOUNTY_ASSIGN_COUNT = bountyAcc.assignCount;
     CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAcc.activityIndex;
 
+    // create bounty application
     console.log(
       "Test applicant public key",
       TEST_APPLICANT_WALLET.publicKey.toString()
@@ -208,117 +172,193 @@ describe("submit to bounty", () => {
     TEST_BOUNTY_ACTIVITY_ASSIGN_PK = bountyActivityAssignPDA;
     CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterAssign.activityIndex;
     TEST_SUBMISSION_SUBMISSION_INDEX = bountySubmissionAcc.submissionIndex;
+  };
+
+  beforeEach(async () => {
+    await sleep(800); // delay 800ms between each test
+    console.log("-----------------------------");
+
+    console.log("Test realm public key", TEST_REALM_PK.toString());
+    // set up bounty board
+    const { bountyBoardPDA, bountyBoardVaultPDA } = await setupBountyBoard(
+      provider,
+      program,
+      TEST_REALM_PK
+    );
+    TEST_BOUNTY_BOARD_PK = bountyBoardPDA;
+    TEST_BOUNTY_BOARD_VAULT_PK = bountyBoardVaultPDA;
+
+    // add tiers config (with custom/non-default windows for Entry tier)
+    await addBountyBoardTierConfig(
+      provider,
+      program,
+      TEST_BOUNTY_BOARD_PK,
+      TEST_REALM_GOVERNANCE,
+      getTiersInVec(new PublicKey(DUMMY_MINT_PK.USDC)).map((t) => {
+        switch (t.tierName) {
+          case "Entry":
+            t.taskSubmissionWindow = 1;
+            t.submissionReviewWindow = 1;
+            t.addressChangeReqWindow = 1;
+          case "A":
+            t.minRequiredSkillsPt = new BN(0);
+            t.minRequiredReputation = 0;
+          default:
+        }
+        return t;
+      })
+    );
+
+    // seed bounty board vault
+    await seedBountyBoardVault(
+      provider,
+      bountyBoardVaultPDA,
+      TEST_REALM_TREASURY_USDC_ATA,
+      provider.wallet.publicKey
+    );
+
+    // set up contributor record
+    const { contributorRecordPDA } = await setupContributorRecord(
+      provider,
+      program,
+      bountyBoardPDA,
+      provider.wallet.publicKey,
+      TEST_REALM_GOVERNANCE,
+      "Core"
+    );
+    TEST_CREATOR_CONTRIBUTOR_RECORD_PK = contributorRecordPDA;
   });
 
-  it("update bounty submission acc correctly", async () => {
+  it("unassign bounty correctly", async () => {
+    await setupAssignedBountyWithVaryingTier("Entry"); // 1 sec for quick overdue
+    await sleep(2000); // sleep 2s to ensure duration rlly overdue
+    const TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK =
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
+
     const {
-      bountyAccAfterSubmit,
+      bountyAccAfterUnassign,
       updatedBountySubmissionAcc,
-      bountyActivitySubmitPDA,
-      bountyActivitySubmitAcc,
-    } = await submitToBlankSubmission(
+      updatedAssigneeContributorRecord,
+      bountyActivityUnassignPDA,
+      bountyActivityUnassignAcc,
+    } = await unassignOverdueBounty(
       provider,
       program,
       TEST_BOUNTY_PK,
       CURRENT_BOUNTY_ACTIVITY_INDEX,
       TEST_BOUNTY_SUBMISSION_PK,
-      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
-      TEST_APPLICANT_WALLET,
-      LINK_TO_SUBMISSION
+      TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK,
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
+      undefined // use provider.wallet to sign
     );
-    TEST_BOUNTY_ACTIVITY_SUBMIT_PK = bountyActivitySubmitPDA;
+    TEST_BOUNTY_ACTIVITY_UNASSIGN_PK = bountyActivityUnassignPDA;
     // DON't update current_bounty_activity_index after actual test (^)
 
-    // assert `bounty_submission` acc is updated accordingly
-    assert.equal(
-      updatedBountySubmissionAcc.linkToSubmission,
-      LINK_TO_SUBMISSION
-    );
-    assert.deepEqual(updatedBountySubmissionAcc.state, { pendingReview: {} });
+    // assert `bounty_submission` acc is updated correctly
+    assert.deepEqual(updatedBountySubmissionAcc.state, {
+      unassignedForOverdue: {},
+    });
     assert.closeTo(
-      updatedBountySubmissionAcc.firstSubmittedAt.toNumber(),
+      updatedBountySubmissionAcc.unassignedAt.toNumber(),
       new Date().getTime() / 1000,
-      60
+      60 // 1 min tolerance
     );
 
-    // assert `bounty_activity` (submit) is created correctly
+    // assert reputation is deducted from `contributor_record` of assignee
     assert.equal(
-      bountyActivitySubmitAcc.bounty.toString(),
+      updatedAssigneeContributorRecord.reputation.toNumber(),
+      0 - bountyAccAfterUnassign.rewardReputation
+    );
+    assert.equal(
+      updatedAssigneeContributorRecord.recentRepChange.toNumber(),
+      -1 * bountyAccAfterUnassign.rewardReputation
+    );
+
+    // assert bounty activity
+    assert.equal(
+      bountyActivityUnassignAcc.bounty.toString(),
       TEST_BOUNTY_PK.toString()
     );
     assert.equal(
-      bountyActivitySubmitAcc.activityIndex,
+      bountyActivityUnassignAcc.activityIndex,
       CURRENT_BOUNTY_ACTIVITY_INDEX
     );
     assert.closeTo(
-      bountyActivitySubmitAcc.timestamp.toNumber(),
+      bountyActivityUnassignAcc.timestamp.toNumber(),
       new Date().getTime() / 1000,
       60
     );
     assert.equal(
-      bountyActivitySubmitAcc.payload.submit.assigneeWallet.toString(),
-      TEST_APPLICANT_WALLET.publicKey.toString() // assignee wallet
+      bountyActivityUnassignAcc.payload.unassignOverdue.actorWallet.toString(),
+      provider.wallet.publicKey.toString() // bounty creator wallet
     );
     assert.equal(
-      bountyActivitySubmitAcc.payload.submit.submissionIndex,
+      bountyActivityUnassignAcc.payload.unassignOverdue.submissionIndex,
       TEST_SUBMISSION_SUBMISSION_INDEX
     );
-
-    // assert `bounty` state is updated
-    assert.deepEqual(bountyAccAfterSubmit.state, { submissionUnderReview: {} });
     assert.equal(
-      bountyAccAfterSubmit.activityIndex,
+      bountyActivityUnassignAcc.payload.unassignOverdue.assigneeWallet.toString(),
+      TEST_APPLICANT_WALLET.publicKey.toString()
+    );
+    assert.equal(
+      bountyActivityUnassignAcc.payload.unassignOverdue.repDeducted,
+      bountyAccAfterUnassign.rewardReputation
+    );
+
+    // assert `bounty` acc is updated correctly
+    assert.deepEqual(bountyAccAfterUnassign.state, { open: {} });
+    assert.equal(bountyAccAfterUnassign.unassignCount, 1);
+    assert.equal(
+      bountyAccAfterUnassign.activityIndex,
       CURRENT_BOUNTY_ACTIVITY_INDEX + 1
     );
   });
 
-  it("should not let non-assignee submit", async () => {
-    console.log(
-      "Test 2nd applicant public key",
-      TEST_2ND_APPLICANT_WALLET.publicKey.toString()
-    );
-    console.log(
-      "Test 2nd applicant secret key",
-      bs58.encode(TEST_2ND_APPLICANT_WALLET.secretKey)
-    );
-    // add contributor record for 2nd applicant
-    const { contributorRecordPDA: secondApplicantContributorRecordPDA } =
-      await setupContributorRecord(
-        provider,
-        program,
-        TEST_BOUNTY_BOARD_PK,
-        TEST_2ND_APPLICANT_WALLET.publicKey,
-        TEST_REALM_GOVERNANCE,
-        "Core"
-      );
-    TEST_2ND_APPLICANT_CONTRIBUTOR_RECORD_PK =
-      secondApplicantContributorRecordPDA;
-
+  it("should not let non-creator unassign bounty", async () => {
+    await setupAssignedBountyWithVaryingTier("Entry"); // duration doesn't matter
+    const TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK =
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
     await assertReject(
       () =>
-        submitToBlankSubmission(
+        unassignOverdueBounty(
           provider,
           program,
           TEST_BOUNTY_PK,
           CURRENT_BOUNTY_ACTIVITY_INDEX,
           TEST_BOUNTY_SUBMISSION_PK,
-          TEST_2ND_APPLICANT_CONTRIBUTOR_RECORD_PK,
-          TEST_2ND_APPLICANT_WALLET
+          TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK,
+          // unassign as applicant instead of bounty creator
+          TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+          TEST_APPLICANT_WALLET
         ),
-      /NotAssignee/
-    );
-
-    // clean up contributor record for 2nd applicant
-    console.log("Cleaning up 2nd applicant contributor record");
-    await cleanUpContributorRecord(
-      provider,
-      program,
-      TEST_2ND_APPLICANT_CONTRIBUTOR_RECORD_PK
+      /NotAuthorizedToUnassignBounty/
     );
   });
 
-  it("should throw if submission is not blank", async () => {
-    // make first submission
+  it("should throw if deadline has not passed", async () => {
+    await setupAssignedBountyWithVaryingTier("A"); // arbitrarily 1wk
+    const TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK =
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
+    await assertReject(
+      () =>
+        unassignOverdueBounty(
+          provider,
+          program,
+          TEST_BOUNTY_PK,
+          CURRENT_BOUNTY_ACTIVITY_INDEX,
+          TEST_BOUNTY_SUBMISSION_PK,
+          TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK,
+          TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
+          undefined // use provider.wallet to sign
+        ),
+      /NotOverdue/
+    );
+  });
+
+  it("should throw if assignee has already submitted his work", async () => {
+    await setupAssignedBountyWithVaryingTier("Entry"); // should throw even if time is after deadline
+    await sleep(2000);
+    // create submission
     const { bountyAccAfterSubmit, bountyActivitySubmitPDA } =
       await submitToBlankSubmission(
         provider,
@@ -327,32 +367,41 @@ describe("submit to bounty", () => {
         CURRENT_BOUNTY_ACTIVITY_INDEX,
         TEST_BOUNTY_SUBMISSION_PK,
         TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
-        TEST_APPLICANT_WALLET,
-        LINK_TO_SUBMISSION
+        TEST_APPLICANT_WALLET
       );
     TEST_BOUNTY_ACTIVITY_SUBMIT_PK = bountyActivitySubmitPDA;
     CURRENT_BOUNTY_ACTIVITY_INDEX = bountyAccAfterSubmit.activityIndex;
 
-    // then attempt to call the method again should fail
+    const TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK =
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK;
     await assertReject(
       () =>
-        submitToBlankSubmission(
+        unassignOverdueBounty(
           provider,
           program,
           TEST_BOUNTY_PK,
           CURRENT_BOUNTY_ACTIVITY_INDEX,
           TEST_BOUNTY_SUBMISSION_PK,
-          TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
-          TEST_APPLICANT_WALLET,
-          LINK_TO_SUBMISSION
+          TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK,
+          TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
+          undefined // use provider.wallet to sign
         ),
-      /NonBlankSubmission/
+      /NotOverdue/
     );
   });
 
   afterEach(async () => {
     console.log("--- Cleanup logs ---");
-    // clean up bounty activity created at submit
+    // clean up bounty activity created at unassign
+    if (TEST_BOUNTY_ACTIVITY_UNASSIGN_PK) {
+      await cleanUpUnassignOverdue(
+        provider,
+        program,
+        TEST_BOUNTY_ACTIVITY_UNASSIGN_PK
+      );
+      TEST_BOUNTY_ACTIVITY_UNASSIGN_PK = undefined;
+    }
+    // clean up bounty activity created from submit
     if (TEST_BOUNTY_ACTIVITY_SUBMIT_PK) {
       await cleanUpSubmitToBlankSubmission(
         provider,

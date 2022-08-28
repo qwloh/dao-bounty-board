@@ -9,7 +9,7 @@ import idl from "../target/idl/dao_bounty_board.json";
 import { assert } from "chai";
 import { DaoBountyBoard } from "../target/types/dao_bounty_board";
 import { Keypair, PublicKey } from "@solana/web3.js";
-import { DUMMY_MINT_PK, BOUNTY_BOARD_PROGRAM_ID } from "../app/api/constants";
+import { BOUNTY_BOARD_PROGRAM_ID } from "../app/api/constants";
 import {
   addBountyBoardTierConfig,
   cleanUpBountyBoard,
@@ -17,6 +17,7 @@ import {
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
 import { assertReject } from "./utils/assert-promise-utils";
+import { sleep } from "./utils/common";
 
 describe("add bounty board tier config", () => {
   // Configure the client to use the local cluster.
@@ -52,6 +53,9 @@ describe("add bounty board tier config", () => {
    */
 
   beforeEach(async () => {
+    await sleep(800); // delay 800ms between each test
+    console.log("-----------------------------");
+
     console.log("Test realm public key", TEST_REALM_PK.toString());
     // set up bounty board
     const { bountyBoardPDA, bountyBoardVaultPDA, realmGovernancePk } =
@@ -82,8 +86,8 @@ describe("add bounty board tier config", () => {
         updatedBountyBoardAcc.config.tiers[idx].payoutMint.toString()
       );
       assert.equal(
-        tier.reputationReward.toNumber(),
-        updatedBountyBoardAcc.config.tiers[idx].reputationReward.toNumber()
+        tier.reputationReward,
+        updatedBountyBoardAcc.config.tiers[idx].reputationReward
       );
       assert.equal(
         tier.payoutReward.toNumber(),
@@ -94,12 +98,24 @@ describe("add bounty board tier config", () => {
         updatedBountyBoardAcc.config.tiers[idx].skillsPtReward.toNumber()
       );
       assert.equal(
-        tier.minRequiredReputation.toNumber(),
-        updatedBountyBoardAcc.config.tiers[idx].minRequiredReputation.toNumber()
+        tier.minRequiredReputation,
+        updatedBountyBoardAcc.config.tiers[idx].minRequiredReputation
       );
       assert.equal(
         tier.minRequiredSkillsPt.toNumber(),
         updatedBountyBoardAcc.config.tiers[idx].minRequiredSkillsPt.toNumber()
+      );
+      assert.equal(
+        tier.taskSubmissionWindow,
+        updatedBountyBoardAcc.config.tiers[idx].taskSubmissionWindow
+      );
+      assert.equal(
+        tier.submissionReviewWindow,
+        updatedBountyBoardAcc.config.tiers[idx].submissionReviewWindow
+      );
+      assert.equal(
+        tier.addressChangeReqWindow,
+        updatedBountyBoardAcc.config.tiers[idx].addressChangeReqWindow
       );
     }
   });
