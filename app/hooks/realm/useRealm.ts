@@ -16,6 +16,8 @@ export const useRealm = (
   // use this to prevent running `isValidPublicKeyAddress` & filtering realmInfos every time this hook re-renders
   // may still run if hook gets unmounted and re-mounted tho (?)
   const [realmPubkeyStr, realmInfo] = useMemo(() => {
+    console.log("[UseMemo] get realmPubkeyStr run", realm, realmInfos?.length);
+
     let realmPubkeyStr;
     let realmInfo;
 
@@ -30,7 +32,7 @@ export const useRealm = (
     }
 
     return [realmPubkeyStr, realmInfo];
-  }, [realm, realmInfos]);
+  }, [realm, realmInfos?.length]);
 
   const queryResult = useQuery(
     ["realm", realmPubkeyStr],
