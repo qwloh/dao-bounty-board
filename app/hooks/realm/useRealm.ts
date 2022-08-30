@@ -2,7 +2,7 @@ import { isValidPublicKeyAddress } from "@metaplex-foundation/js-next";
 import { getRealm } from "@solana/spl-governance";
 import { PublicKey } from "@solana/web3.js";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { useAnchorContext } from "../useAnchorContext";
 import { useRealmInfos } from "./useRealmInfos";
 
@@ -19,16 +19,18 @@ export const useRealm = (
     let realmPubkeyStr;
     let realmInfo;
 
-    if (realmInfos) {
-      realmInfo = realmInfos.filter((r) => r.symbol.toString() === realm);
+    if (isValidPublicKeyAddress(realm)) {
+      realmInfo =
+        realmInfos && realmInfos.find((r) => r.realmId.toString() === realm);
+      realmPubkeyStr = realm;
+    } else {
+      realmInfo =
+        realmInfos && realmInfos.find((r) => r.symbol.toString() === realm);
+      realmPubkeyStr = realmInfo && realmInfo?.realmId.toString();
     }
 
-    realmPubkeyStr = isValidPublicKeyAddress(realm)
-      ? realm
-      : realmInfo && realmInfo[0]?.realmId.toString();
-
     return [realmPubkeyStr, realmInfo];
-  }, [realm, realmInfos || undefined]);
+  }, [realm, realmInfos]);
 
   const queryResult = useQuery(
     ["realm", realmPubkeyStr],
@@ -44,8 +46,9 @@ export const useRealm = (
   console.log(
     "[UseRealm] rendered",
     realmInfos?.length,
-    realmPubkeyStr,
-    realmInfo
+    realmPubkeyStr
+    // realmInfo,
+    // queryResult.data
   );
 
   return {
