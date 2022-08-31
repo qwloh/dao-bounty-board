@@ -1,10 +1,10 @@
 import {
+  Connection,
   PublicKey,
   SystemProgram,
   SYSVAR_CLOCK_PUBKEY,
   SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
-
 import { AnchorProvider, Program } from "@project-serum/anchor";
 import { DUMMY_MINT_PK } from "./constants";
 import { Bounty, Skill } from "../model/bounty.model";
@@ -21,26 +21,30 @@ import {
 } from "@solana/spl-token";
 import { BountyBoard } from "../model/bounty-board.model";
 
-// export const getBounty = (
-//   program: Program<DaoBountyBoard>,
-//   bountyPDA: PublicKey
-// ) => program.account.bounty.fetch(bountyPDA);
-
-export const getBountiesForBoard = (
+export const getBounty = (
   program: Program<DaoBountyBoard>,
-  bountyBoardPDA: PublicKey
+  bountyPK: PublicKey
+) => program.account.bounty.fetch(bountyPK);
+
+export const getBounties = async (
+  connection: Connection,
+  program: Program<DaoBountyBoard>,
+  bountyBoardPK: PublicKey
 ) => {
-  // add filter by DAO (bountyboardPDA)
-  // discriminator takes up 8 bytes
-  // anchor handle the filter by discriminator for us
-  return program.account.bounty.all([
-    { memcmp: { offset: 8, bytes: bountyBoardPDA.toString() } },
-  ]);
+  // filter by bounty baord PK
+  const bounties = await connection.getProgramAccounts(program.programId, {
+    dataSlice: { offset: 0, length: 0 },
+    filters: [
+      { memcmp: program.coder.accounts.memcmp("bounty") },
+      { memcmp: { offset: 8, bytes: bountyBoardPK.toString() } },
+    ],
+  });
+  return bounties.map((b) => b.pubkey);
 };
 
 interface CreateBountyArgs {
   program: Program<DaoBountyBoard>;
-  bountyBoard: { publicKey: PublicKey; account: BountyBoard };
+  bountyBoard: { pubkey: PublicKey; account: BountyBoard };
   skill: Skill;
   tier: string;
   title: string;
@@ -68,12 +72,12 @@ export const createBounty = async ({
   console.log("Bounty index", bountyIndex.toNumber());
 
   const bountyBoardVault = await getBountyBoardVaultAddress(
-    bountyBoard.publicKey,
+    bountyBoard.pubkey,
     rewardMint
   );
   console.log("Bounty board vault PDA", bountyBoardVault.toString());
   const [bountyPDA] = await getBountyAddress(
-    bountyBoard.publicKey,
+    bountyBoard.pubkey,
     bountyIndex.toNumber()
   );
   console.log("Bounty PDA", bountyPDA.toString());
@@ -82,7 +86,7 @@ export const createBounty = async ({
   console.log("Bounty Escrow PDA", bountyEscrowPDA.toString());
 
   const [contributorRecordPDA] = await getContributorRecordAddress(
-    bountyBoard.publicKey,
+    bountyBoard.pubkey,
     provider.wallet.publicKey
   );
   console.log("Contributor Record PDA", contributorRecordPDA.toString());
@@ -93,12 +97,12 @@ export const createBounty = async ({
       .createBounty({
         title,
         description, // to be replaced with ipfs impl
-        bountyBoard: bountyBoard.publicKey,
+        bountyBoard: bountyBoard.pubkey,
         tier,
         skill: { [skill as string]: {} },
       })
       .accounts({
-        bountyBoard: bountyBoard.publicKey,
+        bountyBoard: bountyBoard.pubkey,
         bountyBoardVault,
         bounty: bountyPDA,
         bountyEscrow: bountyEscrowPDA,
@@ -117,16 +121,12 @@ export const createBounty = async ({
 
 interface DeleteBountyArgs {
   program: Program<DaoBountyBoard>;
-  bounty: { publicKey: PublicKey; account: Bounty };
-  bountyBoardPubkey: PublicKey;
+  bounty: { pubkey: PublicKey; account: Bounty };
 }
 
-export const deleteBounty = async ({
-  program,
-  bountyBoardPubkey, // to derive bounty baord vault address
-  bounty,
-}: DeleteBountyArgs) => {
+export const deleteBounty = async ({ program, bounty }: DeleteBountyArgs) => {
   const provider = program.provider as AnchorProvider;
+  const bountyBoardPubkey = bounty.account.bountyBoard;
 
   // const rewardMint = bounty.account.rewardMint;
   console.log("Bounty board PDA", bountyBoardPubkey.toString());
@@ -139,7 +139,7 @@ export const deleteBounty = async ({
   console.log("Bounty board vault PDA", bountyBoardVaultPDA.toString());
 
   const bountyEscrowPDA = await getBountyEscrowAddress(
-    bounty.publicKey,
+    bounty.pubkey,
     rewardMint
   );
   console.log("Bounty escrow PDA", bountyEscrowPDA.toString());
@@ -153,7 +153,7 @@ export const deleteBounty = async ({
   return program.methods
     .deleteBounty()
     .accounts({
-      bounty: bounty.publicKey,
+      bounty: bounty.pubkey,
       bountyBoardVault: bountyBoardVaultPDA,
       bountyEscrow: bountyEscrowPDA,
       contributorRecord: contributorRecordPDA,

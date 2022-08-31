@@ -14,12 +14,7 @@ export const useBountiesByRealm = (
     ["bounties", bountyBoard?.account?.realm + ""],
     async () => {
       console.log("[UseBountiesByRealm] getBounties run");
-      const bounties = await getBounties(
-        provider.connection,
-        program,
-        bountyBoard?.pubkey
-      );
-      return bounties;
+      return getBounties(provider.connection, program, bountyBoard?.pubkey);
     },
     {
       enabled: !!program && !!bountyBoard,
