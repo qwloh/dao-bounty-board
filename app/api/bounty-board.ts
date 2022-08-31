@@ -20,6 +20,7 @@ import {
   _getAddContributorWithRoleInstruction,
   _getUpdateBountyBoardInstruction,
   _getAddBountyBoardTierConfigInstruction,
+  getBountyBoardAddress,
 } from "./utils";
 import { RealmTreasury, UserRepresentationInDAO } from "../hooks";
 import {
@@ -30,11 +31,22 @@ import {
 } from "@solana/spl-governance";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { UserProposalEntity } from "../hooks/realm/useUserProposalEntitiesInRealm";
 
-export const getBountyBoard = (
+export const getBountyBoard = async (
   program: Program<DaoBountyBoard>,
   bountyBoardPubkey: PublicKey
-) => program.account.bountyBoard.fetchNullable(bountyBoardPubkey);
+) => {
+  const bountyBoardAcc = await program.account.bountyBoard.fetchNullable(
+    bountyBoardPubkey
+  );
+  return bountyBoardAcc
+    ? {
+        pubkey: bountyBoardPubkey,
+        account: bountyBoardAcc,
+      }
+    : null;
+};
 
 export const getBountyBoardVaults = async (
   provider: AnchorProvider,
@@ -121,10 +133,9 @@ export const getActiveBountyBoardProposal = async (
 export const proposeInitBountyBoard = async (
   program: Program<DaoBountyBoard>,
   realmPubkey: PublicKey,
-  userRepresentationInDAO: UserRepresentationInDAO,
-  bountyBoardPubkey: PublicKey,
+  userProposalEntity: UserProposalEntity,
   boardConfig: BountyBoardConfig,
-  realmTreasury: RealmTreasury,
+  firstVaultMint: PublicKey,
   amountToFundBountyBoardVault: number,
   initialContributorsWithRole: InitialContributorWithRole[]
 ) => {
@@ -132,22 +143,22 @@ export const proposeInitBountyBoard = async (
 
   // determine if proposal is to be created on council mint or community mint, and get user's representation acc in DAO
   const {
+    council,
     governance: realmGovernancePubkey,
     governingTokenMint: governingTokenMintPubkey,
     tokenOwnerRecord,
-  } = userRepresentationInDAO;
-  const { nativeTreasury } = realmTreasury;
-  console.log(
-    "Chosen identity",
-    `Council token owner record? ${userRepresentationInDAO.council}`,
-    `Council related treasury? ${realmTreasury.council}`,
-    {
-      realmGovernancePubkey: realmGovernancePubkey.toString(),
-      governingTokenMintPubkey: governingTokenMintPubkey.toString(),
-      tokenOwnerRecordPubkey: tokenOwnerRecord.pubkey.toString(),
-      nativeTreasury: nativeTreasury.toString(),
-    }
-  );
+    nativeTreasury,
+  } = userProposalEntity;
+
+  console.log("Chosen identity", `Council token owner record? ${council}`, {
+    realmGovernancePubkey: realmGovernancePubkey.toString(),
+    governingTokenMintPubkey: governingTokenMintPubkey.toString(),
+    tokenOwnerRecordPubkey: tokenOwnerRecord.toString(),
+    nativeTreasury: nativeTreasury.toString(),
+  });
+
+  // compute bounty board PDA
+  const [bountyBoardPubkey] = await getBountyBoardAddress(realmPubkey);
 
   // create instruction objects
   console.log("Board config", boardConfig);
@@ -157,7 +168,7 @@ export const proposeInitBountyBoard = async (
       realmPubkey,
       realmGovernancePubkey,
       bountyBoardPubkey,
-      new PublicKey(DUMMY_MINT_PK.USDC),
+      firstVaultMint,
       boardConfig.roles
     );
 
@@ -196,7 +207,7 @@ export const proposeInitBountyBoard = async (
     realmPubkey,
     realmGovernancePubkey,
     governingTokenMintPubkey,
-    tokenOwnerRecord.pubkey,
+    tokenOwnerRecord,
     INIT_BOUNTY_BOARD_PROPOSAL_NAME,
     "", // or a link to our app to show config
     [

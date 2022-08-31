@@ -1,6 +1,9 @@
 import { useMemo } from "react";
+import { RealmProposalEntity, UserRealm } from "../../api/realm";
 import { useRealmProposalEntities } from "./useRealmProposalEntities";
 import { useUserRealms } from "./useUserRealms";
+
+export interface UserProposalEntity extends RealmProposalEntity, UserRealm {}
 
 export const useUserProposalEntitiesInRealm = (
   // can be symbol or address
