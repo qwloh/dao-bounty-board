@@ -11,13 +11,15 @@ import {
 import { Connection, PublicKey } from "@solana/web3.js";
 import { GOVERNANCE_PROGRAM_ID } from "./constants";
 
+export interface UserRealm {
+  tokenOwnerRecord: PublicKey;
+  governingTokenMint: PublicKey;
+  governingTokenOwner: PublicKey;
+}
+
 export type UserRealms = Record<
   string, // realm pk
-  {
-    tokenOwnerRecord: PublicKey;
-    governingTokenMint: PublicKey;
-    governingTokenOwner: PublicKey;
-  }[]
+  UserRealm[]
 >;
 
 export const getUserRealms = async (
