@@ -25,8 +25,6 @@ export const useBountyBoardByRealm = (
     );
   }, [realmAccount?.pubkey + ""]);
 
-  console.log("[UseBountyBoardByRealm] rendered", bountyBoardPubkey);
-
   return useQuery(
     ["bounty-board", bountyBoardPubkey],
     () => {

@@ -7,6 +7,8 @@ import { useRealm } from "../realm/useRealm";
 import { UserProposalEntity } from "../realm/useUserProposalEntitiesInRealm";
 import { useAnchorContext } from "../useAnchorContext";
 
+export const DEFAULT_CONFIG = {};
+
 export interface ProposeInitBountyBoardArgs {
   userProposalEntity: UserProposalEntity;
   boardConfig: BountyBoardConfig;

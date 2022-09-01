@@ -45,14 +45,6 @@ export const useRealm = (
     }
   );
 
-  console.log(
-    "[UseRealm] rendered",
-    realmInfos?.length,
-    realmPubkeyStr
-    // realmInfo,
-    // queryResult.data
-  );
-
   return {
     ...queryResult,
     data: queryResult.data
