@@ -7,12 +7,20 @@ export const useContributorRecord = (contributorRecordPK: string) => {
   const { program } = useAnchorContext();
   return useQuery(
     ["contributor-record", contributorRecordPK],
-    () => {
-      console.log("[UseContributorRecord] getContributorRecord run");
-      return getContributorRecord(program, new PublicKey(contributorRecordPK));
+    async () => {
+      console.log(
+        "[UseContributorRecord] getContributorRecord run",
+        contributorRecordPK
+      );
+      const pubkey = new PublicKey(contributorRecordPK);
+      const account = await getContributorRecord(program, pubkey);
+      return {
+        pubkey,
+        account,
+      };
     },
     {
-      enabled: !!program,
+      enabled: !!program && !!contributorRecordPK,
     }
   );
 };

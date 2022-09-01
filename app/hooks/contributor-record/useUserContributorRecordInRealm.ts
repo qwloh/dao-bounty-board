@@ -11,7 +11,7 @@ export const useUserContributorRecordInRealm = (
   const { wallet } = useAnchorContext();
   const { data: bountyBoard } = useBountyBoardByRealm(realm);
 
-  // use react query to memoize...
+  // use react query to memoize... cuz more effective than useMemo because it's not affected by mounting/unmounting
   const { data: contributorPKStr } = useQuery(
     ["wallet-to-contributor-record", bountyBoard?.pubkey],
     async () => {
@@ -31,5 +31,5 @@ export const useUserContributorRecordInRealm = (
     }
   );
 
-  return useContributorRecord(contributorPKStr);
+  return useContributorRecord(contributorPKStr); // null if such record d.n.e.
 };

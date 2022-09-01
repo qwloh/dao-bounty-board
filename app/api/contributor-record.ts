@@ -7,7 +7,7 @@ import { BountyBoardProgramAccount } from "../model/util.model";
 export const getContributorRecord = async (
   program: Program<DaoBountyBoard>,
   contributorRecordPK: PublicKey
-) => program.account.contributorRecord.fetch(contributorRecordPK);
+) => program.account.contributorRecord.fetchNullable(contributorRecordPK);
 
 export const getAllContributorRecordsForRealm = async (
   connection: Connection,

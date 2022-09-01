@@ -66,7 +66,7 @@ export const usePagedContributorsByRealm = (
       for (const res of pagedResult) {
         queryClient.setQueryData(
           ["contributor-record", res.pubkey.toString()],
-          res.account
+          res
         );
       }
 
