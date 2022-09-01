@@ -10,7 +10,8 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import { clusterApiUrl, Connection } from "@solana/web3.js";
 import { DaoBountyBoard } from "../../../target/types/dao_bounty_board";
 import { BOUNTY_BOARD_PROGRAM_ID } from "../constants";
-import { cleanUpBountyBoard, cleanUpContributorRecord } from "./test-assist";
+import { cleanUpBountyBoard } from "../../../tests/setup_fixtures/bounty_board";
+import { cleanUpContributorRecord } from "../../../tests/setup_fixtures/contributor_record";
 import idl from "../../../target/idl/dao_bounty_board.json";
 
 // bounty board PDA 3q3na9snfaaVi5e4qNNFRzQiXyRF6RiFQ15aSPBWxtKf
