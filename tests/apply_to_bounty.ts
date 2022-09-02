@@ -4,7 +4,6 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { assert } from "chai";
 import { BOUNTY_BOARD_PROGRAM_ID, DUMMY_MINT_PK } from "../app/api/constants";
-import { setupContributorRecord } from "../app/api/utils";
 import idl from "../target/idl/dao_bounty_board.json";
 import { DaoBountyBoard } from "../target/types/dao_bounty_board";
 import {
@@ -24,7 +23,10 @@ import {
   seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
-import { cleanUpContributorRecord } from "./setup_fixtures/contributor_record";
+import {
+  cleanUpContributorRecord,
+  setupContributorRecord,
+} from "./setup_fixtures/contributor_record";
 import { assertReject } from "./utils/assert-promise-utils";
 import { sleep } from "./utils/common";
 
