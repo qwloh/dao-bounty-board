@@ -8,7 +8,7 @@ export const useRealmProposalEntities = (realm: string) => {
   const { data: realmAccount } = useRealm(realm);
 
   return useQuery(
-    ["realm-proposal-identities", realm],
+    ["realm-proposal-identities", realmAccount?.pubkey + ""],
     async () => {
       console.log("[UseRealmProposalEntities] getRealmProposalEntities run");
       return getRealmProposalEntities(provider.connection, realmAccount);

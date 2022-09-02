@@ -18,7 +18,7 @@ export const useBountyBoardByRealm = (
     if (!realmAccount?.pubkey) return;
     console.log(
       "[UseBountyBoardByRealm] getBountyBoardAddress run",
-      realmAccount
+      realmAccount?.pubkey + ""
     );
     getBountyBoardAddress(realmAccount?.pubkey).then(([pda]) =>
       setBountyBoardPubkey(pda.toString())

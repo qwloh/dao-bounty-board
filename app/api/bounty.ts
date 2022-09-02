@@ -10,9 +10,11 @@ import { DUMMY_MINT_PK } from "./constants";
 import { Bounty, Skill } from "../model/bounty.model";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
 import {
+  getBountyActivityAddress,
   getBountyAddress,
   getBountyBoardVaultAddress,
   getBountyEscrowAddress,
+  getBountySubmissionAddress,
   getContributorRecordAddress,
 } from "./utils";
 import {
@@ -24,7 +26,7 @@ import { BountyBoard } from "../model/bounty-board.model";
 export const getBounty = (
   program: Program<DaoBountyBoard>,
   bountyPK: PublicKey
-) => program.account.bounty.fetch(bountyPK);
+) => program.account.bounty.fetchNullable(bountyPK);
 
 export const getBounties = async (
   connection: Connection,
@@ -164,59 +166,59 @@ export const deleteBounty = async ({ program, bounty }: DeleteBountyArgs) => {
     .rpc();
 };
 
-// Test realm public key 885LdWunq8rh7oUM6kMjeGV56T6wYNMgb9o6P7BiT5yX
-// Test realm governance public key 25N47DNLjSt7LZS2HrvHVG1Qq1mCeLMy74YsWDAQfr4Y
-// Bounty board PDA 3q3na9snfaaVi5e4qNNFRzQiXyRF6RiFQ15aSPBWxtKf
-// Bounty board vault PDA HpM2sETmKVfnbZ4Hz8vdQpXnCrVdwEeQHgfGUyQUy9Kp
-// Bounty PDA 3gG77UevaCzSXC1uEe7DPRvpCEFmhxr3RREmoPFhjoLQ
-// Bounty Escrow PDA BW9AGwi59q7HWJAga4ErFtpD2WFtNNBpDmmhUhL2h1j5
+interface AssignBountyArgs {
+  provider: AnchorProvider;
+  program: Program<DaoBountyBoard>;
+  bounty: { pubkey: PublicKey; account: Bounty };
+  bountyApplicationPK: PublicKey;
+}
 
-// (async () => {
-//   // test script
-//   const paperWalletKeypair = Keypair.fromSecretKey(
-//     bs58.decode(process.env.SK as string)
-//   );
-//   const connection = new Connection(clusterApiUrl("devnet"), "recent");
-//   const provider = new AnchorProvider(
-//     connection,
-//     new Wallet(paperWalletKeypair),
-//     { commitment: "recent" }
-//   );
-//   setProvider(provider);
+export const assignBounty = async ({
+  provider,
+  program,
+  bounty,
+  bountyApplicationPK,
+}: AssignBountyArgs) => {
+  const { pubkey: bountyPK, account: bountyAcc } = bounty;
 
-//   const programId = new PublicKey(BOUNTY_BOARD_PROGRAM_ID);
-//   const program = new Program(
-//     JSON.parse(JSON.stringify(idl)),
-//     programId
-//   ) as Program<DaoBountyBoard>;
+  console.log("Current assign count", bountyAcc.assignCount);
+  const [bountySubmissionPDA] = await getBountySubmissionAddress(
+    bountyPK,
+    bountyAcc.assignCount
+  );
+  console.log("Bounty submission PDA", bountySubmissionPDA.toString());
 
-//   const REALM_PK = new PublicKey(TEST_REALM_PK);
-//   console.log("Test realm public key", REALM_PK.toString());
+  console.log("Current activity index", bountyAcc.activityIndex);
+  const [bountyActivityPDA] = await getBountyActivityAddress(
+    bountyPK,
+    bountyAcc.activityIndex
+  );
+  console.log("Bounty activity (Assign) PDA", bountyActivityPDA.toString());
 
-//   const { bountyBoardPDA, bountyBoardVaultPDA } = await setupBountyBoard(
-//     provider,
-//     program,
-//     REALM_PK
-//   );
+  return program.methods
+    .assignBounty()
+    .accounts({
+      bounty: bountyPK,
+      bountyApplication: bountyApplicationPK,
+      bountySubmission: bountySubmissionPDA,
+      bountyActivity: bountyActivityPDA,
+      user: provider.wallet.publicKey,
+      systemProgram: SystemProgram.programId,
+      clock: SYSVAR_CLOCK_PUBKEY,
+    })
+    .rpc();
+};
 
-//   // pre-populate with bounties
-//   const { bountyPDA, bountyEscrowPDA } = await setupBounty(
-//     provider,
-//     program,
-//     bountyBoardPDA,
-//     bountyBoardVaultPDA
-//   );
+interface UnassignOverdueBountyArgs {
+  program: Program<DaoBountyBoard>;
+}
 
-//   // testing the method
-//   const bounties = await getBountiesForBoard(program, bountyBoardPDA);
-//   console.log("Bounties", bounties);
+export const unassignOverdueBounty = async ({
+  program,
+}: UnassignOverdueBountyArgs) => {};
 
-//   console.log("--- Clenup logs ---");
-//   await cleanUpBounty(provider, program, bountyPDA, bountyEscrowPDA);
-//   await cleanUpBountyBoard(
-//     provider,
-//     program,
-//     bountyBoardPDA,
-//     bountyBoardVaultPDA
-//   );
-// })();
+interface SubmitToBountyArgs {
+  program: Program<DaoBountyBoard>;
+}
+
+export const submitToBounty = async ({ program }: SubmitToBountyArgs) => {};

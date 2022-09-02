@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { useMutation } from "@tanstack/react-query";
-import { applyToBounty } from "../../api";
+import { assignBounty } from "../../api";
 import { CallbacksForUI } from "../../model/util.model";
 import { useUserContributorRecordInRealm } from "../contributor-record/useUserContributorRecordInRealm";
 import { useAnchorContext } from "../useAnchorContext";
@@ -8,7 +8,7 @@ import { useBounty } from "./useBounty";
 import { useBountyActivities } from "./useBountyActivities";
 import { useBountyApplications } from "./useBountyApplications";
 
-export const useApplyToBounty = (
+export const useAssignBounty = (
   // can be symbol or string
   realm: string,
   bountyPK: string,
@@ -22,18 +22,16 @@ export const useApplyToBounty = (
   const { refetch: refetchBountyActivities } = useBountyActivities(bountyPK);
 
   return useMutation(
-    (validity: number) =>
-      applyToBounty({
+    (bountyApplicationPK: string) =>
+      assignBounty({
         provider,
         program,
-        bountyBoardPK: bounty.bountyBoard,
         bounty: {
           pubkey: new PublicKey(bountyPK),
           // @ts-ignore
           account: bounty,
         },
-        applicantContributorRecordPK: contributorRecord?.pubkey,
-        validity,
+        bountyApplicationPK: new PublicKey(bountyApplicationPK),
       }),
     {
       onSuccess: (data, variables, context) => {
