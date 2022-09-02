@@ -1,15 +1,14 @@
 import { PublicKey } from "@solana/web3.js";
 import { useMutation } from "@tanstack/react-query";
-import { assignBounty } from "../../api";
+import { submitToBounty } from "../../api";
 import { CallbacksForUI } from "../../model/util.model";
 import { useUserContributorRecordInRealm } from "../contributor-record/useUserContributorRecordInRealm";
 import { useAnchorContext } from "../useAnchorContext";
 import { useBounty } from "./useBounty";
 import { useBountyActivities } from "./useBountyActivities";
-import { useBountyApplications } from "./useBountyApplications";
 import { useBountySubmissions } from "./useBountySubmissions";
 
-export const useAssignBounty = (
+export const useSubmitToBounty = (
   // can be symbol or string
   realm: string,
   bountyPK: string,
@@ -18,14 +17,13 @@ export const useAssignBounty = (
   const { provider, program } = useAnchorContext();
   const { data: contributorRecord } = useUserContributorRecordInRealm(realm);
   const { data: bounty, refetch: refetchBounty } = useBounty(bountyPK);
-  const { refetch: refetchBountySubmissions } = useBountySubmissions(bountyPK);
-  const { refetch: refetchBountyApplications } =
-    useBountyApplications(bountyPK);
+  const { data: bountySubmissions, refetch: refetchBountySubmissions } =
+    useBountySubmissions(bountyPK);
   const { refetch: refetchBountyActivities } = useBountyActivities(bountyPK);
 
   return useMutation(
-    (bountyApplicationPK: string) =>
-      assignBounty({
+    (linkToSubmission: string) =>
+      submitToBounty({
         provider,
         program,
         bounty: {
@@ -33,13 +31,14 @@ export const useAssignBounty = (
           // @ts-ignore
           account: bounty,
         },
-        bountyApplicationPK: new PublicKey(bountyApplicationPK),
+        bountySubmissionPK: bountySubmissions[0].pubkey, // assume latest submission must be the active submission
+        assigneeContributorRecordPK: contributorRecord.pubkey,
+        linkToSubmission,
       }),
     {
       onSuccess: (data, variables, context) => {
         refetchBounty();
         refetchBountySubmissions();
-        refetchBountyApplications();
         refetchBountyActivities();
         if (callbacks?.onSuccess) {
           callbacks.onSuccess(data, variables, context);

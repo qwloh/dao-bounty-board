@@ -218,7 +218,44 @@ export const unassignOverdueBounty = async ({
 }: UnassignOverdueBountyArgs) => {};
 
 interface SubmitToBountyArgs {
+  provider: AnchorProvider;
   program: Program<DaoBountyBoard>;
+  bounty: { pubkey: PublicKey; account: Bounty };
+  bountySubmissionPK: PublicKey;
+  assigneeContributorRecordPK: PublicKey;
+  linkToSubmission: string;
 }
 
-export const submitToBounty = async ({ program }: SubmitToBountyArgs) => {};
+export const submitToBounty = async ({
+  provider,
+  program,
+  bounty,
+  bountySubmissionPK,
+  assigneeContributorRecordPK,
+  linkToSubmission,
+}: SubmitToBountyArgs) => {
+  console.log("Bounty Submission PK", bountySubmissionPK.toString());
+  const { pubkey: bountyPK, account: bountyAcc } = bounty;
+
+  console.log("Current activity index", bountyAcc.activityIndex);
+  const [bountyActivityPDA] = await getBountyActivityAddress(
+    bountyPK,
+    bountyAcc.activityIndex
+  );
+  console.log("Bounty activity (Submit) PDA", bountyActivityPDA.toString());
+
+  return program.methods
+    .submitToBounty({
+      linkToSubmission,
+    })
+    .accounts({
+      bounty: bountyPK,
+      bountySubmission: bountySubmissionPK,
+      bountyActivity: bountyActivityPDA,
+      contributorRecord: assigneeContributorRecordPK,
+      contributorWallet: provider.wallet.publicKey,
+      systemProgram: SystemProgram.programId,
+      clock: SYSVAR_CLOCK_PUBKEY,
+    })
+    .rpc();
+};

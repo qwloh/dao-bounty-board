@@ -1,7 +1,9 @@
 import { AnchorProvider, BN, Program } from "@project-serum/anchor";
 import { PublicKey, SystemProgram, SYSVAR_CLOCK_PUBKEY } from "@solana/web3.js";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
+import { BountyApplication } from "../model/bounty-application.model";
 import { Bounty } from "../model/bounty.model";
+import { BountyBoardProgramAccount } from "../model/util.model";
 import {
   getBountyActivityAddress,
   getBountyApplicationAddress,
@@ -11,8 +13,8 @@ import {
 export const getBountyApplications = async (
   program: Program<DaoBountyBoard>,
   bountyPK: PublicKey
-) =>
-  program.account.bountyApplication.all([
+): Promise<BountyBoardProgramAccount<BountyApplication>[]> => {
+  const anchorProgAccounts = await program.account.bountyApplication.all([
     {
       memcmp: {
         offset: 8, // after anchor's account discriminator
@@ -20,6 +22,13 @@ export const getBountyApplications = async (
       },
     },
   ]);
+
+  // @ts-ignore, return type is hard asserted
+  return anchorProgAccounts.map((acc) => ({
+    pubkey: acc.publicKey,
+    account: acc.account,
+  }));
+};
 
 interface ApplyToBountyArgs {
   provider: AnchorProvider;
@@ -70,7 +79,7 @@ export const applyToBounty = async ({
     bounty.pubkey,
     bounty.account.activityIndex
   );
-  console.log(`Bounty Activity PDA ${bountyActivityPDA}`);
+  console.log(`Bounty Activity (Apply) PDA ${bountyActivityPDA}`);
 
   return program.methods
     .applyToBounty({

@@ -34,7 +34,7 @@ export const getPagedContributorRecords = async (
 ): Promise<BountyBoardProgramAccount<ContributorRecord>[]> => {
   const contributorRecords =
     await program.account.contributorRecord.fetchMultiple(contributorRecordPKs);
-  //@ts-ignore
+  // @ts-ignore, return type is hard asserted
   return contributorRecords.map((acc, i) => ({
     pubkey: contributorRecordPKs[i],
     account: acc,
