@@ -12,7 +12,15 @@ export const useBountySubmissions = (bountyPK: string) => {
     ["bounty-submissions", bountyPK],
     async () => {
       console.log("[UseBountySubmissions] getBountySubmissions run");
-      return getBountySubmissions(program, new PublicKey(bountyPK));
+      const submissions = await getBountySubmissions(
+        program,
+        new PublicKey(bountyPK)
+      );
+      const sortedSubmissions = submissions.sort(
+        // descending
+        (a, b) => b.account.submissionIndex - a.account.submissionIndex
+      );
+      return sortedSubmissions;
     },
     {
       enabled: !!program,

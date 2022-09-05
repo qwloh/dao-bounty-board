@@ -12,7 +12,15 @@ export const useBountyActivities = (bountyPK: string) => {
     ["bounty-activities", bountyPK],
     async () => {
       console.log("[UseBountyActivities] getBountyActivities run");
-      return getBountyActivities(program, new PublicKey(bountyPK));
+      const activities = await getBountyActivities(
+        program,
+        new PublicKey(bountyPK)
+      );
+      const sortedActivities = activities.sort(
+        // descending
+        (a, b) => b.account.activityIndex - a.account.activityIndex
+      );
+      return sortedActivities;
     },
     {
       enabled: !!program,
