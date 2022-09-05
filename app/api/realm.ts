@@ -51,7 +51,7 @@ export const getUserRealms = async (
       governingTokenOwner: tokenOwnerRecord.account.governingTokenOwner, // should be same as wallet pk
     });
   }
-  console.log("User realms", userRealms);
+  console.log("User realms", userRealms?.length);
   return userRealms;
 };
 
