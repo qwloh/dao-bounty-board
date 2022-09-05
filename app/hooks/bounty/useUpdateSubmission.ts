@@ -44,7 +44,12 @@ export const useUpdateSubmission = (
           callbacks.onSuccess(data, variables, context);
         }
       },
-      onError: callbacks?.onError,
+      onError: (err, variables, context) => {
+        console.error(err);
+        if (callbacks?.onError) {
+          callbacks?.onError(err, variables, context);
+        }
+      },
     }
   );
 };
