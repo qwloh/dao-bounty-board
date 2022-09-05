@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { useMutation } from "@tanstack/react-query";
-import { updateSubmission } from "../../api";
+import { requestChangesToSubmission } from "../../api";
 import { CallbacksForUI } from "../../model/util.model";
 import { useUserContributorRecordInRealm } from "../contributor-record/useUserContributorRecordInRealm";
 import { useAnchorContext } from "../useAnchorContext";
@@ -8,7 +8,7 @@ import { useBounty } from "./useBounty";
 import { useBountyActivities } from "./useBountyActivities";
 import { useBountySubmissions } from "./useBountySubmissions";
 
-export const useUpdateSubmission = (
+export const useRequestChangesToSubmission = (
   // can be symbol or string
   realm: string,
   bountyPK: string,
@@ -22,8 +22,8 @@ export const useUpdateSubmission = (
   const { refetch: refetchBountyActivities } = useBountyActivities(bountyPK);
 
   return useMutation(
-    (linkToSubmission: string) =>
-      updateSubmission({
+    (comment: string) =>
+      requestChangesToSubmission({
         provider,
         program,
         bounty: {
@@ -32,8 +32,8 @@ export const useUpdateSubmission = (
           account: bounty,
         },
         bountySubmissionPK: bountySubmissions[0].pubkey, // assume latest submission must be the active submission
-        assigneeContributorRecordPK: contributorRecord.pubkey,
-        linkToSubmission,
+        reviewerContributorRecordPK: contributorRecord.pubkey,
+        comment,
       }),
     {
       onSuccess: (data, variables, context) => {

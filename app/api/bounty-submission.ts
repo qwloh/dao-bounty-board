@@ -1,5 +1,5 @@
 import { AnchorProvider, Program } from "@project-serum/anchor";
-import { PublicKey, SYSVAR_CLOCK_PUBKEY } from "@solana/web3.js";
+import { PublicKey, SystemProgram, SYSVAR_CLOCK_PUBKEY } from "@solana/web3.js";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
 import { BountySubmission } from "../model/bounty-submission.model";
 import { Bounty } from "../model/bounty.model";
@@ -65,18 +65,57 @@ export const updateSubmission = async ({
       bountyActivity: bountyActivityPDA,
       contributorRecord: assigneeContributorRecordPK,
       contributorWallet: provider.wallet.publicKey,
+      systemProgram: SystemProgram.programId,
       clock: SYSVAR_CLOCK_PUBKEY,
     })
     .rpc();
 };
 
 interface RequestChangesToSubmissionArgs {
+  provider: AnchorProvider;
   program: Program<DaoBountyBoard>;
+  bounty: { pubkey: PublicKey; account: Bounty };
+  bountySubmissionPK: PublicKey;
+  reviewerContributorRecordPK: PublicKey; // limited to bounty creator currently
+  comment: string;
 }
 
 export const requestChangesToSubmission = async ({
+  provider,
   program,
-}: RequestChangesToSubmissionArgs) => {};
+  bounty,
+  bountySubmissionPK,
+  reviewerContributorRecordPK,
+  comment,
+}: RequestChangesToSubmissionArgs) => {
+  console.log("Bounty Submission PK", bountySubmissionPK.toString());
+  const { pubkey: bountyPK, account: bountyAcc } = bounty;
+
+  console.log("Current activity index", bountyAcc.activityIndex);
+  const [bountyActivityPDA] = await getBountyActivityAddress(
+    bountyPK,
+    bountyAcc.activityIndex
+  );
+  console.log(
+    "Bounty activity (Request Change to Submission) PDA",
+    bountyActivityPDA.toString()
+  );
+
+  return program.methods
+    .requestChangesToSubmission({
+      comment,
+    })
+    .accounts({
+      bounty: bountyPK,
+      bountySubmission: bountySubmissionPK,
+      bountyActivity: bountyActivityPDA,
+      contributorRecord: reviewerContributorRecordPK,
+      contributorWallet: provider.wallet.publicKey,
+      systemProgram: SystemProgram.programId,
+      clock: SYSVAR_CLOCK_PUBKEY,
+    })
+    .rpc();
+};
 
 interface RejectStaleSubmissionArgs {
   program: Program<DaoBountyBoard>;
@@ -87,7 +126,44 @@ export const rejectStaleSubmission = async ({
 }: RejectStaleSubmissionArgs) => {};
 
 interface RejectSubmissionArgs {
+  provider: AnchorProvider;
   program: Program<DaoBountyBoard>;
+  bounty: { pubkey: PublicKey; account: Bounty };
+  bountySubmissionPK: PublicKey;
+  reviewerContributorRecordPK: PublicKey; // limited to bounty creator currently
+  comment: string;
 }
 
-export const rejectSubmission = async ({ program }: RejectSubmissionArgs) => {};
+export const rejectSubmission = async ({
+  provider,
+  program,
+  bounty,
+  bountySubmissionPK,
+  reviewerContributorRecordPK,
+  comment,
+}: RejectSubmissionArgs) => {
+  console.log("Bounty Submission PK", bountySubmissionPK.toString());
+  const { pubkey: bountyPK, account: bountyAcc } = bounty;
+
+  console.log("Current activity index", bountyAcc.activityIndex);
+  const [bountyActivityPDA] = await getBountyActivityAddress(
+    bountyPK,
+    bountyAcc.activityIndex
+  );
+  console.log("Bounty activity (Reject) PDA", bountyActivityPDA.toString());
+
+  return program.methods
+    .rejectSubmission({
+      comment,
+    })
+    .accounts({
+      bounty: bountyPK,
+      bountySubmission: bountySubmissionPK,
+      bountyActivity: bountyActivityPDA,
+      contributorRecord: reviewerContributorRecordPK,
+      contributorWallet: provider.wallet.publicKey,
+      systemProgram: SystemProgram.programId,
+      clock: SYSVAR_CLOCK_PUBKEY,
+    })
+    .rpc();
+};
