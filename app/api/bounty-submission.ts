@@ -118,12 +118,53 @@ export const requestChangesToSubmission = async ({
 };
 
 interface RejectStaleSubmissionArgs {
+  provider: AnchorProvider;
   program: Program<DaoBountyBoard>;
+  bounty: { pubkey: PublicKey; account: Bounty };
+  bountySubmissionPK: PublicKey;
+  assigneeContributorRecordPK: PublicKey;
+  reviewerContributorRecordPK: PublicKey; // limited to bounty creator currently
+  comment: string;
 }
 
 export const rejectStaleSubmission = async ({
+  provider,
   program,
-}: RejectStaleSubmissionArgs) => {};
+  bounty,
+  bountySubmissionPK,
+  assigneeContributorRecordPK,
+  reviewerContributorRecordPK,
+  comment,
+}: RejectStaleSubmissionArgs) => {
+  console.log("Bounty Submission PK", bountySubmissionPK.toString());
+  const { pubkey: bountyPK, account: bountyAcc } = bounty;
+
+  console.log("Current activity index", bountyAcc.activityIndex);
+  const [bountyActivityPDA] = await getBountyActivityAddress(
+    bountyPK,
+    bountyAcc.activityIndex
+  );
+  console.log(
+    "Bounty activity (Reject Stale) PDA",
+    bountyActivityPDA.toString()
+  );
+
+  return program.methods
+    .rejectStaleSubmission({
+      comment,
+    })
+    .accounts({
+      bounty: bountyPK,
+      bountySubmission: bountySubmissionPK,
+      bountyActivity: bountyActivityPDA,
+      assigneeContributorRecord: assigneeContributorRecordPK,
+      contributorRecord: reviewerContributorRecordPK,
+      contributorWallet: provider.wallet.publicKey,
+      systemProgram: SystemProgram.programId,
+      clock: SYSVAR_CLOCK_PUBKEY,
+    })
+    .rpc();
+};
 
 interface RejectSubmissionArgs {
   provider: AnchorProvider;
