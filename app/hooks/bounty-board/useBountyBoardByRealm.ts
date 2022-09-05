@@ -1,6 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
 import { getBountyBoard } from "../../api";
 import { getBountyBoardAddress } from "../../api/utils";
 import { useRealm } from "../realm/useRealm";
@@ -12,27 +11,22 @@ export const useBountyBoardByRealm = (
 ) => {
   const { program } = useAnchorContext();
   const { data: realmAccount } = useRealm(realm);
-  const [bountyBoardPubkey, setBountyBoardPubkey] = useState(undefined);
-
-  useEffect(() => {
-    if (!realmAccount?.pubkey) return;
-    console.log(
-      "[UseBountyBoardByRealm] getBountyBoardAddress run",
-      realmAccount?.pubkey + ""
-    );
-    getBountyBoardAddress(realmAccount?.pubkey).then(([pda]) =>
-      setBountyBoardPubkey(pda.toString())
-    );
-  }, [realmAccount?.pubkey + ""]);
 
   return useQuery(
-    ["bounty-board", bountyBoardPubkey],
-    () => {
-      console.log("UseBountyBoardByRealm] getBountyBoard run");
+    ["bounty-board", realmAccount?.pubkey],
+    async () => {
+      console.log("[UseBountyBoardByRealm] getBountyBoard run");
+      const [bountyBoardPubkey] = await getBountyBoardAddress(
+        realmAccount?.pubkey
+      );
+      console.log(
+        "[UseBountyBoardByRealm] Bounty board pub key",
+        bountyBoardPubkey.toString()
+      );
       return getBountyBoard(program, new PublicKey(bountyBoardPubkey));
     },
     {
-      enabled: !!program && !!bountyBoardPubkey,
+      enabled: !!program && !!realmAccount,
     }
   );
 };
