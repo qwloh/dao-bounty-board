@@ -372,6 +372,7 @@ export const unassignOverdueBounty = async (
         assigneeContributorRecord: TEST_ASSIGNEE_CONTRIBUTOR_RECORD_PK,
         contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
         contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
+        systemProgram: SystemProgram.programId,
         clock: SYSVAR_CLOCK_PUBKEY,
       })
       .signers(SIGNERS)

@@ -298,6 +298,7 @@ export const updateSubmission = async (
         bountyActivity: TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PDA,
         contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
         contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
+        systemProgram: SystemProgram.programId,
         clock: SYSVAR_CLOCK_PUBKEY,
       })
       .signers(SIGNERS)
@@ -428,6 +429,7 @@ export const rejectSubmission = async (
         bountyActivity: TEST_BOUNTY_ACTIVITY_REJECT_PDA,
         contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
         contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
+        systemProgram: SystemProgram.programId,
         clock: SYSVAR_CLOCK_PUBKEY,
       })
       .signers(SIGNERS)
