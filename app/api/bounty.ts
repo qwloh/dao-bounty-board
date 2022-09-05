@@ -78,6 +78,7 @@ export const createBounty = async ({
     rewardMint
   );
   console.log("Bounty board vault PDA", bountyBoardVault.toString());
+
   const [bountyPDA] = await getBountyAddress(
     bountyBoard.pubkey,
     bountyIndex.toNumber()
@@ -210,12 +211,55 @@ export const assignBounty = async ({
 };
 
 interface UnassignOverdueBountyArgs {
+  provider: AnchorProvider;
   program: Program<DaoBountyBoard>;
+  bounty: { pubkey: PublicKey; account: Bounty };
+  bountySubmissionPK: PublicKey;
+  assigneeContributorRecordPK: PublicKey;
+  reviewerContributorRecordPK: PublicKey;
+  comment: string;
 }
 
 export const unassignOverdueBounty = async ({
+  provider,
   program,
-}: UnassignOverdueBountyArgs) => {};
+  bounty,
+  bountySubmissionPK,
+  assigneeContributorRecordPK,
+  reviewerContributorRecordPK,
+  comment,
+}: UnassignOverdueBountyArgs) => {
+  console.log("Bounty Submission PK", bountySubmissionPK.toString());
+  const { pubkey: bountyPK, account: bountyAcc } = bounty;
+
+  console.log("Current activity index", bountyAcc.activityIndex);
+  const [bountyActivityPDA] = await getBountyActivityAddress(
+    bountyPK,
+    bountyAcc.activityIndex
+  );
+  console.log(
+    "Bounty activity (Unassign Overdue) PDA",
+    bountyActivityPDA.toString()
+  );
+
+  return (
+    program.methods
+      //@ts-ignore
+      .unassignOverdueBounty({
+        comment,
+      })
+      .accounts({
+        bounty: bountyPK,
+        bountySubmission: bountySubmissionPK,
+        bountyActivity: bountyActivityPDA,
+        assigneeContributorRecord: assigneeContributorRecordPK,
+        contributorRecord: reviewerContributorRecordPK,
+        contributorWallet: provider.wallet.publicKey,
+        clock: SYSVAR_CLOCK_PUBKEY,
+      })
+      .rpc()
+  );
+};
 
 interface SubmitToBountyArgs {
   provider: AnchorProvider;
