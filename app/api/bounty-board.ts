@@ -30,7 +30,7 @@ import {
   ProposalState,
 } from "@solana/spl-governance";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, unpackAccount } from "@solana/spl-token";
 import { UserProposalEntity } from "../hooks/realm/useUserProposalEntitiesInRealm";
 
 export const getBountyBoard = async (
@@ -52,42 +52,18 @@ export const getBountyBoardVaults = async (
   provider: AnchorProvider,
   bountyBoardPubkey: PublicKey
 ) => {
-  const bountyBoardVaults =
-    await provider.connection.getParsedTokenAccountsByOwner(
-      bountyBoardPubkey,
-      {
-        programId: TOKEN_PROGRAM_ID,
-      }
-      // { dataSlice: {offset: 0, length: 0}}
-      // ^ not available because @solana/web3.js haven't caught up with JSON rpc method
-    );
-
-  console.log(
-    "[QW log] Bounty board vaults found",
-    bountyBoardVaults.value.length
+  const bountyBoardVaults = await provider.connection.getTokenAccountsByOwner(
+    bountyBoardPubkey,
+    {
+      programId: TOKEN_PROGRAM_ID,
+    }
+    // { dataSlice: {offset: 0, length: 0}}
+    // ^ not available because @solana/web3.js haven't caught up with JSON rpc method
   );
-  // return bountyBoardVaults;
 
-  // parsed it into shape compatible with spl-token
-  const normalizedBountyBoardVaults = bountyBoardVaults.value.map((v) => {
-    const data = v.account.data.parsed.info;
-    return {
-      address: v.pubkey,
-      mint: data.mint,
-      owner: data.owner,
-      amount: data.tokenAmount.amount,
-      // delegate: rawAccount.delegateOption ? rawAccount.delegate : null,
-      // delegatedAmount: rawAccount.delegatedAmount,
-      isInitialized: data.state === "initialized",
-      // isFrozen: rawAccount.state === AccountState.Frozen,
-      isNative: !!data.isNative,
-      // rentExemptReserve: rawAccount.isNativeOption ? rawAccount.isNative : null,
-      // closeAuthority: rawAccount.closeAuthorityOption
-      //   ? rawAccount.closeAuthority
-      //   : null,
-    };
-  });
-  return normalizedBountyBoardVaults;
+  return bountyBoardVaults.value.map((v) =>
+    unpackAccount(v.pubkey, v.account, TOKEN_PROGRAM_ID)
+  );
 };
 
 export const getActiveBountyBoardProposal = async (
@@ -98,9 +74,6 @@ export const getActiveBountyBoardProposal = async (
   // very inefficient, well
   const proposalsForAllGovernances: ProgramAccount<Proposal>[] = [];
   for (const governancePK of governancePubkeys) {
-    console.log(
-      `[QW log] Get active bounty board proposal for ${governancePK}`
-    );
     const proposals = await getProposalsByGovernance(
       provider.connection,
       new PublicKey(GOVERNANCE_PROGRAM_ID),
@@ -108,10 +81,6 @@ export const getActiveBountyBoardProposal = async (
     );
     proposalsForAllGovernances.push(...proposals);
   }
-  console.log(
-    `[QW log] Proposals found ${proposalsForAllGovernances.length}`,
-    proposalsForAllGovernances
-  );
 
   return proposalsForAllGovernances.filter(
     (p) =>
@@ -134,7 +103,7 @@ export const proposeInitBountyBoard = async (
   program: Program<DaoBountyBoard>,
   realmPubkey: PublicKey,
   userProposalEntity: UserProposalEntity,
-  boardConfig: BountyBoardConfig,
+  boardConfig: Omit<BountyBoardConfig, "lastRevised">,
   firstVaultMint: PublicKey,
   amountToFundBountyBoardVault: number,
   initialContributorsWithRole: InitialContributorWithRole[]

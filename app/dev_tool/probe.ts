@@ -16,7 +16,6 @@ import {
 } from "@solana/spl-token";
 import { clusterApiUrl, Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { GOVERNANCE_PROGRAM_ID, TEST_REALM_PK } from "../api/constants";
-import { readableTokenAcc } from "../api/utils";
 
 (async () => {
   const paperWalletKeypair = Keypair.fromSecretKey(
@@ -69,7 +68,7 @@ import { readableTokenAcc } from "../api/utils";
     connection,
     new PublicKey("CVCtwsNWqvAJUcq3QvEaUAaL8dZtxDfD27UKc9fVnmP9")
   );
-  console.log("ATA", readableTokenAcc(ata));
+  // console.log("ATA", readableTokenAcc(ata));
   console.log("ATA owner", ata.owner.toString());
   console.log("ATA mint", ata.mint.toString());
 
