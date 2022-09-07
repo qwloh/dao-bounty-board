@@ -1,3 +1,4 @@
+use crate::errors::BountyBoardError;
 use crate::state::bounty_board::*;
 use crate::PROGRAM_AUTHORITY_SEED;
 use anchor_lang::prelude::*;
@@ -12,6 +13,12 @@ pub fn init_bounty_board(ctx: Context<InitBountyBoard>, data: InitBountyBoardVM)
     let bounty_board = &mut ctx.accounts.bounty_board;
     let realm_governance = &ctx.accounts.realm_governance;
     let clock = &ctx.accounts.clock;
+
+    // validate roles
+    require!(
+        data.roles.iter().any(|r| r.default),
+        BountyBoardError::NoDefaultRoleConfigured
+    );
 
     bounty_board.realm = data.realm_pk;
     bounty_board.config = BountyBoardConfig {

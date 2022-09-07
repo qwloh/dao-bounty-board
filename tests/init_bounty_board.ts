@@ -12,8 +12,10 @@ import { PublicKey } from "@solana/web3.js";
 import { DUMMY_MINT_PK, BOUNTY_BOARD_PROGRAM_ID } from "../app/api/constants";
 import {
   cleanUpBountyBoard,
+  DEFAULT_ROLES,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
+import { assertReject } from "./utils/assert-promise-utils";
 
 describe("init bounty board", () => {
   // Configure the client to use the local cluster.
@@ -73,6 +75,19 @@ describe("init bounty board", () => {
       bountyBoardPDA.toString()
     );
     assert.equal(bountyBoardVaultAcc.mint.toString(), DUMMY_MINT_PK.USDC);
+  });
+
+  it("should throw if no default role is provided in role settings", async () => {
+    await assertReject(
+      () =>
+        setupBountyBoard(
+          provider,
+          program,
+          TEST_REALM_PK,
+          DEFAULT_ROLES.slice(0, 1)
+        ),
+      /NoDefaultRoleConfigured/
+    );
   });
 
   afterEach(async () => {
