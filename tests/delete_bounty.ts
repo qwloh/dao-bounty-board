@@ -224,7 +224,9 @@ describe("delete bounty", () => {
       TEST_BOUNTY_PK,
       TEST_BOUNTY_ASSIGN_COUNT,
       CURRENT_BOUNTY_ACTIVITY_INDEX,
-      TEST_BOUNTY_APPLICATION_PK
+      TEST_BOUNTY_APPLICATION_PK,
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
+      undefined // use provider.wallet to sign
     );
     // then do the exact same operation as above
 

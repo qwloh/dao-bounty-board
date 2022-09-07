@@ -181,10 +181,16 @@ export const assignBounty = async (
   bountyPubkey: PublicKey,
   bountyAssignCount: number,
   bountyActivityIndex: number,
-  bountyApplicationPubkey: PublicKey
+  bountyApplicationPubkey: PublicKey,
+  contributorRecordPubkey: PublicKey,
+  contributorWallet: Keypair = undefined
 ) => {
   const TEST_BOUNTY_PK = bountyPubkey;
   const TEST_BOUNTY_APPLICATION_PK = bountyApplicationPubkey;
+  const TEST_CONTRIBUTOR_RECORD_PK = contributorRecordPubkey;
+  const TEST_CONTRIBUTOR_WALLET = contributorWallet || provider.wallet;
+
+  const SIGNERS = contributorWallet ? [contributorWallet] : [];
 
   const [TEST_BOUNTY_SUBMISSION_PDA] = await getBountySubmissionAddress(
     bountyPubkey,
@@ -210,10 +216,12 @@ export const assignBounty = async (
         bountyApplication: TEST_BOUNTY_APPLICATION_PK,
         bountySubmission: TEST_BOUNTY_SUBMISSION_PDA,
         bountyActivity: TEST_BOUNTY_ACTIVITY_ASSIGN_PDA,
-        user: provider.wallet.publicKey,
+        contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
+        contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
         systemProgram: SystemProgram.programId,
         clock: SYSVAR_CLOCK_PUBKEY,
       })
+      .signers(SIGNERS)
       // .simulate();
       .rpc();
     console.log("[AssignBounty] Your transaction signature", tx);
@@ -335,8 +343,7 @@ export const unassignOverdueBounty = async (
   currentBountySubmissionPubkey: PublicKey,
   assigneeContributorRecordPubkey: PublicKey,
   bountyCreatorContributorRecordPubkey: PublicKey,
-  bountyCreatorWallet: Keypair = undefined,
-  comment: string = ""
+  bountyCreatorWallet: Keypair = undefined
 ) => {
   const TEST_BOUNTY_PK = bountyPubkey;
   const TEST_BOUNTY_SUBMISSION_PK = currentBountySubmissionPubkey;
@@ -361,10 +368,7 @@ export const unassignOverdueBounty = async (
 
   try {
     const unassignTx = await program.methods
-      //@ts-ignore
-      .unassignOverdueBounty({
-        comment,
-      })
+      .unassignOverdueBounty()
       .accounts({
         bounty: TEST_BOUNTY_PK,
         bountySubmission: TEST_BOUNTY_SUBMISSION_PK,

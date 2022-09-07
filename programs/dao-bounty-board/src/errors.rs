@@ -5,6 +5,8 @@ pub enum BountyBoardError {
     // add tier config
     #[msg("Attempt to reinitialize tiers")]
     TiersAlreadyConfigured,
+    // add contributor with role
+    InvalidRole,
     // create bounty
     NotAuthorizedToCreateBounty,
     // apply to bounty
@@ -12,6 +14,7 @@ pub enum BountyBoardError {
     InsufficientReputation,
     InsufficientSkillsPt,
     // assign bounty
+    NotAuthorizedToAssignBounty,
     BountyApplicationExpired,
     // assign or delete bounty
     BountyAlreadyAssigned,
