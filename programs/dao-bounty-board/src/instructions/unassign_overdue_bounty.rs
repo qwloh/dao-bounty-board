@@ -3,10 +3,7 @@ use crate::state::{bounty::*, bounty_activity::*, bounty_submission::*, contribu
 use crate::PROGRAM_AUTHORITY_SEED;
 use anchor_lang::prelude::*;
 
-pub fn unassign_overdue_bounty(
-    ctx: Context<UnassignOverdueBounty>,
-    data: UnassignOverdueBountyVM,
-) -> Result<()> {
+pub fn unassign_overdue_bounty(ctx: Context<UnassignOverdueBounty>) -> Result<()> {
     let bounty = &mut ctx.accounts.bounty;
     let bounty_submission = &mut ctx.accounts.bounty_submission;
     let bounty_activity = &mut ctx.accounts.bounty_activity;
@@ -95,9 +92,4 @@ pub struct UnassignOverdueBounty<'info> {
 
     pub system_program: Program<'info, System>,
     pub clock: Sysvar<'info, Clock>,
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
-pub struct UnassignOverdueBountyVM {
-    pub comment: String,
 }
