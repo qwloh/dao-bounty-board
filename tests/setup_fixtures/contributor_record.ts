@@ -42,6 +42,7 @@ export const setupContributorRecord = async (
     console.log("Your transaction signature", tx);
   } catch (err) {
     console.log("[AddContributorWithRole] Transaction / Simulation fail.", err);
+    throw err;
   }
 
   let contributorRecordAcc;

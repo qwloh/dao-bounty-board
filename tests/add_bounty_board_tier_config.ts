@@ -3,6 +3,7 @@ import {
   web3,
   setProvider,
   AnchorProvider,
+  utils,
 } from "@project-serum/anchor";
 
 import idl from "../target/idl/dao_bounty_board.json";
@@ -73,10 +74,13 @@ describe("add bounty board tier config", () => {
     );
 
     for (const [idx, tier] of DEFAULT_TIERS.entries()) {
-      assert.equal(
-        tier.tierName,
-        updatedBountyBoardAcc.config.tiers[idx].tierName
-      );
+      const tierNameDecoded = utils.bytes.utf8
+        .decode(
+          Uint8Array.from(updatedBountyBoardAcc.config.tiers[idx].tierName)
+        )
+        .trim()
+        .replace(/\0/g, "");
+      assert.equal(tier.tierName, tierNameDecoded);
       assert.equal(
         tier.difficultyLevel,
         updatedBountyBoardAcc.config.tiers[idx].difficultyLevel

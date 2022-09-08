@@ -1,4 +1,9 @@
-import { AnchorProvider, Program, setProvider } from "@project-serum/anchor";
+import {
+  AnchorProvider,
+  Program,
+  setProvider,
+  utils,
+} from "@project-serum/anchor";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { assert } from "chai";
 import { BOUNTY_BOARD_PROGRAM_ID } from "../app/api/constants";
@@ -12,6 +17,7 @@ import {
   cleanUpContributorRecord,
   setupContributorRecord,
 } from "./setup_fixtures/contributor_record";
+import { assertReject } from "./utils/assert-promise-utils";
 import { sleep } from "./utils/common";
 
 describe("add contributor with role", () => {
@@ -45,6 +51,10 @@ describe("add contributor with role", () => {
   // Bounty board vault PDA GYhav3DSCrtBfxR8cAP7J6QN77T3iBjcapZiHLqm9zfR
   // Contributor record PDA 6pks4WpJu41j9RcaySmQkm6o3i66yzwdmw87SANMNqEW
 
+  // data for assertion
+  const TEST_ASSOCIATED_WALLET = provider.wallet.publicKey;
+  const TEST_ROLE_NAME = "Contributor";
+
   beforeEach(async () => {
     await sleep(800); // delay 800ms between each test
     console.log("-----------------------------");
@@ -60,9 +70,6 @@ describe("add contributor with role", () => {
   });
 
   it("create contributor record acc correctly", async () => {
-    const TEST_ASSOCIATED_WALLET = provider.wallet.publicKey;
-    const TEST_ROLE_NAME = "Contributor";
-
     const { contributorRecordAcc, contributorRecordPDA } =
       await setupContributorRecord(
         provider,
@@ -74,25 +81,46 @@ describe("add contributor with role", () => {
       );
     TEST_CONTRIBUTOR_RECORD_PDA = contributorRecordPDA;
 
-    assert.isTrue(contributorRecordAcc.initialized);
+    assert.equal(
+      contributorRecordAcc.realm.toString(),
+      TEST_REALM_PK.toString()
+    );
+    const roleNameDecoded = utils.bytes.utf8
+      .decode(Uint8Array.from(contributorRecordAcc.role))
+      .trim()
+      .replace(/\0/g, "");
+    assert.equal(roleNameDecoded, TEST_ROLE_NAME);
+    assert.equal(contributorRecordAcc.reputation.toNumber(), 0);
+
+    assert.isEmpty(contributorRecordAcc.skillsPt);
+
+    assert.equal(contributorRecordAcc.bountyCompleted, 0);
+    assert.equal(contributorRecordAcc.recentRepChange, 0);
+
     assert.equal(
       contributorRecordAcc.bountyBoard.toString(),
       TEST_BOUNTY_BOARD_PK.toString()
     );
     assert.equal(
-      contributorRecordAcc.realm.toString(),
-      TEST_REALM_PK.toString()
-    );
-    assert.equal(
       contributorRecordAcc.associatedWallet.toString(),
       TEST_ASSOCIATED_WALLET.toString()
     );
-    assert.equal(contributorRecordAcc.role, TEST_ROLE_NAME);
+    assert.isTrue(contributorRecordAcc.initialized);
+  });
 
-    assert.equal(contributorRecordAcc.reputation.toNumber(), 0);
-    assert.isEmpty(contributorRecordAcc.skillsPt);
-    assert.equal(contributorRecordAcc.bountyCompleted, 0);
-    assert.equal(contributorRecordAcc.recentRepChange, 0);
+  it("should throw when invalid role is specified", async () => {
+    await assertReject(
+      () =>
+        setupContributorRecord(
+          provider,
+          program,
+          TEST_BOUNTY_BOARD_PK,
+          TEST_ASSOCIATED_WALLET,
+          TEST_REALM_GOVERNANCE,
+          "NonExistingRole"
+        ),
+      /InvalidRole/
+    );
   });
 
   afterEach(async () => {

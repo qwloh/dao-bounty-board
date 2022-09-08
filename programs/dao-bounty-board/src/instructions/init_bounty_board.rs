@@ -22,7 +22,11 @@ pub fn init_bounty_board(ctx: Context<InitBountyBoard>, data: InitBountyBoardVM)
 
     bounty_board.realm = data.realm_pk;
     bounty_board.config = BountyBoardConfig {
-        roles: data.roles,
+        roles: data
+            .roles
+            .iter()
+            .map(|r| map_vm_to_role_setting(r))
+            .collect::<Vec<RoleSetting>>(),
         tiers: Vec::new(),
         last_revised: clock.unix_timestamp,
     };
@@ -68,5 +72,20 @@ pub struct InitBountyBoard<'info> {
 pub struct InitBountyBoardVM {
     /// DAO the bounty board belongs to
     pub realm_pk: Pubkey,
-    pub roles: Vec<RoleSetting>,
+    pub roles: Vec<RoleSettingVM>,
+}
+
+#[derive(Debug, AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Default)]
+pub struct RoleSettingVM {
+    pub role_name: String,
+    pub permissions: Vec<Permission>,
+    pub default: bool,
+}
+
+fn map_vm_to_role_setting(role_vm: &RoleSettingVM) -> RoleSetting {
+    RoleSetting {
+        role_name: map_str_to_bytes::<24>(&role_vm.role_name[..]),
+        permissions: role_vm.permissions.clone(),
+        default: role_vm.default,
+    }
 }
