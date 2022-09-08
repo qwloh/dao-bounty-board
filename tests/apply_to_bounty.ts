@@ -1,4 +1,9 @@
-import { AnchorProvider, Program, setProvider } from "@project-serum/anchor";
+import {
+  AnchorProvider,
+  Program,
+  setProvider,
+  utils,
+} from "@project-serum/anchor";
 import { bs58 } from "@project-serum/anchor/dist/cjs/utils/bytes";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
@@ -212,26 +217,33 @@ describe("apply to bounty", () => {
     assert.deepEqual(bountyApplicationAcc.status, { notAssigned: {} });
 
     // assert contributorRecordAcc is created
-    assert.isTrue(applicantContributorRecordAcc.initialized);
+    assert.equal(
+      applicantContributorRecordAcc.realm.toString(),
+      TEST_REALM_PK.toString()
+    );
+    const defaultRole = getRolesInVec().find((r) => r.default);
+    const roleDecoded = utils.bytes.utf8
+      .decode(Uint8Array.from(applicantContributorRecordAcc.role))
+      .trim()
+      .replace(/\0/g, "");
+    assert.equal(roleDecoded, defaultRole.roleName);
+
+    assert.equal(applicantContributorRecordAcc.reputation.toNumber(), 0);
+
+    assert.isEmpty(applicantContributorRecordAcc.skillsPt);
+
+    assert.equal(applicantContributorRecordAcc.bountyCompleted, 0);
+    assert.equal(applicantContributorRecordAcc.recentRepChange, 0);
+
     assert.equal(
       applicantContributorRecordAcc.bountyBoard.toString(),
       TEST_BOUNTY_BOARD_PK.toString()
     );
     assert.equal(
-      applicantContributorRecordAcc.realm.toString(),
-      TEST_REALM_PK.toString()
-    );
-    assert.equal(
       applicantContributorRecordAcc.associatedWallet.toString(),
       TEST_APPLICANT_WALLET.publicKey.toString()
     );
-    const defaultRole = getRolesInVec().find((r) => r.default);
-    assert.equal(applicantContributorRecordAcc.role, defaultRole.roleName);
-
-    assert.equal(applicantContributorRecordAcc.reputation.toNumber(), 0);
-    assert.isEmpty(applicantContributorRecordAcc.skillsPt);
-    assert.equal(applicantContributorRecordAcc.bountyCompleted, 0);
-    assert.equal(applicantContributorRecordAcc.recentRepChange, 0);
+    assert.isTrue(applicantContributorRecordAcc.initialized);
 
     // assert bounty activity is created
     assert.equal(

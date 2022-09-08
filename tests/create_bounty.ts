@@ -3,6 +3,7 @@ import {
   web3,
   setProvider,
   AnchorProvider,
+  utils,
 } from "@project-serum/anchor";
 import idl from "../target/idl/dao_bounty_board.json";
 import { assert } from "chai";
@@ -133,15 +134,19 @@ describe("create bounty", () => {
 
     assert.deepEqual(bountyAcc.state, { open: {} });
 
+    const tierDecoded = utils.bytes.utf8
+      .decode(Uint8Array.from(bountyAcc.tier))
+      .trim()
+      .replace(/\0/g, "");
+    assert.equal(tierDecoded, DEFAULT_BOUNTY_DETAILS.tier);
+    assert.deepEqual(bountyAcc.skill, DEFAULT_BOUNTY_DETAILS.skill);
+    assert.equal(bountyAcc.title, DEFAULT_BOUNTY_DETAILS.title);
+    assert.equal(bountyAcc.description, DEFAULT_BOUNTY_DETAILS.description);
+
     assert.equal(
       bountyAcc.creator.toString(),
       TEST_CONTRIBUTOR_RECORD_PK.toString()
     );
-
-    assert.equal(bountyAcc.title, DEFAULT_BOUNTY_DETAILS.title);
-    assert.equal(bountyAcc.description, DEFAULT_BOUNTY_DETAILS.description);
-    assert.deepEqual(bountyAcc.skill, DEFAULT_BOUNTY_DETAILS.skill);
-    assert.equal(bountyAcc.tier, DEFAULT_BOUNTY_DETAILS.tier);
 
     const defaultTiers = getTiersInVec(new PublicKey(DUMMY_MINT_PK.USDC));
     const tierConfig = defaultTiers.find(

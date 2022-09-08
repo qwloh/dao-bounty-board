@@ -44,13 +44,13 @@ pub fn create_bounty(ctx: Context<CreateBounty>, data: BountyVM) -> Result<()> {
 
     bounty.state = BountyState::Open;
 
-    bounty.creator = contributor_record.key();
-    bounty.created_at = clock.unix_timestamp;
-
+    bounty.tier = map_str_to_bytes::<24>(&data.tier[..]);
+    bounty.skill = data.skill;
     bounty.title = data.title;
     bounty.description = data.description;
-    bounty.skill = data.skill;
-    bounty.tier = data.tier;
+
+    bounty.creator = contributor_record.key();
+    bounty.created_at = clock.unix_timestamp;
 
     let tier_config = bounty_board
         .config

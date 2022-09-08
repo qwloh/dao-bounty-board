@@ -66,14 +66,14 @@ pub struct Bounty {
 
     pub state: BountyState, // 1
 
+    pub tier: [u8; 24],      // 24
+    pub skill: Skill,        // 1
+    pub title: String,       // unknown
+    pub description: String, // unknown, ipfs cid
+
     #[get_size(ignore)]
     pub creator: Pubkey, // 32, contributor record
     pub created_at: i64, // 8, UnixTimestamp ni seconds
-
-    pub title: String,       // unknown
-    pub description: String, // unknown, ipfs cid
-    pub skill: Skill,        // 1
-    pub tier: String,        // unknown
 
     pub task_submission_window: u32,    // 4, duration in seconds
     pub submission_review_window: u32,  // 4, duration in seconds
