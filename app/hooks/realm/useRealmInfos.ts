@@ -14,6 +14,11 @@ export const useRealmInfos = () => {
     },
     {
       enabled: !!provider,
+      // for use by global onError
+      meta: {
+        hookName: "UseRealmInfos",
+        methodName: "getCertifiedRealmInfos",
+      },
     }
   );
 };

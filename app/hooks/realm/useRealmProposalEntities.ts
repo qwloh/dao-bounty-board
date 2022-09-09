@@ -15,6 +15,11 @@ export const useRealmProposalEntities = (realm: string) => {
     },
     {
       enabled: !!wallet && !!realmAccount,
+      // for use by global onError
+      meta: {
+        hookName: "UseRealmProposalEntities",
+        methodName: "getRealmProposalEntities",
+      },
     }
   );
 };

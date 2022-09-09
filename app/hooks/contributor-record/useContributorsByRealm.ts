@@ -39,6 +39,11 @@ export const usePagedContributorsByRealm = (
     },
     {
       enabled: !!realmAccount,
+      // for use by global onError
+      meta: {
+        hookName: "UsePagedContributorsByRealm",
+        methodName: "getAllContributorRecordsForRealm",
+      },
     }
   );
 
@@ -51,7 +56,7 @@ export const usePagedContributorsByRealm = (
       );
       const { page, size } = pageParam;
       const pagedAddresses = getSliceFromAllElements(
-        allContributorsOfRealmPK,
+        allContributorsOfRealmPK.map((c) => c.pubkey),
         page,
         size
       );
@@ -79,6 +84,11 @@ export const usePagedContributorsByRealm = (
     {
       enabled: !!realmAccount && !!allContributorsOfRealmPK,
       getNextPageParam,
+      // for use by global onError
+      meta: {
+        hookName: "UsePagedContributorsByRealm",
+        methodName: "getPagedContributorRecords",
+      },
     }
   );
 };

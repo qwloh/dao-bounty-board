@@ -56,6 +56,11 @@ export const useRealm = (
     },
     {
       enabled: !!provider && !!mapped,
+      // for use by global onError
+      meta: {
+        hookName: "UseRealm",
+        methodName: "getRealm",
+      },
     }
   );
 };

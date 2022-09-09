@@ -18,6 +18,11 @@ export const useBountiesByRealm = (
     },
     {
       enabled: !!program && !!bountyBoard,
+      // for use by global onError
+      meta: {
+        hookName: "UseBountiesByRealm",
+        methodName: "getBounties",
+      },
     }
   );
 };

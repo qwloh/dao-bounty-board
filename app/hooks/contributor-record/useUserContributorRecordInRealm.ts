@@ -28,6 +28,11 @@ export const useUserContributorRecordInRealm = (
     },
     {
       enabled: !!wallet && !!bountyBoard,
+      // for use by global onError
+      meta: {
+        hookName: "UseUserContributorRecordInRealm",
+        methodName: "getContributorRecordAddress",
+      },
     }
   );
 

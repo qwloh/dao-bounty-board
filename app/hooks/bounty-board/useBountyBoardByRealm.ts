@@ -27,6 +27,11 @@ export const useBountyBoardByRealm = (
     },
     {
       enabled: !!program && !!realmAccount,
+      // for use by global onError
+      meta: {
+        hookName: "UseBountyBoardByRealm",
+        methodName: "getBountyBoard",
+      },
     }
   );
 };

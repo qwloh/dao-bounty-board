@@ -25,6 +25,11 @@ export const useActiveBountyBoardProposals = (
     },
     {
       enabled: !!realmProposalEntities,
+      // for use by global onError
+      meta: {
+        hookName: "UseActiveBountyBoardProposals",
+        methodName: "getActiveBountyBoardProposal",
+      },
     }
   );
 };

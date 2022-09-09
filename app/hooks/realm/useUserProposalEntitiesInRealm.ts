@@ -43,6 +43,11 @@ export const useUserProposalEntitiesInRealm = (
     },
     {
       enabled: !!wallet && !!realmProposalEntities && !!userRealms,
+      // for use by global onError
+      meta: {
+        hookName: "UseUserProposalEntitiesInRealm",
+        methodName: "getUserProposalEntitiesInRealm",
+      },
     }
   );
 };

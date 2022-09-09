@@ -21,6 +21,11 @@ export const useContributorRecord = (contributorRecordPK: string) => {
     },
     {
       enabled: !!program && !!contributorRecordPK,
+      // for use by global onError
+      meta: {
+        hookName: "UseContributorRecord",
+        methodName: "getContributorRecord",
+      },
     }
   );
 };

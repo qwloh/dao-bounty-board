@@ -13,6 +13,11 @@ export const useUserRealms = () => {
     },
     {
       enabled: !!provider && !!wallet?.publicKey,
+      // for use by global onError
+      meta: {
+        hookName: "UseUserRealms",
+        methodName: "getUserRealms",
+      },
     }
   );
 };

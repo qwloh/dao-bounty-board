@@ -17,6 +17,11 @@ export const useBountyApplications = (bountyPK: string) => {
     },
     {
       enabled: !!program,
+      // for use by global onError
+      meta: {
+        hookName: "UseBountyApplications",
+        methodName: "getBountyApplications",
+      },
     }
   );
 };
