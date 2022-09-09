@@ -4,11 +4,12 @@ import { BN } from "@project-serum/anchor";
 import { proposeInitBountyBoard } from "../../api";
 import { DUMMY_MINT_PK } from "../../api/constants";
 import { InitialContributorWithRole } from "../../api/utils";
-import { BountyBoardConfig } from "../../model/bounty-board.model";
+import { BountyBoardConfig, Permission } from "../../model/bounty-board.model";
 import { CallbacksForUI } from "../../model/util.model";
 import { useRealm } from "../realm/useRealm";
 import { UserProposalEntity } from "../realm/useUserProposalEntitiesInRealm";
 import { useAnchorContext } from "../useAnchorContext";
+import { useActiveBountyBoardProposals } from "./useActiveBountyBoardProposals";
 
 export interface ProposeInitBountyBoardArgs {
   userProposalEntity: UserProposalEntity;
@@ -25,6 +26,8 @@ export const useProposeInitBountyBoard = (
 ) => {
   const { program } = useAnchorContext();
   const { data: realmAccount } = useRealm(realm);
+  const { refetch: refetchActiveProposals } =
+    useActiveBountyBoardProposals(realm);
 
   return useMutation(
     ({
@@ -45,6 +48,7 @@ export const useProposeInitBountyBoard = (
       ),
     {
       onSuccess: (data, variables, context) => {
+        refetchActiveProposals();
         if (callbacks?.onSuccess) {
           callbacks.onSuccess(data, variables, context);
         }
@@ -115,21 +119,10 @@ export const getTiersInVec = (PAYOUT_MINT: PublicKey) => [
     addressChangeReqWindow: 14 * 24 * 3600, // 14 days
   },
 ];
-
-enum Permission {
-  CreateBounty = "createBounty",
-  UpdateBounty = "updateBounty",
-  DeleteBounty = "deleteBounty",
-  AssignBounty = "assignBounty",
-  RequestChangeToSubmission = "requestChangeToSubmission",
-  AcceptSubmission = "acceptSubmission",
-  RejectSubmission = "rejectSubmission",
-}
-
 export const getRolesInVec = () => [
   {
     roleName: "Core",
-    permissions: Object.values(Permission).map((p) => ({ [p]: {} })),
+    permissions: Permission.names().map((p) => ({ [p]: {} })),
     default: false,
   },
   { roleName: "Contributor", permissions: [], default: true },
