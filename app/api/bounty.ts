@@ -5,9 +5,9 @@ import {
   SYSVAR_CLOCK_PUBKEY,
   SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
-import { AnchorProvider, Program } from "@project-serum/anchor";
+import { AnchorProvider, Program, BN } from "@project-serum/anchor";
 import { DUMMY_MINT_PK } from "./constants";
-import { Bounty, Skill } from "../model/bounty.model";
+import { Bounty, BountyState, Skill } from "../model/bounty.model";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
 import {
   getBountyActivityAddress,
@@ -22,26 +22,47 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { BountyBoard } from "../model/bounty-board.model";
+import { mapBytesToStr } from "./utils/mapping-utils";
 
-export const getBounty = (
+export const getBounty = async (
   program: Program<DaoBountyBoard>,
   bountyPK: PublicKey
-) => program.account.bounty.fetchNullable(bountyPK);
+) => {
+  const bounty = await program.account.bounty.fetchNullable(bountyPK);
+  return bounty
+    ? {
+        ...bounty,
+        tier: mapBytesToStr(bounty.tier),
+      }
+    : null;
+};
 
 export const getBounties = async (
   connection: Connection,
   program: Program<DaoBountyBoard>,
   bountyBoardPK: PublicKey
 ) => {
-  // filter by bounty baord PK
+  // filter by bounty board PK
   const bounties = await connection.getProgramAccounts(program.programId, {
-    dataSlice: { offset: 0, length: 0 },
+    dataSlice: { offset: 8 + 32, length: 34 },
     filters: [
       { memcmp: program.coder.accounts.memcmp("bounty") },
       { memcmp: { offset: 8, bytes: bountyBoardPK.toString() } },
     ],
   });
-  return bounties.map((b) => b.pubkey);
+  // Example data buffer: [0,0,0,0,0,0,0,0, 0, 69,110,116,114,121,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0]
+  return bounties.map((b) => {
+    const dataBuffer = b.account.data;
+    return {
+      pubkey: b.pubkey.toString(),
+      account: {
+        bountyIndex: new BN(dataBuffer.subarray(0, 8), "le"),
+        state: BountyState[dataBuffer[8]],
+        tier: mapBytesToStr(dataBuffer.subarray(9, 9 + 24)),
+        skill: Skill[dataBuffer[33]],
+      },
+    };
+  });
 };
 
 interface CreateBountyArgs {
@@ -102,7 +123,7 @@ export const createBounty = async ({
         description, // to be replaced with ipfs impl
         bountyBoard: bountyBoard.pubkey,
         tier,
-        skill: { [skill as string]: {} },
+        skill: { [Skill[skill]]: {} },
       })
       .accounts({
         bountyBoard: bountyBoard.pubkey,
@@ -172,6 +193,7 @@ interface AssignBountyArgs {
   program: Program<DaoBountyBoard>;
   bounty: { pubkey: PublicKey; account: Bounty };
   bountyApplicationPK: PublicKey;
+  contributorRecordPK: PublicKey;
 }
 
 export const assignBounty = async ({
@@ -179,6 +201,7 @@ export const assignBounty = async ({
   program,
   bounty,
   bountyApplicationPK,
+  contributorRecordPK,
 }: AssignBountyArgs) => {
   const { pubkey: bountyPK, account: bountyAcc } = bounty;
 
@@ -203,7 +226,8 @@ export const assignBounty = async ({
       bountyApplication: bountyApplicationPK,
       bountySubmission: bountySubmissionPDA,
       bountyActivity: bountyActivityPDA,
-      user: provider.wallet.publicKey,
+      contributorRecord: contributorRecordPK,
+      contributorWallet: provider.wallet.publicKey,
       systemProgram: SystemProgram.programId,
       clock: SYSVAR_CLOCK_PUBKEY,
     })

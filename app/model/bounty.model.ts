@@ -1,26 +1,32 @@
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 
-export type BountyState =
-  | "open"
-  | "assigned"
-  | "submissionUnderReview"
-  | "completeAndPaid";
+export enum BountyState {
+  open,
+  assigned,
+  submissionUnderReview,
+  completeAndPaid,
+}
 
-export type Skill = "development" | "design" | "marketing" | "operation";
+export enum Skill {
+  development,
+  design,
+  marketing,
+  operation,
+}
 
 export interface Bounty {
   bountyBoard: PublicKey;
   bountyIndex: BN;
 
-  state: Record<BountyState, {}>;
+  state: Record<keyof typeof BountyState, {}>;
 
   creator: PublicKey;
   createdAt: number; // date in epoch seconds
 
   title: string;
   description: string; // max char 400 first. Implement IPFS if possible
-  skill: Record<Skill, {}>;
+  skill: Record<keyof typeof Skill, {}>;
   tier: string;
 
   taskSubmissionWindow: number; // how much time the assignee has to submit work
