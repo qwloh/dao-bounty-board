@@ -19,7 +19,7 @@ import {
   getBountyBoardVaultAddress,
   getBountyEscrowAddress,
 } from "./pda-utils";
-import { deleteBounty, getBounties } from "../bounty";
+import { getBounties } from "../bounty";
 import { getBountyApplications } from "../bounty-application";
 import { getBountySubmissions } from "../bounty-submission";
 import { getBountyActivities } from "../bounty-activity";
@@ -77,17 +77,17 @@ import { getBountyBoardVaults } from "..";
     program,
     TEST_REALM_PK
   );
-  const contributorRecordPKs = contributorRecords.map((r) => new PublicKey(r));
+  const contributorRecordPKs = contributorRecords.map(
+    (r) => new PublicKey(r.pubkey)
+  );
   console.log(
     `Contributor records ${contributorRecordPKs.length}`,
     contributorRecords
   );
 
-  const bountyPKs = await getBounties(connection, program, bountyBoardPDA);
-  console.log(
-    `Bounties ${bountyPKs.length}`,
-    bountyPKs.map((b) => b.toString())
-  );
+  const bounties = await getBounties(connection, program, bountyBoardPDA);
+  const bountyPKs = bounties.map((b) => new PublicKey(b.pubkey));
+  console.log(`Bounties ${bountyPKs.length}`, bounties);
   const bountyEscrowPKs = [];
 
   const bountyApplicationPKs = [];
@@ -177,14 +177,7 @@ import { getBountyBoardVaults } from "..";
   }
 
   for (const contributorRecord of contributorRecordPKs) {
-    await program.methods
-      .closeContributorRecord()
-      .accounts({
-        contributorRecord,
-        user: provider.wallet.publicKey,
-        systemProgram: SystemProgram.programId,
-      })
-      .rpc();
+    await cleanUpContributorRecord(provider, program, contributorRecord);
   }
 
   const bountyBoardVaultPDA = await getBountyBoardVaultAddress(
