@@ -16,13 +16,13 @@ export const useSort = <T>({ filteredData, initialSort }: UseSortArgs<T>) => {
     return [...filteredData];
   }, [filteredData]);
 
+  // sorted data based on Sort
   const sorted = useMemo(() => {
     if (!filteredData) return [];
-    return sort
-      ? unsortedData.sort(getSortComparator(unsortedData, [sort]))
-      : filteredData; // if sort is undefined, do nothing
+    return sort ? unsortedData.sort(getSortComparator([sort])) : filteredData; // if sort is undefined, do nothing
   }, [filteredData, sort]);
 
+  // functions to expose to hook consumer
   const updateSort = (field: keyof T, order: "asc" | "desc") => {
     setSort({
       field,
@@ -46,7 +46,7 @@ export const useSort = <T>({ filteredData, initialSort }: UseSortArgs<T>) => {
   };
 };
 
-const getSortComparator = <T>(data: T[], sort: Sort<T>[]) => {
+const getSortComparator = <T>(sort: Sort<T>[]) => {
   // opportunity for improvement: allow dot notation in 'field' for nested value access
   return (a: T, b: T) => {
     let res = 0;
