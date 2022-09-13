@@ -11,7 +11,7 @@ import {
 import { Connection, PublicKey } from "@solana/web3.js";
 import { GOVERNANCE_PROGRAM_ID } from "./constants";
 
-export interface UserRealm {
+export interface UserVotingIdentity {
   tokenOwnerRecord: PublicKey;
   governingTokenMint: PublicKey;
   governingTokenOwner: PublicKey;
@@ -19,7 +19,7 @@ export interface UserRealm {
 
 export type UserRealms = Record<
   string, // realm pk
-  UserRealm[]
+  UserVotingIdentity[]
 >;
 
 export const getUserRealms = async (
@@ -51,7 +51,6 @@ export const getUserRealms = async (
       governingTokenOwner: tokenOwnerRecord.account.governingTokenOwner, // should be same as wallet pk
     });
   }
-  console.log("User realms", userRealms?.length);
   return userRealms;
 };
 
