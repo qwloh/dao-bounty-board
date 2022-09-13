@@ -9,7 +9,7 @@ export const useRealm = (
   // can be symbol or address
   realm: string
 ) => {
-  const { provider } = useAnchorContext();
+  const { connection } = useAnchorContext();
   const { data: realmInfos } = useRealmInfos();
 
   // use react-query for caching instead of useMemo
@@ -39,7 +39,7 @@ export const useRealm = (
       return { realmPubkeyStr, realmInfo };
     },
     {
-      enabled: !!provider && !!realmInfos?.length,
+      enabled: !!connection && !!realmInfos?.length,
     }
   );
 
@@ -48,14 +48,11 @@ export const useRealm = (
     async () => {
       console.log("[UseRealm] getRealm run");
       const { realmPubkeyStr, realmInfo } = mapped;
-      const res = await getRealm(
-        provider.connection,
-        new PublicKey(realmPubkeyStr)
-      );
+      const res = await getRealm(connection, new PublicKey(realmPubkeyStr));
       return { ...res, metadata: realmInfo };
     },
     {
-      enabled: !!provider && !!mapped,
+      enabled: !!connection && !!mapped,
       // for use by global onError
       meta: {
         hookName: "UseRealm",

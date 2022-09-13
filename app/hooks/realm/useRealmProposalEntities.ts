@@ -4,17 +4,17 @@ import { useAnchorContext } from "../useAnchorContext";
 import { useRealm } from "./useRealm";
 
 export const useRealmProposalEntities = (realm: string) => {
-  const { provider, wallet } = useAnchorContext();
+  const { connection } = useAnchorContext();
   const { data: realmAccount } = useRealm(realm);
 
   return useQuery(
     ["realm-proposal-identities", realmAccount?.pubkey + ""],
     async () => {
       console.log("[UseRealmProposalEntities] getRealmProposalEntities run");
-      return getRealmProposalEntities(provider.connection, realmAccount);
+      return getRealmProposalEntities(connection, realmAccount);
     },
     {
-      enabled: !!wallet && !!realmAccount,
+      enabled: !!connection && !!realmAccount, // should run regardless if user has connected wallet
       // for use by global onError
       meta: {
         hookName: "UseRealmProposalEntities",

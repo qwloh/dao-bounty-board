@@ -7,14 +7,14 @@ export const useBountiesByRealm = (
   // can be either address or symbol
   realm: string
 ) => {
-  const { provider, program } = useAnchorContext();
+  const { connection, program } = useAnchorContext();
   const { data: bountyBoard } = useBountyBoardByRealm(realm);
 
   return useQuery(
     ["bounties", bountyBoard?.account?.realm + ""],
     async () => {
       console.log("[UseBountiesByRealm] getBounties run");
-      return getBounties(provider.connection, program, bountyBoard?.pubkey);
+      return getBounties(connection, program, bountyBoard?.pubkey);
     },
     {
       enabled: !!program && !!bountyBoard,

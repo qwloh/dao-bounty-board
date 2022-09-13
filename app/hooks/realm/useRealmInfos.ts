@@ -1,19 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { getCertifiedRealmInfos } from "../../api";
-import { useAnchorContext } from "../useAnchorContext";
+import { RealmInfoAsJSON } from "../../model/realm.model";
+import devnetRealms from "../../public/realms/devnet.json";
 
 export const useRealmInfos = () => {
-  const { provider } = useAnchorContext();
-
   return useQuery(
     ["realms-metadata"],
-    // () => getRealms(provider.connection, new PublicKey(GOVERNANCE_PROGRAM_ID)),
     () => {
       console.log("[UseRealmInfos] getCertifiedRealmInfos run");
-      return getCertifiedRealmInfos("devnet");
+      return devnetRealms as RealmInfoAsJSON[];
     },
     {
-      enabled: !!provider,
+      // no enabled check needed, should run  regardless if user has connected wallet
       // for use by global onError
       meta: {
         hookName: "UseRealmInfos",
