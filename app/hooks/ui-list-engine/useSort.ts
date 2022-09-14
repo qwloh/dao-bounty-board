@@ -42,7 +42,7 @@ export const useSort = <T>({ filteredData, initialSort }: UseSortArgs<T>) => {
   };
 };
 
-const getSortComparator = <T>(sort: Sort<T>[]) => {
+export const getSortComparator = <T>(sort: Sort<T>[]) => {
   // opportunity for improvement: allow dot notation in 'field' for nested value access
   return (a: T, b: T) => {
     let res = 0;

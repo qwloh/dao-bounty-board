@@ -1,25 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
-import { getUserRealms } from "../../api/realm";
-import { useAnchorContext } from "../useAnchorContext";
+import { useRealms } from "./useRealms";
+import { useSelector } from "../useSelector";
 
 export const useUserRealms = () => {
-  const { provider, wallet } = useAnchorContext();
-
-  return useQuery(
-    ["user-realms", wallet?.publicKey + ""],
-    () => {
-      console.log("[UseUserRealms] getUserRealms run");
-      return getUserRealms(provider.connection, wallet.publicKey);
-    },
-    {
-      enabled: !!provider && !!wallet?.publicKey,
-      // for use by global onError
-      meta: {
-        hookName: "UseUserRealms",
-        methodName: "getUserRealms",
-      },
-    }
-  );
+  const { data: realms } = useRealms();
+  return useSelector({
+    data: realms,
+    selector: (r) => r.userIdentities?.length !== 0,
+    sorts: [
+      { field: "bountyBoard", order: "desc" },
+      { field: "meta", order: "desc" },
+    ],
+  });
 };
 
 // pub struct TokenOwnerRecordV2 {
