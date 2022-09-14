@@ -1,14 +1,9 @@
 import { AnchorProvider, Program } from "@project-serum/anchor";
-import {
-  PublicKey,
-  Transaction,
-  TransactionInstruction,
-} from "@solana/web3.js";
+import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import {
   DUMMY_MINT_PK,
   GOVERNANCE_PROGRAM_ID,
   INIT_BOUNTY_BOARD_PROPOSAL_NAME,
-  PROGRAM_AUTHORITY_SEED,
   UPDATE_BOUNTY_BOARD_PROPOSAL_NAME,
 } from "./constants";
 import { BountyBoard, BountyBoardConfig } from "../model/bounty-board.model";
@@ -22,7 +17,6 @@ import {
   _getAddBountyBoardTierConfigInstruction,
   getBountyBoardAddress,
 } from "./utils";
-import { RealmTreasury, UserRepresentationInDAO } from "../hooks";
 import {
   getProposalsByGovernance,
   ProgramAccount,
@@ -32,6 +26,27 @@ import {
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
 import { TOKEN_PROGRAM_ID, unpackAccount } from "@solana/spl-token";
 import { UserProposalEntity } from "../hooks/realm/useUserProposalEntitiesInRealm";
+import { _getInitBountyBoardDescription } from "./utils/proposal-description-utils";
+import { BountyBoardProgramAccount } from "../model/util.model";
+import { bytesToAddressStr, bytesToStr } from "../utils/encoding";
+
+export const getAllBountyBoards = async (
+  connection: Connection,
+  program: Program<DaoBountyBoard>
+): Promise<BountyBoardProgramAccount<{ realm: string }>[]> => {
+  // get all bounty boards in the world
+  const bountyBoards = await connection.getProgramAccounts(program.programId, {
+    dataSlice: { offset: 8, length: 32 }, // keep the realm PK
+    filters: [{ memcmp: program.coder.accounts.memcmp("bountyBoard") }],
+  });
+  // Example data buffer: [0,0,0,0,0,0,0,0, 0, 69,110,116,114,121,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0]
+  return bountyBoards.map((b) => ({
+    pubkey: b.pubkey,
+    account: {
+      realm: bytesToAddressStr(b.account.data),
+    },
+  }));
+};
 
 export const getBountyBoard = async (
   program: Program<DaoBountyBoard>,
@@ -40,12 +55,28 @@ export const getBountyBoard = async (
   const bountyBoardAcc = await program.account.bountyBoard.fetchNullable(
     bountyBoardPubkey
   );
-  return bountyBoardAcc
-    ? {
-        pubkey: bountyBoardPubkey,
-        account: bountyBoardAcc,
-      }
-    : null;
+
+  return {
+    pubkey: bountyBoardPubkey,
+    account: bountyBoardAcc
+      ? {
+          ...bountyBoardAcc,
+          config: {
+            ...bountyBoardAcc.config,
+            //@ts-ignore
+            tiers: bountyBoardAcc.config.tiers.map((t) => ({
+              ...t,
+              tierName: bytesToStr(t.tierName),
+            })),
+            //@ts-ignore
+            roles: bountyBoardAcc.config.roles.map((r) => ({
+              ...r,
+              roleName: bytesToStr(r.roleName),
+            })),
+          },
+        }
+      : null,
+  };
 };
 
 export const getBountyBoardVaults = async (
@@ -169,6 +200,8 @@ export const proposeInitBountyBoard = async (
     );
     addContributorWithRoleInstructions.push(ix);
   }
+
+  // const proposalDescription = _getInitBountyBoardDescription(boardConfig);
 
   // submit proposal
   const proposalAddress = await _createProposal(

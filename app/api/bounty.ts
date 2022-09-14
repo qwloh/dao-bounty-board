@@ -22,7 +22,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { BountyBoard } from "../model/bounty-board.model";
-import { mapBytesToStr } from "./utils/mapping-utils";
+import { bytesToStr } from "../utils/encoding";
 
 export const getBounty = async (
   program: Program<DaoBountyBoard>,
@@ -32,7 +32,7 @@ export const getBounty = async (
   return bounty
     ? {
         ...bounty,
-        tier: mapBytesToStr(bounty.tier),
+        tier: bytesToStr(bounty.tier),
       }
     : null;
 };
@@ -58,7 +58,7 @@ export const getBounties = async (
       account: {
         bountyIndex: new BN(dataBuffer.subarray(0, 8), "le"),
         state: BountyState[dataBuffer[8]],
-        tier: mapBytesToStr(dataBuffer.subarray(9, 9 + 24)),
+        tier: bytesToStr(dataBuffer.subarray(9, 9 + 24)),
         skill: Skill[dataBuffer[33]],
       },
     };

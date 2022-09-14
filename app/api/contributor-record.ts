@@ -3,7 +3,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
 import { ContributorRecord } from "../model/contributor-record.model";
 import { BountyBoardProgramAccount } from "../model/util.model";
-import { mapBytesToStr } from "./utils/mapping-utils";
+import { bytesToStr } from "../utils/encoding";
 
 export const getContributorRecord = async (
   program: Program<DaoBountyBoard>,
@@ -14,7 +14,7 @@ export const getContributorRecord = async (
   return contributorRecord
     ? {
         ...contributorRecord,
-        role: mapBytesToStr(contributorRecord.role),
+        role: bytesToStr(contributorRecord.role),
       }
     : null;
 };
@@ -39,7 +39,7 @@ export const getAllContributorRecordsForRealm = async (
   return contributorRecords.map((c) => ({
     pubkey: c.pubkey.toString(),
     account: {
-      role: mapBytesToStr(c.account.data.subarray(0, 24)),
+      role: bytesToStr(c.account.data.subarray(0, 24)),
       reputation: new BN(c.account.data.subarray(24), "le"),
     },
   }));
@@ -58,7 +58,7 @@ export const getPagedContributorRecords = async (
       ? {
           ...acc,
           // @ts-ignore
-          role: mapBytesToStr(acc.role),
+          role: bytesToStr(acc.role),
         }
       : null,
   }));
