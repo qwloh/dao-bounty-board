@@ -10,16 +10,12 @@ interface UseSortArgs<T> {
 export const useSort = <T>({ filteredData, initialSort }: UseSortArgs<T>) => {
   const [sort, setSort] = useState<Sort<T> | undefined>(initialSort);
 
-  // create a copy so we don't mutate the original data
-  const unsortedData = useMemo(() => {
-    if (!filteredData) return [];
-    return [...filteredData];
-  }, [filteredData]);
-
   // sorted data based on Sort
   const sorted = useMemo(() => {
     if (!filteredData) return [];
-    return sort ? unsortedData.sort(getSortComparator([sort])) : filteredData; // if sort is undefined, do nothing
+    return sort
+      ? [...filteredData].sort(getSortComparator([sort])) // create a new reference every time a sort happens to notify downstream users
+      : filteredData; // if sort is undefined, do nothing
   }, [filteredData, sort]);
 
   // functions to expose to hook consumer
