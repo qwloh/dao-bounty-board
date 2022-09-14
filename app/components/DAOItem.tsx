@@ -1,13 +1,13 @@
-import Link from 'next/link';
-import React from 'react';
+import Link from "next/link";
+import React from "react";
 
-import { RealmInfo } from '../api';
-import { H3 } from './H3';
+import { RealmInfoAsJSON } from "../model/realm.model";
+import { H3 } from "./H3";
 
 interface IDAOItem {
-  name: string
-  id: string
-  imgUrl: string
+  name: string;
+  id: string;
+  imgUrl: string;
 }
 
 // symbol: string;
@@ -45,8 +45,9 @@ export const DAOItem = ({
   symbol,
   bannerImage,
   ogImage,
-}: RealmInfo) => (
-  <Link href={`/dao/${symbol}/bounty-board`} passHref>
+  realmId,
+}: RealmInfoAsJSON) => (
+  <Link href={`/dao/${symbol || realmId}/bounty-board`} passHref>
     <a className="group rounded-lg p-8 flex flex-col gap-5 items-center cursor-pointer text-center transition-all bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10">
       <div className="w-16 h-16 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center transition-all group-hover:scale-110">
         {ogImage && <img src={ogImage} className="w-10" />}
@@ -60,4 +61,4 @@ export const DAOItem = ({
       <H3>{displayName || symbol}</H3>
     </a>
   </Link>
-)
+);

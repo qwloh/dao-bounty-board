@@ -1,4 +1,3 @@
-export * from "./realm-info";
 export * from "./bounty-board";
 export * from "./bounty";
 export * from "./bounty-submission";

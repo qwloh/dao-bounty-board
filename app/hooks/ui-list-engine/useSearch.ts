@@ -11,6 +11,8 @@ export const useSearch = <T>(
 ) => {
   const [searchTerm, setSearchTerm] = useState("");
 
+  // can get a bit laggy when user is typing fast
+  // to explore performance improvement solution again
   const result = useMemo(() => {
     if (!data) return [];
     if (!searchTerm) return data; // do nothing
@@ -28,8 +30,14 @@ export const useSearch = <T>(
     setSearchTerm(searchTerm);
   };
 
+  const clearSearch = () => {
+    setSearchTerm("");
+  };
+
   return {
     result,
+    searchTerm,
     updateSearchTerm,
+    clearSearch,
   };
 };

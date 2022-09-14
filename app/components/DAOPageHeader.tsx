@@ -1,20 +1,20 @@
-import React, { useMemo } from 'react';
+import React, { useMemo } from "react";
+import { useRealm } from "../hooks/realm/useRealm";
 
-import { useRealmInfoBySymbol } from '../hooks/useRealmInfoBySymbol';
-import { useRouter } from '../hooks/useRouter';
-import { Back } from './Back';
-import { DAOHeader } from './DAOHeader';
-import { DAONav } from './DAONav';
+import { useRouter } from "../hooks/useRouter";
+import { Back } from "./Back";
+import { DAOHeader } from "./DAOHeader";
+import { DAONav } from "./DAONav";
 
 export const DAOPageHeader = () => {
-  const { symbol } = useRouter()
-  const { realmInfo } = useRealmInfoBySymbol(symbol)
+  const { symbol } = useRouter();
+  const { data: realm } = useRealm(symbol);
 
   return (
     <div className="flex flex-col gap-6">
       <Back />
-      <DAOHeader {...realmInfo} />
+      {realm && <DAOHeader {...realm.metadata} />}
       <DAONav />
     </div>
-  )
-}
+  );
+};

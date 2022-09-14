@@ -5,7 +5,7 @@ import { GOVERNANCE_PROGRAM_ID } from "../../api/constants";
 import { RealmInfoAsJSON, UIRealmsItem } from "../../model/realm.model";
 import { useAnchorContext } from "../useAnchorContext";
 import realmInfos from "../../public/realms/devnet.json";
-import { getAllBountyBoards, getBountyBoard, RealmInfo } from "../../api";
+import { getAllBountyBoards } from "../../api";
 import { getUserRealms } from "../../api/realm";
 import { _toMap } from "../../utils/data-transform";
 
@@ -58,10 +58,10 @@ export const useRealms = () => {
 
         // build symbol-address mapping for DAOs with metadata
         if (realmInfo?.symbol) {
-          queryClient.setQueryData(
-            ["realm-mapping", realmInfo.symbol],
-            realmPkStr
-          );
+          queryClient.setQueryData(["realm-mapping", realmInfo.symbol], {
+            realmPubkeyStr: realmPkStr,
+            realmInfo,
+          });
         }
 
         // data normalization

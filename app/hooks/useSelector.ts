@@ -23,6 +23,7 @@ export const useSelector = <T>({
   return useMemo(() => {
     if (!data) return [];
     console.log("Selector run");
-    return data.filter(filterPredicate).sort(getSortComparator(sorts));
+    const filtered = data.filter(filterPredicate);
+    return sorts ? filtered.sort(getSortComparator(sorts)) : filtered;
   }, [data, filterPredicate]);
 };
