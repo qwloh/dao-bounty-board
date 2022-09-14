@@ -187,7 +187,7 @@ pub mod dao_bounty_board {
     //     string_in_bytes.resize(128 + 4, 0u8); // try_to_vec add 4 extra bytes before actual value begins to store size of vec
     //     test_account.padded_string = string_in_bytes[4..132].try_into().unwrap(); // we don't want the first 4 bytes
     //     test_account.next_field = data.next_field;
-
+    //     test_account.string_with_newline = data.string_with_newline;
     //     Ok(())
     // }
 
@@ -238,10 +238,12 @@ pub mod dao_bounty_board {
 // pub struct TestAccount {
 //     pub padded_string: [u8; 128],
 //     pub next_field: bool,
+//     pub string_with_newline: String,
 // }
 
 // #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 // pub struct TestAccountVM {
 //     pub string: String,
 //     pub next_field: bool,
+//     pub string_with_newline: String,
 // }
