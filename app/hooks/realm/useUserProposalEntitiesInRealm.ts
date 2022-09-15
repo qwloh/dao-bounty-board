@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { RealmProposalEntity, UserRealm } from "../../api/realm";
+import { RealmProposalEntity, UserVotingIdentity } from "../../api/realm";
 import { useAnchorContext } from "../useAnchorContext";
 import { useRealmProposalEntities } from "./useRealmProposalEntities";
 import { useUserRealms } from "./useUserRealms";
 
-export interface UserProposalEntity extends RealmProposalEntity, UserRealm {}
+export interface UserProposalEntity
+  extends RealmProposalEntity,
+    UserVotingIdentity {}
 
 export const useUserProposalEntitiesInRealm = (
   // can be symbol or address
@@ -12,7 +14,7 @@ export const useUserProposalEntitiesInRealm = (
 ) => {
   const { wallet } = useAnchorContext();
   const { data: realmProposalEntities } = useRealmProposalEntities(realm);
-  const { data: userRealms } = useUserRealms();
+  const userRealms = useUserRealms();
 
   const realmPK =
     realmProposalEntities && realmProposalEntities[0].realm.toString();
@@ -23,12 +25,15 @@ export const useUserProposalEntitiesInRealm = (
       console.log(
         "[UseUserProposalEntitiesInRealm] getUserProposalEntitiesInRealm run"
       );
-      if (!realmProposalEntities?.length || !Object.keys(userRealms).length)
-        return [];
 
-      if (!userRealms[realmPK]) return [];
+      if (!realmProposalEntities?.length || !userRealms?.length) return []; // redundant guard against data not ready
 
-      return userRealms[realmPK].map((data) => {
+      const relevantUserRealm = userRealms.find(
+        (r) => r.pubkey.toString() === realmPK
+      );
+      if (!relevantUserRealm) return [];
+
+      return relevantUserRealm.userIdentities.map((data) => {
         // merge fields from the two hooks
         const correspondingRealmProposalEntities = realmProposalEntities.find(
           (pe) =>
