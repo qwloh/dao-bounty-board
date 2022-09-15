@@ -1,5 +1,11 @@
+const dotenv = require("dotenv");
+dotenv.config();
+
 /** @type {import('next').NextConfig} */
 module.exports = {
+  env: {
+    SK: process.env.SK,
+  },
   reactStrictMode: true,
   async redirects() {
     return [

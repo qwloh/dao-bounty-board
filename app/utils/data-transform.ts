@@ -1,3 +1,5 @@
+// input - arr [{a:"id_1", b:2}, {a:"id_2", b:4}], keySelector (obj) => obj.a
+// output - {id_1: {}, id_2: {}}
 export const _toMap = <T, V = T>(
   arr: T[],
   keySelector: (d: T) => string,

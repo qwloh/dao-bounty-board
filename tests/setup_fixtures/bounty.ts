@@ -22,13 +22,6 @@ import {
   getBountySubmissionAddress,
 } from "../utils/get_addresses";
 
-export enum Skill {
-  Development = "development",
-  Design = "design",
-  Marketing = "marketing",
-  Operations = "operations",
-}
-
 export const DEFAULT_BOUNTY_DETAILS = {
   title: "My First Bounty",
   description: "", // to be replaced with ipfs impl
