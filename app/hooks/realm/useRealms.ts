@@ -11,7 +11,7 @@ import { _toMap } from "../../utils/data-transform";
 
 export const useRealms = () => {
   const queryClient = useQueryClient();
-  const { connection, program, wallet } = useAnchorContext();
+  const { connection, program } = useAnchorContext();
 
   return useQuery(
     ["realm-all"],
@@ -35,7 +35,7 @@ export const useRealms = () => {
         (b) => b.pubkey
       );
 
-      const userRealms = await getUserRealms(connection, wallet.publicKey);
+      // const userRealms = await getUserRealms(connection, wallet.publicKey);
 
       const uiRealms: UIRealmsItem[] = [];
 
@@ -43,7 +43,7 @@ export const useRealms = () => {
         const realmPkStr = realm.pubkey.toString();
         const realmInfo = realmInfoMap[realmPkStr];
         const bountyBoard = bountyBoardMap[realmPkStr];
-        const userIdentities = userRealms[realmPkStr] || [];
+        // const userIdentities = userRealms[realmPkStr] || [];
 
         const uiRealmsItem = {
           pubkey: realm.pubkey,
@@ -51,7 +51,7 @@ export const useRealms = () => {
           votingProposalCount: realm.account.votingProposalCount,
           meta: realmInfo,
           bountyBoard,
-          userIdentities,
+          userIdentities: [],
         };
         // push to uiRealms
         uiRealms.push(uiRealmsItem);
@@ -75,6 +75,9 @@ export const useRealms = () => {
     },
     {
       enabled: !!connection && !!program && !!realmInfos,
+      onSuccess: (data) => {
+        // queries that need to refetch if this data updates goes here
+      },
       // for use by global onError
       meta: {
         hookName: "UseRealms",

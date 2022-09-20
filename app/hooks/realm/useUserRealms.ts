@@ -1,16 +1,46 @@
 import { useRealms } from "./useRealms";
 import { useSelector } from "../useSelector";
+import { useQuery } from "@tanstack/react-query";
+import { useAnchorContext } from "../useAnchorContext";
+import { getUserRealms } from "../../api/realm";
+import { UIRealmsItem } from "../../model/realm.model";
 
 export const useUserRealms = () => {
+  const { connection, wallet } = useAnchorContext();
   const { data: realms } = useRealms();
-  return useSelector({
-    data: realms,
-    selector: (r) => r.userIdentities?.length !== 0,
-    sorts: [
-      { field: "bountyBoard", order: "desc" },
-      { field: "meta", order: "desc" },
-    ],
-  });
+
+  // return useSelector({
+  //   data: realms,
+  //   selector: (r) => r.userIdentities?.length !== 0,
+  //   sorts: [
+  //     { field: "bountyBoard", order: "desc" },
+  //     { field: "meta", order: "desc" },
+  //   ],
+  // });
+
+  return useQuery(
+    ["realms", "isMember", wallet?.publicKey + ""],
+    async () => {
+      const userRealms = await getUserRealms(connection, wallet.publicKey);
+
+      const uiRealms: UIRealmsItem[] = [];
+      for (const [realmPkStr, userVotingIdentities] of Object.entries(
+        userRealms
+      )) {
+        const relevantRealm = realms.find(
+          (r) => r.pubkey.toString() === realmPkStr
+        );
+        relevantRealm.userIdentities = userVotingIdentities;
+        // push to uiRealms
+        uiRealms.push(relevantRealm);
+      }
+
+      return uiRealms;
+    },
+    {
+      enabled: !!wallet && !!realms && !!connection,
+    }
+  );
 };
 
 // pub struct TokenOwnerRecordV2 {

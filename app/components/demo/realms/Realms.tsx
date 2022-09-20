@@ -13,8 +13,9 @@ export const Realms = () => {
     }
   );
 
+  const { data: userRealms } = useUserRealms();
   // convenient wrappers. Can remove them if not needed
-  const userRealms = useUserRealms();
+  // const userRealms = useUserRealms();
   const realmsWithBountyBoard = useRealmsWithBountyBoard();
   const restRealms = useRestRealms();
 
@@ -38,23 +39,27 @@ export const Realms = () => {
       {/* render normal stuff if not on search */}
       {!searchTerm && (
         <>
-          <div className="h-96 p-6 bg-white overflow-y-scroll break-words">
-            <div className="text-lg font-bold">User realms</div>
+          <div className="h-96 p-6 bg-white overflow-y-scroll break-words rounded-lg">
+            <div className="text-lg font-bold">
+              User realms ({userRealms?.length || 0})
+            </div>
             {userRealms?.length ? (
               userRealms.map((r) => (
                 <div key={r.pubkey.toString()} className="py-2">
                   <p>Name: {r.name}</p>
                   <p>Bounty board: {r.bountyBoard + ""}</p>
-                  <p>User in realm? {!!r.userIdentities}</p>
-                  <p>Metadata: {JSON.stringify(r.meta)}</p>
+                  <p>User in realm? {!!r.userIdentities + ""}</p>
+                  <p>Metadata: {JSON.stringify(r.meta) || "-"}</p>
                 </div>
               ))
             ) : (
               <div className="text-s font-normal">No data</div>
             )}
           </div>
-          <div className="h-96 p-6 bg-white overflow-y-scroll break-words">
-            <div className="text-lg font-bold">Realms with bounty board</div>
+          <div className="h-96 p-6 bg-white overflow-y-scroll break-words rounded-lg">
+            <div className="text-lg font-bold">
+              Realms with bounty board ({realmsWithBountyBoard?.length || 0})
+            </div>
             {realmsWithBountyBoard?.length ? (
               realmsWithBountyBoard.map((r) => (
                 <div key={r.pubkey.toString()} className="py-2">
@@ -68,8 +73,10 @@ export const Realms = () => {
               <div className="text-s font-normal">No data</div>
             )}
           </div>
-          <div className="h-96 p-6 bg-white overflow-y-scroll break-words">
-            <div className="text-lg font-bold">Rest realms</div>
+          <div className="h-96 p-6 bg-white overflow-y-scroll break-words rounded-lg">
+            <div className="text-lg font-bold">
+              Rest realms ({restRealms?.length || 0})
+            </div>
             {restRealms.map((r) => (
               <div key={r.pubkey.toString()} className="py-2">
                 <p>Name: {r.name}</p>
@@ -83,7 +90,7 @@ export const Realms = () => {
       )}
       {/* search result */}
       {searchTerm && (
-        <div className="h-96 p-6 bg-white overflow-y-scroll break-words">
+        <div className="h-96 p-6 bg-white overflow-y-scroll break-words rounded-lg">
           <div className="text-lg font-bold">Search result</div>
           {result?.length ? (
             result.map((r) => (
