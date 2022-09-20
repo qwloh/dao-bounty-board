@@ -5,7 +5,21 @@ export interface BountyActivity {
   bounty: PublicKey;
   activityIndex: number;
   timestamp: BN;
+  type: keyof typeof BountyActivityType;
   payload: ActivityPayload;
+}
+
+export enum BountyActivityType {
+  apply,
+  assign,
+  unassignOverdue,
+  submit,
+  requestChange,
+  updateSubmission,
+  accept,
+  forceAccept,
+  reject,
+  rejectForUnaddressedChangeRequest,
 }
 
 export type ActivityPayload =

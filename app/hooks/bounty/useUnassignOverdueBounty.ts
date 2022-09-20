@@ -22,7 +22,7 @@ export const useUnassignOverdueBounty = (
   const { refetch: refetchBountyActivities } = useBountyActivities(bountyPK);
 
   return useMutation(
-    (comment: string) =>
+    () =>
       unassignOverdueBounty({
         provider,
         program,
@@ -34,7 +34,6 @@ export const useUnassignOverdueBounty = (
         bountySubmissionPK: bountySubmissions[0].pubkey, // assume latest submission must be the active submission
         assigneeContributorRecordPK: bountySubmissions[0].account.assignee,
         reviewerContributorRecordPK: contributorRecord.pubkey,
-        comment,
       }),
     {
       onSuccess: (data, variables, context) => {

@@ -1,7 +1,10 @@
 import { AnchorProvider, BN, Program } from "@project-serum/anchor";
 import { PublicKey, SystemProgram, SYSVAR_CLOCK_PUBKEY } from "@solana/web3.js";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
-import { BountyApplication } from "../model/bounty-application.model";
+import {
+  BountyApplication,
+  BountyApplicationStatus,
+} from "../model/bounty-application.model";
 import { Bounty } from "../model/bounty.model";
 import { BountyBoardProgramAccount } from "../model/util.model";
 import {
@@ -26,7 +29,16 @@ export const getBountyApplications = async (
   // @ts-ignore, return type is hard asserted
   return anchorProgAccounts.map((acc) => ({
     pubkey: acc.publicKey,
-    account: acc.account,
+    account: {
+      ...acc.account,
+      // convert rust enums into more convenient form
+      // original: status: {assigned: {}}
+      // after conversion: state: 'assigned'
+      status:
+        BountyApplicationStatus[
+          BountyApplicationStatus[Object.keys(acc.account.status)[0]]
+        ],
+    },
   }));
 };
 

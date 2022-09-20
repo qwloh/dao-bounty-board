@@ -1,22 +1,23 @@
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 
-export type BountySubmissionState =
-  | "pendingSubmission"
-  | "unassignedForOverdue"
-  | "pendingReview"
-  | "changeRequested"
-  | "rejected"
-  | "rejectedForUnaddressedChangeRequest"
-  | "accepted"
-  | "forceAccepted";
+export enum BountySubmissionState {
+  pendingSubmission,
+  unassignedForOverdue,
+  pendingReview,
+  changeRequested,
+  rejected,
+  rejectedForUnaddressedChangeRequest,
+  accepted,
+  forceAccepted,
+}
 
 export interface BountySubmission {
   bounty: PublicKey;
   submissionIndex: number;
   assignee: PublicKey;
   assignedAt: BN;
-  state: Partial<Record<BountySubmissionState, {}>>;
+  state: keyof typeof BountySubmissionState;
 
   linkToSubmission: string;
   firstSubmittedAt: BN;

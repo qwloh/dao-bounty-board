@@ -33,6 +33,11 @@ export const getBounty = async (
     ? {
         ...bounty,
         tier: bytesToStr(bounty.tier),
+        // convert rust enums into more convenient form
+        // original: state: {open: {}}
+        // after conversion: state: 'open'
+        state: BountyState[BountyState[Object.keys(bounty.state)[0]]],
+        skill: Skill[Skill[Object.keys(bounty.skill)[0]]],
       }
     : null;
 };
@@ -241,7 +246,6 @@ interface UnassignOverdueBountyArgs {
   bountySubmissionPK: PublicKey;
   assigneeContributorRecordPK: PublicKey;
   reviewerContributorRecordPK: PublicKey;
-  comment: string;
 }
 
 export const unassignOverdueBounty = async ({
@@ -251,7 +255,6 @@ export const unassignOverdueBounty = async ({
   bountySubmissionPK,
   assigneeContributorRecordPK,
   reviewerContributorRecordPK,
-  comment,
 }: UnassignOverdueBountyArgs) => {
   console.log("Bounty Submission PK", bountySubmissionPK.toString());
   const { pubkey: bountyPK, account: bountyAcc } = bounty;
@@ -269,9 +272,7 @@ export const unassignOverdueBounty = async ({
   return (
     program.methods
       //@ts-ignore
-      .unassignOverdueBounty({
-        comment,
-      })
+      .unassignOverdueBounty()
       .accounts({
         bounty: bountyPK,
         bountySubmission: bountySubmissionPK,

@@ -34,6 +34,7 @@ export const useAssignBounty = (
           account: bounty,
         },
         bountyApplicationPK: new PublicKey(bountyApplicationPK),
+        contributorRecordPK: contributorRecord.pubkey,
       }),
     {
       onSuccess: (data, variables, context) => {

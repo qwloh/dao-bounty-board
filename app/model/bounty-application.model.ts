@@ -1,7 +1,10 @@
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 
-export type BountyApplicationStatus = "assigned" | "notAssigned";
+export enum BountyApplicationStatus {
+  assigned,
+  notAssigned,
+}
 
 export interface BountyApplication {
   bounty: PublicKey;
@@ -9,5 +12,5 @@ export interface BountyApplication {
   contributorRecord: PublicKey;
   validity: BN;
   appliedAt: BN;
-  status: Partial<Record<BountyApplicationStatus, {}>>;
+  status: keyof typeof BountyApplicationStatus;
 }
