@@ -14,7 +14,7 @@ export const useUserProposalEntitiesInRealm = (
 ) => {
   const { wallet } = useAnchorContext();
   const { data: realmProposalEntities } = useRealmProposalEntities(realm);
-  const userRealms = useUserRealms();
+  const { data: userRealms } = useUserRealms();
 
   const realmPK =
     realmProposalEntities && realmProposalEntities[0].realm.toString();

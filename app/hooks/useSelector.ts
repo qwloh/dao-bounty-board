@@ -11,14 +11,16 @@ interface UseSelectorArgs<T> {
   data: T[];
   selector: (d: T) => boolean;
   sorts?: Sort<T>[]; // support sort by multiple field
+  selectorDependencies?: any[];
 }
 
 export const useSelector = <T>({
   data,
   selector,
   sorts,
+  selectorDependencies = [],
 }: UseSelectorArgs<T>) => {
-  const filterPredicate = useCallback(selector, []); // expect selector to never change since declaration, so never refresh
+  const filterPredicate = useCallback(selector, selectorDependencies); // expect selector to never change since declaration, so never refresh
 
   return useMemo(() => {
     if (!data) return [];
