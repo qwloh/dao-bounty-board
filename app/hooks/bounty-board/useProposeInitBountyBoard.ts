@@ -7,10 +7,14 @@ import { InitialContributorWithRole } from "../../api/utils";
 import { BountyBoardConfig, Permission } from "../../model/bounty-board.model";
 import { CallbacksForUI } from "../../model/util.model";
 import { useRealm } from "../realm/useRealm";
-import { UserProposalEntity } from "../realm/useUserProposalEntitiesInRealm";
+import {
+  UserProposalEntity,
+  useUserProposalEntitiesInRealm,
+} from "../realm/useUserProposalEntitiesInRealm";
 import { useAnchorContext } from "../useAnchorContext";
 import { useActiveBountyBoardProposals } from "./useActiveBountyBoardProposals";
 import { useMemo } from "react";
+import { useBountyBoardByRealm } from "./useBountyBoardByRealm";
 
 export interface ProposeInitBountyBoardArgs {
   userProposalEntity: UserProposalEntity;
@@ -27,8 +31,11 @@ export const useProposeInitBountyBoard = (
 ) => {
   const { program, walletConnected } = useAnchorContext();
   const { data: realmAccount } = useRealm(realm);
+  const { data: userProposalEntitiesInRealm } =
+    useUserProposalEntitiesInRealm(realm);
   const { refetch: refetchActiveProposals } =
     useActiveBountyBoardProposals(realm);
+  const { data: bountyBoard } = useBountyBoardByRealm(realm);
 
   const { enabled, instructionToEnable } = useMemo(() => {
     if (!walletConnected)
@@ -36,8 +43,22 @@ export const useProposeInitBountyBoard = (
         enabled: false,
         instructionToEnable: "Connect your wallet first",
       };
+    if (!userProposalEntitiesInRealm?.length)
+      return {
+        enabled: false,
+        instructionToEnable: "You're a not a member of this DAO",
+      };
+    if (bountyBoard?.account)
+      return {
+        enabled: false,
+        instructionToEnable: "This realm already has a bounty board",
+      };
     return { enabled: true };
-  }, [walletConnected]);
+  }, [
+    walletConnected,
+    userProposalEntitiesInRealm?.length,
+    !!bountyBoard?.account,
+  ]);
 
   const mutationResult = useMutation(
     ({

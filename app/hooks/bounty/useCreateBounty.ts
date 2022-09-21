@@ -30,8 +30,16 @@ export const useCreateBounty = (
         enabled: false,
         instructionToEnable: "Connect your wallet first",
       };
+
+    if (!bountyBoard?.account)
+      return {
+        enabled: false,
+        instructionToEnable:
+          "Your realm does not have a bounty board set up. You can submit a proposal to set up one.",
+      };
+
     return { enabled: true };
-  }, [walletConnected]);
+  }, [walletConnected, bountyBoard?.account]);
 
   const mutationResult = useMutation(
     (bountyDetails: CreateBountyArgs) =>

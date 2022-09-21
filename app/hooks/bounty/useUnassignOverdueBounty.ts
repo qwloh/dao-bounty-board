@@ -29,8 +29,44 @@ export const useUnassignOverdueBounty = (
         enabled: false,
         instructionToEnable: "Connect your wallet first",
       };
+
+    const activeSubmission =
+      !!bountySubmissions?.length && bountySubmissions[0];
+    const concluded = ![
+      "pendingSubmission",
+      "pendingReview",
+      "changeRequested",
+    ].includes(activeSubmission?.account?.state);
+
+    if (!activeSubmission || concluded)
+      return {
+        enabled: false,
+        instructionToEnable: "No active assignment to unassign",
+      };
+
+    if (activeSubmission.account.state !== "pendingSubmission")
+      return {
+        enabled: false,
+        instructionToEnable: !concluded
+          ? "Assignee has already submitted work. [Request change] instead, or [Reject] the submission if a consensus cannot be reached after 3 rounds of iteration"
+          : "Submission concluded",
+      };
+
+    const taskSubmissionWindow = bounty?.taskSubmissionWindow;
+    const nowInEpochSecs = new Date().getTime() / 1000;
+    const bountyOverdueAt =
+      activeSubmission.account.assignedAt.toNumber() + taskSubmissionWindow;
+    const bountyOverdue = nowInEpochSecs > bountyOverdueAt;
+    if (!bountyOverdue)
+      return {
+        enabled: false,
+        instructionToEnable: `Bounty not overdue yet. Assignee has until ${new Date(
+          bountyOverdueAt * 1000
+        ).toISOString()} to submit his work`,
+      };
+
     return { enabled: true };
-  }, [walletConnected]);
+  }, [walletConnected, bountySubmissions]);
 
   const mutationResult = useMutation(
     () =>

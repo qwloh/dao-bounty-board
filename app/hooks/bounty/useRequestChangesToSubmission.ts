@@ -31,8 +31,27 @@ export const useRequestChangesToSubmission = (
         enabled: false,
         instructionToEnable: "Connect your wallet first",
       };
+
+    const activeSubmission =
+      !!bountySubmissions?.length && bountySubmissions[0];
+
+    if (
+      activeSubmission &&
+      activeSubmission.account.state === "changeRequested"
+    )
+      return {
+        enabled: false,
+        instructionToEnable: "Work not pending review",
+      };
+
+    if (!activeSubmission || activeSubmission.account.state !== "pendingReview")
+      return {
+        enabled: false,
+        instructionToEnable: "No work pending review",
+      };
+
     return { enabled: true };
-  }, [walletConnected]);
+  }, [walletConnected, bountySubmissions]);
 
   const mutationResult = useMutation(
     (comment: string) =>

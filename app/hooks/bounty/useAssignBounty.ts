@@ -33,6 +33,12 @@ export const useAssignBounty = (
         enabled: false,
         instructionToEnable: "Connect your wallet first",
       };
+    if (bounty && bounty?.state !== "open")
+      return {
+        enabled: false,
+        instructionToEnable:
+          "Bounty already assigned. To assign to another application, either unassign or reject previous assignment",
+      };
     if (!bountyApplications?.length)
       return {
         enabled: false,
@@ -40,7 +46,7 @@ export const useAssignBounty = (
           "No application yet. Create some bounty applications by applying to bounty first.",
       };
     return { enabled: true };
-  }, [walletConnected, bountyApplications?.length]);
+  }, [walletConnected, bounty?.state !== "open", bountyApplications?.length]);
 
   const mutationResult = useMutation(
     (bountyApplicationPK: string) =>
