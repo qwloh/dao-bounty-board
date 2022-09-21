@@ -5,18 +5,20 @@ import { getContributorRecordAddress } from "../../api/utils";
 import { useBountyBoardByRealm } from "../bounty-board/useBountyBoardByRealm";
 import { useAnchorContext } from "../useAnchorContext";
 
-export const useContributorRecord = (realm: string, walletPK: string) => {
+export const useContributorRecord = (realm: string, walletPK: PublicKey) => {
   const { program } = useAnchorContext();
   const { data: bountyBoard } = useBountyBoardByRealm(realm);
 
   return useQuery(
-    ["contributor-record", realm, walletPK],
+    ["contributor-record", realm, walletPK + ""],
     async () => {
-      console.log("[UseContributorRecord] getContributorRecord run", walletPK);
-      const walletPubkey = new PublicKey(walletPK);
+      console.log(
+        "[UseContributorRecord] getContributorRecord run",
+        walletPK + ""
+      );
       const [contributorRecordPK] = await getContributorRecordAddress(
         bountyBoard.pubkey,
-        walletPubkey
+        walletPK
       );
       const account = await getContributorRecord(program, contributorRecordPK);
       return {

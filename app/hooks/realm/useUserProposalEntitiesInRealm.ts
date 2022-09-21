@@ -20,7 +20,7 @@ export const useUserProposalEntitiesInRealm = (
     realmProposalEntities && realmProposalEntities[0].realm.toString();
 
   return useQuery(
-    ["user-proposal-entities-in-realm", realmPK, wallet?.publicKey],
+    ["realm", "user-proposal-entities", realmPK, wallet?.publicKey],
     () => {
       console.log(
         "[UseUserProposalEntitiesInRealm] getUserProposalEntitiesInRealm run"

@@ -2,7 +2,7 @@ import { PublicKey } from "@solana/web3.js";
 import { useMutation } from "@tanstack/react-query";
 import { unassignOverdueBounty } from "../../api";
 import { CallbacksForUI } from "../../model/util.model";
-import { useUserContributorRecordInRealm } from "../contributor-record/useUserContributorRecordInRealm";
+import { useContributorRecord } from "../contributor-record/useContributorRecord";
 import { useAnchorContext } from "../useAnchorContext";
 import { useBounty } from "./useBounty";
 import { useBountyActivities } from "./useBountyActivities";
@@ -14,8 +14,9 @@ export const useUnassignOverdueBounty = (
   bountyPK: string,
   callbacks: CallbacksForUI = { onSuccess: undefined, onError: undefined }
 ) => {
-  const { provider, program } = useAnchorContext();
-  const { data: contributorRecord } = useUserContributorRecordInRealm(realm);
+  const { provider, program, wallet } = useAnchorContext();
+  const { data: contributorRecord, refetch: refetchContributorRecord } =
+    useContributorRecord(realm, wallet?.publicKey);
   const { data: bounty, refetch: refetchBounty } = useBounty(bountyPK);
   const { data: bountySubmissions, refetch: refetchBountySubmissions } =
     useBountySubmissions(bountyPK);
@@ -40,6 +41,7 @@ export const useUnassignOverdueBounty = (
         refetchBounty();
         refetchBountySubmissions();
         refetchBountyActivities();
+        refetchContributorRecord();
         if (callbacks?.onSuccess) {
           callbacks.onSuccess(data, variables, context);
         }

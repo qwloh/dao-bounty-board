@@ -23,15 +23,12 @@ export const BountyDetails = ({ realm }: { realm: string }) => {
 
   return (
     <div className="flex flex-col gap-y-2 py-4">
-      <div className="bg-white rounded-lg p-4">
-        <div className="font-bold">Me as contributor in realm</div>
-        <ContributorRecord realm={realm} walletPK={wallet?.publicKey + ""} />
-      </div>
       {/* Input bar */}
       <div className="flex gap-2">
         <input
           type="text"
-          placeholder="Address of bounty to view details"
+          placeholder=" Note: Copy paste a bounty address from previous page to view details
+          of that bounty"
           className="bg-white border-slate-100 rounded-lg p-2 flex-1"
         />
         <button
@@ -45,24 +42,22 @@ export const BountyDetails = ({ realm }: { realm: string }) => {
           View
         </button>
       </div>
-      {(!bountyPK || !bountyPK.trim()) && (
-        <div className="bg-white rounded-lg p-4">
-          Note: Copy paste a bounty address from previous page to view details
-          of that bounty
-        </div>
-      )}
+      <div className="bg-white rounded-lg p-4">
+        <div className="font-bold">Me as contributor in realm</div>
+        <ContributorRecord realm={realm} walletPK={wallet?.publicKey} />
+      </div>
       {bountyPK && bountyPK.trim() && (
         <div className="flex gap-x-4  items-start">
           <div className="basis-2/3 min-w-0 flex flex-col gap-y-4">
             <div className="flex gap-x-4">
               {/* Bounty details */}
-              <div className="basis-2/3 min-w-0 flex flex-col gap-y-1 bg-white rounded-lg p-4">
+              <div className="basis-1/2 min-w-0 flex flex-col gap-y-1 bg-white rounded-lg p-4">
                 <div className="font-bold">Bounty details</div>
                 <Bounty bountyPK={bountyPK} />
               </div>
               {/* Bounty applications */}
-              <div className="basis-1/3 min-w-0 bg-white rounded-lg p-4">
-                <BountyApplications bountyPK={bountyPK} />
+              <div className="basis-1/2 min-w-0 bg-white rounded-lg p-4">
+                <BountyApplications realm={realm} bountyPK={bountyPK} />
               </div>
             </div>
             {/* Bounty submissions */}
