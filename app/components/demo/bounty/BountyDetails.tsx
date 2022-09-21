@@ -12,17 +12,21 @@ import { SubmitToBounty } from "./SubmitToBounty";
 import { UpdateSubmission } from "./UpdateSubmission";
 import { ForceAcceptSubmission } from "./ForceAcceptSubmission";
 import { AcceptSubmission } from "./AcceptSubmission";
-import { CreateBountyBtn } from "../bounties/buttons/CreateBountyBtn";
-import { DeleteBounty } from "../bounties/DeleteBounty";
-import { Skill } from "../../../model/bounty.model";
 import { useState } from "react";
+import { ContributorRecord } from "../contributor-record/ContributorRecord";
+import { useAnchorContext } from "../../../hooks";
 
 export const BountyDetails = ({ realm }: { realm: string }) => {
   // hard coded value
   const [bountyPK, setBountyPK] = useState("");
+  const { wallet } = useAnchorContext();
 
   return (
     <div className="flex flex-col gap-y-2 py-4">
+      <div className="bg-white rounded-lg p-4">
+        <div className="font-bold">Me as contributor in realm</div>
+        <ContributorRecord realm={realm} walletPK={wallet?.publicKey + ""} />
+      </div>
       {/* Input bar */}
       <div className="flex gap-2">
         <input

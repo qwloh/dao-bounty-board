@@ -1,26 +1,31 @@
 import { PublicKey } from "@solana/web3.js";
 import { useQuery } from "@tanstack/react-query";
 import { getContributorRecord } from "../../api";
+import { getContributorRecordAddress } from "../../api/utils";
+import { useBountyBoardByRealm } from "../bounty-board/useBountyBoardByRealm";
 import { useAnchorContext } from "../useAnchorContext";
 
-export const useContributorRecord = (contributorRecordPK: string) => {
+export const useContributorRecord = (realm: string, walletPK: string) => {
   const { program } = useAnchorContext();
+  const { data: bountyBoard } = useBountyBoardByRealm(realm);
+
   return useQuery(
-    ["contributor-record", contributorRecordPK],
+    ["contributor-record", realm, walletPK],
     async () => {
-      console.log(
-        "[UseContributorRecord] getContributorRecord run",
-        contributorRecordPK
+      console.log("[UseContributorRecord] getContributorRecord run", walletPK);
+      const walletPubkey = new PublicKey(walletPK);
+      const [contributorRecordPK] = await getContributorRecordAddress(
+        bountyBoard.pubkey,
+        walletPubkey
       );
-      const pubkey = new PublicKey(contributorRecordPK);
-      const account = await getContributorRecord(program, pubkey);
+      const account = await getContributorRecord(program, contributorRecordPK);
       return {
-        pubkey,
+        pubkey: contributorRecordPK,
         account,
       };
     },
     {
-      enabled: !!program && !!contributorRecordPK,
+      enabled: !!program && !!walletPK && !!bountyBoard,
       // for use by global onError
       meta: {
         hookName: "UseContributorRecord",
