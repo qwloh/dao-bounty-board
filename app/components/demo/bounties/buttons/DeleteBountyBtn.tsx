@@ -1,5 +1,5 @@
 import { useDeleteBounty } from "../../../../hooks/bounty/useDeleteBounty";
-import { ButtonWrapper } from "../../ButtonWrapper";
+import { MutationStateWrapper } from "../../MutationStateWrapper";
 
 export const DeleteBountyBtn = ({
   realm,
@@ -25,7 +25,7 @@ export const DeleteBountyBtn = ({
   };
 
   return (
-    <ButtonWrapper
+    <MutationStateWrapper
       enabled={enabled}
       instructionToEnable={instructionToEnable}
       isLoading={isLoading}
@@ -43,6 +43,6 @@ export const DeleteBountyBtn = ({
       >
         Delete bounty
       </button>
-    </ButtonWrapper>
+    </MutationStateWrapper>
   );
 };

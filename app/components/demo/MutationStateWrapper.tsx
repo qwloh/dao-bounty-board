@@ -1,17 +1,17 @@
-interface ButtonWrapperProps {
+interface MutationStateWrapper {
   enabled: boolean;
   instructionToEnable: string;
   isLoading: boolean;
   success: boolean;
 }
 
-export const ButtonWrapper = ({
+export const MutationStateWrapper = ({
   enabled,
   instructionToEnable,
   isLoading,
   success,
   children,
-}: React.PropsWithChildren<ButtonWrapperProps>) => {
+}: React.PropsWithChildren<MutationStateWrapper>) => {
   return (
     <div className="flex flex-col gap-2">
       {children}

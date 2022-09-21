@@ -2,7 +2,7 @@ import {
   CreateBountyArgs,
   useCreateBounty,
 } from "../../../../hooks/bounty/useCreateBounty";
-import { ButtonWrapper } from "../../ButtonWrapper";
+import { MutationStateWrapper } from "../../MutationStateWrapper";
 
 export const CreateBountyBtn = ({
   realm,
@@ -28,7 +28,7 @@ export const CreateBountyBtn = ({
   };
 
   return (
-    <ButtonWrapper
+    <MutationStateWrapper
       enabled={enabled}
       instructionToEnable={instructionToEnable}
       isLoading={isLoading}
@@ -46,6 +46,6 @@ export const CreateBountyBtn = ({
       >
         Create bounty
       </button>
-    </ButtonWrapper>
+    </MutationStateWrapper>
   );
 };

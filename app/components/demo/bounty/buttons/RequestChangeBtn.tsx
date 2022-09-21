@@ -1,5 +1,5 @@
 import { useRequestChangesToSubmission } from "../../../../hooks/bounty/useRequestChangesToSubmission";
-import { ButtonWrapper } from "../../ButtonWrapper";
+import { MutationStateWrapper } from "../../MutationStateWrapper";
 
 export const RequestChangeBtn = ({
   realm,
@@ -27,7 +27,7 @@ export const RequestChangeBtn = ({
   };
 
   return (
-    <ButtonWrapper
+    <MutationStateWrapper
       enabled={enabled}
       instructionToEnable={instructionToEnable}
       isLoading={isLoading}
@@ -45,6 +45,6 @@ export const RequestChangeBtn = ({
       >
         Request Change
       </button>
-    </ButtonWrapper>
+    </MutationStateWrapper>
   );
 };

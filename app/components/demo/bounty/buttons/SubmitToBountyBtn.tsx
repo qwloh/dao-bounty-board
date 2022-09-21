@@ -1,5 +1,5 @@
 import { useSubmitToBounty } from "../../../../hooks/bounty/useSubmitToBounty";
-import { ButtonWrapper } from "../../ButtonWrapper";
+import { MutationStateWrapper } from "../../MutationStateWrapper";
 
 export const SubmitToBountyBtn = ({
   realm,
@@ -27,7 +27,7 @@ export const SubmitToBountyBtn = ({
   };
 
   return (
-    <ButtonWrapper
+    <MutationStateWrapper
       enabled={enabled}
       instructionToEnable={instructionToEnable}
       isLoading={isLoading}
@@ -45,6 +45,6 @@ export const SubmitToBountyBtn = ({
       >
         Submit to Bounty
       </button>
-    </ButtonWrapper>
+    </MutationStateWrapper>
   );
 };

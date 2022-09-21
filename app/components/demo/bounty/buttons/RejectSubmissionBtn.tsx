@@ -1,5 +1,5 @@
 import { useRejectSubmission } from "../../../../hooks/bounty/useRejectSubmission";
-import { ButtonWrapper } from "../../ButtonWrapper";
+import { MutationStateWrapper } from "../../MutationStateWrapper";
 
 export const RejectSubmissionBtn = ({
   realm,
@@ -27,7 +27,7 @@ export const RejectSubmissionBtn = ({
   };
 
   return (
-    <ButtonWrapper
+    <MutationStateWrapper
       enabled={enabled}
       instructionToEnable={instructionToEnable}
       isLoading={isLoading}
@@ -45,6 +45,6 @@ export const RejectSubmissionBtn = ({
       >
         Reject Submission
       </button>
-    </ButtonWrapper>
+    </MutationStateWrapper>
   );
 };

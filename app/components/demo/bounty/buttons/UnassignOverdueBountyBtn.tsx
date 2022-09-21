@@ -1,5 +1,5 @@
 import { useUnassignOverdueBounty } from "../../../../hooks/bounty/useUnassignOverdueBounty";
-import { ButtonWrapper } from "../../ButtonWrapper";
+import { MutationStateWrapper } from "../../MutationStateWrapper";
 
 export const UnassignOverdueBountyBtn = ({
   realm,
@@ -25,7 +25,7 @@ export const UnassignOverdueBountyBtn = ({
   };
 
   return (
-    <ButtonWrapper
+    <MutationStateWrapper
       enabled={enabled}
       instructionToEnable={instructionToEnable}
       isLoading={isLoading}
@@ -43,6 +43,6 @@ export const UnassignOverdueBountyBtn = ({
       >
         Unassign Bounty
       </button>
-    </ButtonWrapper>
+    </MutationStateWrapper>
   );
 };

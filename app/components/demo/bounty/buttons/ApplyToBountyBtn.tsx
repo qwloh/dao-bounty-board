@@ -1,5 +1,5 @@
 import { useApplyToBounty } from "../../../../hooks/bounty/useApplyToBounty";
-import { ButtonWrapper } from "../../ButtonWrapper";
+import { MutationStateWrapper } from "../../MutationStateWrapper";
 
 export const ApplyToBountyBtn = ({
   realm,
@@ -27,7 +27,7 @@ export const ApplyToBountyBtn = ({
   };
 
   return (
-    <ButtonWrapper
+    <MutationStateWrapper
       enabled={enabled}
       instructionToEnable={instructionToEnable}
       isLoading={isLoading}
@@ -45,6 +45,6 @@ export const ApplyToBountyBtn = ({
       >
         Apply To Bounty
       </button>
-    </ButtonWrapper>
+    </MutationStateWrapper>
   );
 };
