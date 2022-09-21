@@ -1,5 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { useMutation } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { rejectSubmission } from "../../api";
 import { CallbacksForUI } from "../../model/util.model";
 import { useContributorRecord } from "../contributor-record/useContributorRecord";
@@ -14,7 +15,7 @@ export const useRejectSubmission = (
   bountyPK: string,
   callbacks: CallbacksForUI = { onSuccess: undefined, onError: undefined }
 ) => {
-  const { provider, program, wallet } = useAnchorContext();
+  const { provider, program, wallet, walletConnected } = useAnchorContext();
   const { data: contributorRecord } = useContributorRecord(
     realm,
     wallet?.publicKey
@@ -24,7 +25,16 @@ export const useRejectSubmission = (
     useBountySubmissions(bountyPK);
   const { refetch: refetchBountyActivities } = useBountyActivities(bountyPK);
 
-  return useMutation(
+  const { enabled, instructionToEnable } = useMemo(() => {
+    if (!walletConnected)
+      return {
+        enabled: false,
+        instructionToEnable: "Connect your wallet first",
+      };
+    return { enabled: true };
+  }, [walletConnected]);
+
+  const mutationResult = useMutation(
     (comment: string) =>
       rejectSubmission({
         provider,
@@ -55,4 +65,10 @@ export const useRejectSubmission = (
       },
     }
   );
+
+  return {
+    enabled,
+    instructionToEnable,
+    ...mutationResult,
+  };
 };

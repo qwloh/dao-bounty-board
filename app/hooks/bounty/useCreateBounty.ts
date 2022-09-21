@@ -1,28 +1,66 @@
 import { useMutation } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { createBounty } from "../../api";
 import { Skill } from "../../model/bounty.model";
+import { CallbacksForUI } from "../../model/util.model";
 import { useBountyBoardByRealm } from "../bounty-board/useBountyBoardByRealm";
 import { useAnchorContext } from "../useAnchorContext";
+import { useBountiesByRealm } from "./useBountiesByRealm";
+
+export interface CreateBountyArgs {
+  title: string;
+  description: string;
+  skill: Skill;
+  tier: string;
+}
 
 export const useCreateBounty = (
   // can be symbol or address
-  realm: string
+  realm: string,
+  callbacks: CallbacksForUI = { onSuccess: undefined, onError: undefined }
 ) => {
-  const { program } = useAnchorContext();
-  const { data: bountyBoard } = useBountyBoardByRealm(realm);
+  const { program, walletConnected } = useAnchorContext();
+  const { data: bountyBoard, refetch: refetchBountyBoard } =
+    useBountyBoardByRealm(realm);
+  const { refetch: refetchBounties } = useBountiesByRealm(realm);
 
-  return useMutation(
-    (bountyDetails: {
-      title: string;
-      description: string;
-      skill: Skill;
-      tier: string;
-    }) =>
+  const { enabled, instructionToEnable } = useMemo(() => {
+    if (!walletConnected)
+      return {
+        enabled: false,
+        instructionToEnable: "Connect your wallet first",
+      };
+    return { enabled: true };
+  }, [walletConnected]);
+
+  const mutationResult = useMutation(
+    (bountyDetails: CreateBountyArgs) =>
       createBounty({
         program,
         // @ts-ignore
         bountyBoard,
         ...bountyDetails,
-      })
+      }),
+    {
+      onSuccess: (data, variables, context) => {
+        refetchBountyBoard();
+        refetchBounties();
+        if (callbacks?.onSuccess) {
+          callbacks.onSuccess(data, variables, context);
+        }
+      },
+      onError: (err, variables, context) => {
+        console.error(err);
+        if (callbacks?.onError) {
+          callbacks?.onError(err, variables, context);
+        }
+      },
+    }
   );
+
+  return {
+    enabled,
+    instructionToEnable,
+    ...mutationResult,
+  };
 };

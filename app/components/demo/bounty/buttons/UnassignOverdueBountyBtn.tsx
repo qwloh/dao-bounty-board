@@ -1,4 +1,5 @@
 import { useUnassignOverdueBounty } from "../../../../hooks/bounty/useUnassignOverdueBounty";
+import { ButtonWrapper } from "../../ButtonWrapper";
 
 export const UnassignOverdueBountyBtn = ({
   realm,
@@ -8,9 +9,11 @@ export const UnassignOverdueBountyBtn = ({
   bountyPK: string;
 }) => {
   const {
+    enabled,
+    instructionToEnable,
     mutate: unassignOverdue,
     isLoading,
-    data,
+    status,
   } = useUnassignOverdueBounty(realm, bountyPK, {
     // UI based actions. Logging and refetching necessary data is already taken care of in the hook
     onSuccess: () => {},
@@ -22,19 +25,24 @@ export const UnassignOverdueBountyBtn = ({
   };
 
   return (
-    <div className="flex flex-col gap-y-2">
+    <ButtonWrapper
+      enabled={enabled}
+      instructionToEnable={instructionToEnable}
+      isLoading={isLoading}
+      success={status === "success"}
+    >
       <button
-        className="border border-violet-400 bg-violet-100 text-violet-400 rounded-lg py-1 px-3"
+        className={`border rounded-lg py-1 px-3 ${
+          enabled
+            ? "border-violet-400 bg-violet-100 text-violet-400"
+            : "border-slate-400 bg-slate-100 text-slate-400"
+        }
+`}
         onClick={handleUnassignOverdueBounty}
+        disabled={!enabled}
       >
         Unassign Bounty
       </button>
-      {isLoading && "Sending..."}
-      {data && (
-        <div className="bg-green-100 rounded-lg text-xs text-green-500 py-1 px-3">
-          Success.
-        </div>
-      )}
-    </div>
+    </ButtonWrapper>
   );
 };

@@ -11,7 +11,7 @@ export const AcceptSubmission = ({
 
   return (
     <div className="flex flex-col gap-y-1">
-      <div className="flex gap-x-4 items-center">
+      <div className="flex flex-col gap-y-2">
         <input
           type="text"
           placeholder="Comment"

@@ -1,29 +1,27 @@
-import { useApplyToBounty } from "../../../../hooks/bounty/useApplyToBounty";
+import { useDeleteBounty } from "../../../../hooks/bounty/useDeleteBounty";
 import { ButtonWrapper } from "../../ButtonWrapper";
 
-export const ApplyToBountyBtn = ({
+export const DeleteBountyBtn = ({
   realm,
   bountyPK,
-  validity,
 }: {
   realm: string;
   bountyPK: string;
-  validity: number;
 }) => {
   const {
     enabled,
     instructionToEnable,
-    mutate: apply,
+    mutate: deleteBounty,
     isLoading,
     status,
-  } = useApplyToBounty(realm, bountyPK, {
+  } = useDeleteBounty(realm, bountyPK, {
     // UI based actions. Logging and refetching necessary data is already taken care of in the hook
     onSuccess: () => {},
     onError: () => {},
   });
 
-  const handleApplyToBounty = () => {
-    apply(validity);
+  const handleDeleteBounty = () => {
+    deleteBounty();
   };
 
   return (
@@ -36,14 +34,14 @@ export const ApplyToBountyBtn = ({
       <button
         className={`border rounded-lg py-1 px-3 ${
           enabled
-            ? "border-violet-400 bg-violet-100 text-violet-400"
+            ? "border-rose-400 bg-rose-100 text-rose-400"
             : "border-slate-400 bg-slate-100 text-slate-400"
         }
-        `}
-        onClick={handleApplyToBounty}
+      `}
+        onClick={handleDeleteBounty}
         disabled={!enabled}
       >
-        Apply To Bounty
+        Delete bounty
       </button>
     </ButtonWrapper>
   );

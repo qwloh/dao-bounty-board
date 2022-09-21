@@ -1,4 +1,5 @@
 import { useRejectStaleSubmission } from "../../../../hooks/bounty/useRejectStaleSubmission";
+import { ButtonWrapper } from "../../ButtonWrapper";
 
 export const RejectStaleSubmissionBtn = ({
   realm,
@@ -10,9 +11,11 @@ export const RejectStaleSubmissionBtn = ({
   comment: string;
 }) => {
   const {
+    enabled,
+    instructionToEnable,
     mutate: rejectStale,
     isLoading,
-    data,
+    status,
   } = useRejectStaleSubmission(realm, bountyPK, {
     // UI based actions. Logging and refetching necessary data is already taken care of in the hook
     onSuccess: () => {},
@@ -24,19 +27,24 @@ export const RejectStaleSubmissionBtn = ({
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <ButtonWrapper
+      enabled={enabled}
+      instructionToEnable={instructionToEnable}
+      isLoading={isLoading}
+      success={status === "success"}
+    >
       <button
-        className="border border-violet-400 bg-violet-100 text-violet-400 rounded-lg py-1 px-3"
+        className={`border rounded-lg py-1 px-3 ${
+          enabled
+            ? "border-violet-400 bg-violet-100 text-violet-400"
+            : "border-slate-400 bg-slate-100 text-slate-400"
+        }
+`}
         onClick={handleRejectStaleSubmission}
+        disabled={!enabled}
       >
         Reject Stale Submission
       </button>
-      {isLoading && "Sending..."}
-      {data && (
-        <div className="bg-green-100 rounded-lg text-xs text-green-500 py-1 px-3">
-          Success.
-        </div>
-      )}
-    </div>
+    </ButtonWrapper>
   );
 };

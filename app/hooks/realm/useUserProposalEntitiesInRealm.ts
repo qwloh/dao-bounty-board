@@ -12,7 +12,7 @@ export const useUserProposalEntitiesInRealm = (
   // can be symbol or address
   realm: string
 ) => {
-  const { wallet } = useAnchorContext();
+  const { wallet, walletConnected } = useAnchorContext();
   const { data: realmProposalEntities } = useRealmProposalEntities(realm);
   const { data: userRealms } = useUserRealms();
 
@@ -47,7 +47,7 @@ export const useUserProposalEntitiesInRealm = (
       });
     },
     {
-      enabled: !!wallet && !!realmProposalEntities && !!userRealms,
+      enabled: !!walletConnected && !!realmProposalEntities && !!userRealms,
       // for use by global onError
       meta: {
         hookName: "UseUserProposalEntitiesInRealm",

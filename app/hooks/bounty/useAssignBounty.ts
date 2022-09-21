@@ -40,7 +40,7 @@ export const useAssignBounty = (
           "No application yet. Create some bounty applications by applying to bounty first.",
       };
     return { enabled: true };
-  }, [walletConnected, bountyApplications]);
+  }, [walletConnected, bountyApplications?.length]);
 
   const mutationResult = useMutation(
     (bountyApplicationPK: string) =>

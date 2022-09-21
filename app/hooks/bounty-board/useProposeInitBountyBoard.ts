@@ -10,6 +10,7 @@ import { useRealm } from "../realm/useRealm";
 import { UserProposalEntity } from "../realm/useUserProposalEntitiesInRealm";
 import { useAnchorContext } from "../useAnchorContext";
 import { useActiveBountyBoardProposals } from "./useActiveBountyBoardProposals";
+import { useMemo } from "react";
 
 export interface ProposeInitBountyBoardArgs {
   userProposalEntity: UserProposalEntity;
@@ -24,12 +25,21 @@ export const useProposeInitBountyBoard = (
   realm: string,
   callbacks: CallbacksForUI = { onSuccess: undefined, onError: undefined }
 ) => {
-  const { program } = useAnchorContext();
+  const { program, walletConnected } = useAnchorContext();
   const { data: realmAccount } = useRealm(realm);
   const { refetch: refetchActiveProposals } =
     useActiveBountyBoardProposals(realm);
 
-  return useMutation(
+  const { enabled, instructionToEnable } = useMemo(() => {
+    if (!walletConnected)
+      return {
+        enabled: false,
+        instructionToEnable: "Connect your wallet first",
+      };
+    return { enabled: true };
+  }, [walletConnected]);
+
+  const mutationResult = useMutation(
     ({
       userProposalEntity,
       boardConfig,
@@ -61,6 +71,12 @@ export const useProposeInitBountyBoard = (
       },
     }
   );
+
+  return {
+    enabled,
+    instructionToEnable,
+    ...mutationResult,
+  };
 };
 
 // --- default values

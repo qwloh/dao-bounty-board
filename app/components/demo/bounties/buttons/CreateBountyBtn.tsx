@@ -1,29 +1,30 @@
-import { useApplyToBounty } from "../../../../hooks/bounty/useApplyToBounty";
+import {
+  CreateBountyArgs,
+  useCreateBounty,
+} from "../../../../hooks/bounty/useCreateBounty";
 import { ButtonWrapper } from "../../ButtonWrapper";
 
-export const ApplyToBountyBtn = ({
+export const CreateBountyBtn = ({
   realm,
-  bountyPK,
-  validity,
+  args,
 }: {
   realm: string;
-  bountyPK: string;
-  validity: number;
+  args: CreateBountyArgs;
 }) => {
   const {
     enabled,
     instructionToEnable,
-    mutate: apply,
+    mutate: createBounty,
     isLoading,
-    status,
-  } = useApplyToBounty(realm, bountyPK, {
+    data,
+  } = useCreateBounty(realm, {
     // UI based actions. Logging and refetching necessary data is already taken care of in the hook
     onSuccess: () => {},
     onError: () => {},
   });
 
-  const handleApplyToBounty = () => {
-    apply(validity);
+  const handleCreateBounty = () => {
+    createBounty(args);
   };
 
   return (
@@ -36,14 +37,14 @@ export const ApplyToBountyBtn = ({
       <button
         className={`border rounded-lg py-1 px-3 ${
           enabled
-            ? "border-violet-400 bg-violet-100 text-violet-400"
+            ? "border-blue-400 bg-blue-100 text-blue-400"
             : "border-slate-400 bg-slate-100 text-slate-400"
         }
         `}
-        onClick={handleApplyToBounty}
+        onClick={handleCreateBounty}
         disabled={!enabled}
       >
-        Apply To Bounty
+        Create bounty
       </button>
     </ButtonWrapper>
   );

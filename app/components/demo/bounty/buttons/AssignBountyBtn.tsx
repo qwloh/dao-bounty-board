@@ -1,4 +1,5 @@
 import { useAssignBounty } from "../../../../hooks/bounty/useAssignBounty";
+import { ButtonWrapper } from "../../ButtonWrapper";
 
 export const AssignBountyBtn = ({
   realm,
@@ -14,7 +15,7 @@ export const AssignBountyBtn = ({
     instructionToEnable,
     mutate: assign,
     isLoading,
-    data,
+    status,
   } = useAssignBounty(realm, bountyPK, {
     // UI based actions. Logging and refetching necessary data is already taken care of in the hook
     onSuccess: () => {},
@@ -26,7 +27,12 @@ export const AssignBountyBtn = ({
   };
 
   return (
-    <div className="flex flex-col gap-y-2">
+    <ButtonWrapper
+      enabled={enabled}
+      instructionToEnable={instructionToEnable}
+      isLoading={isLoading}
+      success={status === "success"}
+    >
       <button
         className={`border rounded-lg py-1 px-3 ${
           enabled
@@ -35,23 +41,10 @@ export const AssignBountyBtn = ({
         }
       `}
         onClick={handleAssign}
+        disabled={!enabled}
       >
         Assign Bounty
       </button>
-      {/* On disable */}
-      {instructionToEnable && (
-        <div className="bg-rose-100 rounded-lg text-xs text-rose-400 py-1 px-3">
-          {instructionToEnable}
-        </div>
-      )}
-      {/* On sending */}
-      {isLoading && "Sending..."}
-      {/* On success */}
-      {data && (
-        <div className="bg-green-100 rounded-lg text-xs text-green-500 py-1 px-3">
-          Success.
-        </div>
-      )}
-    </div>
+    </ButtonWrapper>
   );
 };
