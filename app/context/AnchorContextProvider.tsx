@@ -6,10 +6,11 @@ import React, { createContext } from "react";
 import idl from "../../target/idl/dao_bounty_board.json";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
 import { BOUNTY_BOARD_PROGRAM_ID } from "../api/constants";
-import { PaperWallet } from "../utils/paper-wallet";
+import { MockWallet } from "../utils/mock-wallet";
 
 interface AnchorContextInterface {
   connection: Connection;
+  walletConnected: boolean;
   wallet: AnchorWallet;
   provider: AnchorProvider;
   program: Program<DaoBountyBoard>;
@@ -20,7 +21,10 @@ export const AnchorContext = createContext<AnchorContextInterface | null>(null);
 const AnchorContextProvider = ({ children }) => {
   const connection = new Connection(clusterApiUrl("devnet"), "processed");
 
-  const wallet = useAnchorWallet() || new PaperWallet(Keypair.generate(), true);
+  const anchorWallet = useAnchorWallet();
+  const walletConnected = !!anchorWallet;
+
+  const wallet = anchorWallet || new MockWallet(Keypair.generate()); // anchor program needs a wallet anyhow to fetch data
 
   const provider = new AnchorProvider(connection, wallet, {
     preflightCommitment: "processed",
@@ -36,6 +40,7 @@ const AnchorContextProvider = ({ children }) => {
     <AnchorContext.Provider
       value={{
         connection,
+        walletConnected,
         wallet,
         provider,
         program: bountyBoardProgram,

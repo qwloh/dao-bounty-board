@@ -16,7 +16,7 @@ import { getBountySubmissions } from "./bounty-submission";
 import { getBountyActivities } from "./bounty-activity";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { bs58 } from "@project-serum/anchor/dist/cjs/utils/bytes";
-import { PaperWallet } from "../utils/paper-wallet";
+import { MockWallet } from "../utils/mock-wallet";
 
 export const restart = async (connection: Connection) => {
   // setup
@@ -28,7 +28,7 @@ export const restart = async (connection: Connection) => {
 
   const paperProvider = new AnchorProvider(
     connection,
-    new PaperWallet(paperWalletKeypair, false),
+    new MockWallet(paperWalletKeypair, true),
     {
       commitment: "recent",
     }
