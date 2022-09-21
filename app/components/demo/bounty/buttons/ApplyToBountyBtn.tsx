@@ -28,12 +28,11 @@ export const ApplyToBountyBtn = ({
   return (
     <div className="flex flex-col gap-2">
       <button
-        className={`border rounded-lg py-1 px-3
-${
-  enabled
-    ? "border-violet-400 bg-violet-100 text-violet-400"
-    : "border-slate-400 bg-slate-100 text-slate-400"
-}
+        className={`border rounded-lg py-1 px-3 ${
+          enabled
+            ? "border-violet-400 bg-violet-100 text-violet-400"
+            : "border-slate-400 bg-slate-100 text-slate-400"
+        }
         `}
         onClick={handleApplyToBounty}
         disabled={!enabled}

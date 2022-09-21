@@ -1,5 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { useMutation } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { assignBounty } from "../../api";
 import { CallbacksForUI } from "../../model/util.model";
 import { useContributorRecord } from "../contributor-record/useContributorRecord";
@@ -15,18 +16,33 @@ export const useAssignBounty = (
   bountyPK: string,
   callbacks: CallbacksForUI = { onSuccess: undefined, onError: undefined }
 ) => {
-  const { provider, program, wallet } = useAnchorContext();
+  const { provider, program, wallet, walletConnected } = useAnchorContext();
   const { data: contributorRecord } = useContributorRecord(
     realm,
     wallet?.publicKey
   );
   const { data: bounty, refetch: refetchBounty } = useBounty(bountyPK);
   const { refetch: refetchBountySubmissions } = useBountySubmissions(bountyPK);
-  const { refetch: refetchBountyApplications } =
+  const { data: bountyApplications, refetch: refetchBountyApplications } =
     useBountyApplications(bountyPK);
   const { refetch: refetchBountyActivities } = useBountyActivities(bountyPK);
 
-  return useMutation(
+  const { enabled, instructionToEnable } = useMemo(() => {
+    if (!walletConnected)
+      return {
+        enabled: false,
+        instructionToEnable: "Connect your wallet first",
+      };
+    if (!bountyApplications?.length)
+      return {
+        enabled: false,
+        instructionToEnable:
+          "No application yet. Create some bounty applications by applying to bounty first.",
+      };
+    return { enabled: true };
+  }, [walletConnected, bountyApplications]);
+
+  const mutationResult = useMutation(
     (bountyApplicationPK: string) =>
       assignBounty({
         provider,
@@ -57,4 +73,10 @@ export const useAssignBounty = (
       },
     }
   );
+
+  return {
+    enabled,
+    instructionToEnable,
+    ...mutationResult,
+  };
 };

@@ -12,7 +12,7 @@ export const AssignBounty = ({
 
   return (
     <div className="flex flex-col gap-y-1">
-      <div className="flex gap-x-4 items-center">
+      <div className="flex flex-col gap-y-2">
         <input
           type="text"
           placeholder="Address of application to assign"

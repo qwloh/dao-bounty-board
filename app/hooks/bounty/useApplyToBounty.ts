@@ -26,12 +26,15 @@ export const useApplyToBounty = (
   const { refetch: refetchBountyActivities } = useBountyActivities(bountyPK);
 
   const { enabled, instructionToEnable } = useMemo(() => {
-    return walletConnected
-      ? { enabled: true }
-      : { enabled: false, instructionToEnable: "Connect your wallet first" };
+    if (!walletConnected)
+      return {
+        enabled: false,
+        instructionToEnable: "Connect your wallet first",
+      };
+    return { enabled: true };
   }, [walletConnected]);
 
-  const mutationResult= useMutation(
+  const mutationResult = useMutation(
     (validity: number) =>
       applyToBounty({
         provider,
@@ -66,6 +69,6 @@ export const useApplyToBounty = (
   return {
     enabled,
     instructionToEnable,
-    ...mutationResult
+    ...mutationResult,
   };
 };
