@@ -35,10 +35,7 @@ export const useRequestChangesToSubmission = (
     const activeSubmission =
       !!bountySubmissions?.length && bountySubmissions[0];
 
-    if (
-      activeSubmission &&
-      activeSubmission.account.state === "changeRequested"
-    )
+    if (activeSubmission?.account?.state === "changeRequested")
       return {
         enabled: false,
         instructionToEnable: "Work not pending review",
@@ -48,6 +45,12 @@ export const useRequestChangesToSubmission = (
       return {
         enabled: false,
         instructionToEnable: "No work pending review",
+      };
+
+    if (activeSubmission && activeSubmission.account.requestChangeCount >= 3)
+      return {
+        enabled: false,
+        instructionToEnable: "You can only request changes up to 3 times.",
       };
 
     return { enabled: true };

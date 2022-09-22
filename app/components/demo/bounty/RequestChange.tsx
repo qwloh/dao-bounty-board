@@ -22,8 +22,11 @@ export const RequestChange = ({
         <RequestChangeBtn realm={realm} bountyPK={bountyPK} comment={comment} />
       </div>
       <div className="text-xs px-2">
-        Request change to assignee's submission. Can do up to 3 times, then will
-        have to decide either to reject or accept.
+        Request change to assignee's submission. To be fair to assignee and
+        prevent 'un-ending' change requests from the bounty creator / reviewer
+        for a task of bounded reward, the number of change requests allowed is
+        limited to 3 times. After which, a decision on whether to accept or
+        reject the submission has to be made.
       </div>
     </div>
   );

@@ -37,7 +37,7 @@ export const useAssignBounty = (
       return {
         enabled: false,
         instructionToEnable:
-          "Bounty already assigned. To assign to another application, either unassign or reject previous assignment",
+          "Bounty already assigned. To assign to another applicant, either unassign or reject previous assignment",
       };
     if (!bountyApplications?.length)
       return {

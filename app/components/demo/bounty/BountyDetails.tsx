@@ -75,7 +75,10 @@ export const BountyDetails = ({ realm }: { realm: string }) => {
             <div className="py-4 flex flex-col gap-y-8">
               {/* Methods available to anyone */}
               <div className="flex flex-col gap-y-4 p-4 border border-slate-200 rounded-lg">
-                <div>Available to anyone</div>
+                <div>
+                  Available to anyone (with sufficient reputation and skills
+                  point)
+                </div>
                 <ApplyToBountyBtn
                   realm={realm}
                   bountyPK={bountyPK}

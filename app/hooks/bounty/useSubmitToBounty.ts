@@ -31,8 +31,44 @@ export const useSubmitToBounty = (
         enabled: false,
         instructionToEnable: "Connect your wallet first",
       };
+
+    const activeSubmission =
+      !!bountySubmissions?.length && bountySubmissions[0];
+
+    // no assignment / not assignee
+    if (
+      !activeSubmission ||
+      activeSubmission.account.assignee.toString() !==
+        contributorRecord.pubkey.toString()
+    )
+      return {
+        enabled: false,
+        instructionToEnable: "Only assignee of the bounty can submit work",
+      };
+
+    // concluded
+    const concluded = [
+      "rejected",
+      "rejectedForUnaddressedChangeRequest",
+      "accepted",
+      "forceAccepted",
+    ].includes(activeSubmission?.account?.state);
+    if (concluded)
+      return {
+        enabled: false,
+        instructionToEnable: "Submission already concluded",
+      };
+
+    // not pending submission
+    if (activeSubmission?.account?.state !== "pendingSubmission")
+      return {
+        enabled: false,
+        instructionToEnable:
+          "Use [Update Submission] button to update work after first submission",
+      };
+
     return { enabled: true };
-  }, [walletConnected]);
+  }, [walletConnected, bountySubmissions]);
 
   const mutationResult = useMutation(
     (linkToSubmission: string) =>
