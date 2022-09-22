@@ -32,10 +32,11 @@ export const useUnassignOverdueBounty = (
 
     const activeSubmission =
       !!bountySubmissions?.length && bountySubmissions[0];
-    const concluded = ![
-      "pendingSubmission",
-      "pendingReview",
-      "changeRequested",
+    const concluded = [
+      "rejected",
+      "rejectedForUnaddressedChangeRequest",
+      "accepted",
+      "forceAccepted",
     ].includes(activeSubmission?.account?.state);
 
     if (!activeSubmission || concluded)
@@ -47,9 +48,8 @@ export const useUnassignOverdueBounty = (
     if (activeSubmission.account.state !== "pendingSubmission")
       return {
         enabled: false,
-        instructionToEnable: !concluded
-          ? "Assignee has already submitted work. [Request change] instead, or [Reject] the submission if a consensus cannot be reached after 3 rounds of iteration"
-          : "Submission concluded",
+        instructionToEnable:
+          "Assignee has already submitted work. [Request change] instead, or [Reject] the submission if a consensus cannot be reached after 3 rounds of iteration",
       };
 
     const taskSubmissionWindow = bounty?.taskSubmissionWindow;

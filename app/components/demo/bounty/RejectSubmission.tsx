@@ -26,8 +26,11 @@ export const RejectSubmission = ({
         />
       </div>
       <div className="text-xs px-2">
-        Reject submission. Can be triggered if assignee's work is still not up
-        to standard after 3 rounds of iterations.
+        Reject submission. A minimum of 3 rounds of "change request-update"
+        iteration is needed before this action can be triggered. This is to
+        encourage common ground seeking between bounty creator and contributor
+        before ultimately rejecting a submission, which is a huge waste of time
+        and effort for both the bounty creator and contributor
       </div>
     </div>
   );

@@ -27,8 +27,10 @@ import { bytesToStr } from "../utils/encoding";
 export const getBounty = async (
   program: Program<DaoBountyBoard>,
   bountyPK: PublicKey
-) => {
+): Promise<Bounty | null> => {
   const bounty = await program.account.bounty.fetchNullable(bountyPK);
+  
+  // @ts-ignore, return type is hard asserted
   return bounty
     ? {
         ...bounty,

@@ -29,8 +29,45 @@ export const useRejectStaleSubmission = (
         enabled: false,
         instructionToEnable: "Connect your wallet first",
       };
+
+    const activeSubmission =
+      !!bountySubmissions?.length && bountySubmissions[0];
+
+    // pendingReview
+    if (activeSubmission && activeSubmission.account.state === "pendingReview")
+      return {
+        enabled: false,
+        instructionToEnable:
+          "There is updated content pending review. This submission is not stale",
+      };
+
+    // pendingSubmission, rejected, rejectedForUnaddressedChangeRequest, accepted, forceAccepted
+    if (
+      !activeSubmission ||
+      activeSubmission.account.state !== "changeRequested"
+    )
+      return {
+        enabled: false,
+        instructionToEnable: "No work pending review",
+      };
+
+    // changeRequested, but submission not stale
+    const addressChangeReqWindow = bounty?.addressChangeReqWindow;
+    const nowInEpochSecs = new Date().getTime() / 1000;
+    const submissionStaleAt =
+      activeSubmission.account.changeRequestedAt.toNumber() +
+      addressChangeReqWindow;
+    const submissionStale = nowInEpochSecs > submissionStaleAt;
+    if (!submissionStale)
+      return {
+        enabled: false,
+        instructionToEnable: `Submission not stale yet. Assignee has until ${new Date(
+          submissionStaleAt * 1000
+        ).toISOString()} to address change request`,
+      };
+
     return { enabled: true };
-  }, [walletConnected]);
+  }, [walletConnected, bountySubmissions]);
 
   const mutationResult = useMutation(
     (comment: string) =>

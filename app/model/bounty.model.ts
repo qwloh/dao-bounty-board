@@ -19,14 +19,14 @@ export interface Bounty {
   bountyBoard: PublicKey;
   bountyIndex: BN;
 
-  state: Record<keyof typeof BountyState, {}>;
+  state: keyof typeof BountyState;
 
   creator: PublicKey;
   createdAt: number; // date in epoch seconds
 
   title: string;
   description: string; // max char 400 first. Implement IPFS if possible
-  skill: Record<keyof typeof Skill, {}>;
+  skill: keyof typeof Skill;
   tier: string;
 
   taskSubmissionWindow: number; // how much time the assignee has to submit work

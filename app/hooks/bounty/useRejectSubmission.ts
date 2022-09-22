@@ -31,8 +31,37 @@ export const useRejectSubmission = (
         enabled: false,
         instructionToEnable: "Connect your wallet first",
       };
+
+    const activeSubmission =
+      !!bountySubmissions?.length && bountySubmissions[0];
+
+    // changeRequested
+    if (
+      activeSubmission &&
+      activeSubmission.account.state === "changeRequested"
+    )
+      return {
+        enabled: false,
+        instructionToEnable: "Work not pending review",
+      };
+
+    // pendingSubmission, rejected, rejectedForUnaddressedChangeRequest, accepted, forceAccepted
+    if (!activeSubmission || activeSubmission.account.state !== "pendingReview")
+      return {
+        enabled: false,
+        instructionToEnable: "No work pending review",
+      };
+
+    // pendingReview, but min iterations count not reached
+    const requestChangeCount = activeSubmission.account.requestChangeCount;
+    if (requestChangeCount < 3)
+      return {
+        enabled: false,
+        instructionToEnable: `This action will be enabled from the 3rd round of 'change request-update' iteration onwards. Current iteration count: ${requestChangeCount}/3. If the contributor does not respond to a change request within the configured time frame, use [RejectStaleSubmission] instead, in which the assignee's reputation will be deducted.`,
+      };
+
     return { enabled: true };
-  }, [walletConnected]);
+  }, [walletConnected, bountySubmissions]);
 
   const mutationResult = useMutation(
     (comment: string) =>
