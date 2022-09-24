@@ -1,4 +1,8 @@
-import { AnchorProvider, Program } from "@project-serum/anchor";
+import {
+  AnchorProvider,
+  BorshInstructionCoder,
+  Program,
+} from "@project-serum/anchor";
 import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import {
   DUMMY_MINT_PK,
@@ -6,7 +10,7 @@ import {
   INIT_BOUNTY_BOARD_PROPOSAL_NAME,
   UPDATE_BOUNTY_BOARD_PROPOSAL_NAME,
 } from "./constants";
-import { BountyBoard, BountyBoardConfig } from "../model/bounty-board.model";
+import { BountyBoardConfig, Permission } from "../model/bounty-board.model";
 import {
   InitialContributorWithRole,
   _createProposal,
@@ -18,13 +22,23 @@ import {
   getBountyBoardAddress,
 } from "./utils";
 import {
+  getGovernanceAccounts,
   getProposalsByGovernance,
+  InstructionData,
   ProgramAccount,
   Proposal,
   ProposalState,
+  ProposalTransaction,
+  pubkeyFilter,
 } from "@solana/spl-governance";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
-import { TOKEN_PROGRAM_ID, unpackAccount } from "@solana/spl-token";
+import {
+  DecodedTransferInstruction,
+  decodeInstruction,
+  getAccount,
+  TOKEN_PROGRAM_ID,
+  unpackAccount,
+} from "@solana/spl-token";
 import { UserProposalEntity } from "../hooks/realm/useUserProposalEntitiesInRealm";
 import { _getInitBountyBoardDescription } from "./utils/proposal-description-utils";
 import { BountyBoardProgramAccount } from "../model/util.model";
@@ -80,10 +94,10 @@ export const getBountyBoard = async (
 };
 
 export const getBountyBoardVaults = async (
-  provider: AnchorProvider,
+  connection: Connection,
   bountyBoardPubkey: PublicKey
 ) => {
-  const bountyBoardVaults = await provider.connection.getTokenAccountsByOwner(
+  const bountyBoardVaults = await connection.getTokenAccountsByOwner(
     bountyBoardPubkey,
     {
       programId: TOKEN_PROGRAM_ID,
@@ -95,6 +109,100 @@ export const getBountyBoardVaults = async (
   return bountyBoardVaults.value.map((v) =>
     unpackAccount(v.pubkey, v.account, TOKEN_PROGRAM_ID)
   );
+};
+
+const decodeSplTokenTransferIx = (
+  ix: InstructionData
+): DecodedTransferInstruction => {
+  return decodeInstruction({
+    programId: ix.programId,
+    data: Buffer.from(ix.data),
+    keys: ix.accounts,
+  }) as unknown as DecodedTransferInstruction;
+};
+
+const transformPermissions = (
+  permissions: Record<keyof typeof Permission, {}>[]
+): (keyof typeof Permission)[] =>
+  permissions.map(
+    (p) => Permission[Permission[Object.keys(p)[0]]] as keyof typeof Permission
+  );
+
+type proposedBoardConfig = Omit<BountyBoardConfig, "lastRevised"> & {
+  initialContributors: InitialContributorWithRole[];
+  amountToFundBountyBoardVault: number;
+  firstVaultMint: PublicKey;
+};
+
+const attachProposedConfig = async (
+  program: Program<DaoBountyBoard>,
+  proposal: ProgramAccount<Proposal>
+) => {
+  const proposalAddress = proposal.pubkey;
+
+  const proposalTransactions = await getGovernanceAccounts(
+    program.provider.connection,
+    new PublicKey(GOVERNANCE_PROGRAM_ID),
+    ProposalTransaction,
+    [pubkeyFilter(1, proposalAddress)!]
+  );
+
+  const boardConfig = {
+    initialContributors: [],
+  } as proposedBoardConfig;
+
+  const ixDecoder = new BorshInstructionCoder(program.idl);
+  for (const tx of proposalTransactions) {
+    console.log(tx.account.instructions);
+    const txBuffer = Buffer.from(tx.account.instructions[0].data);
+    const decodedTx = ixDecoder.decode(txBuffer);
+
+    switch (decodedTx?.name) {
+      case "initBountyBoard":
+        //@ts-ignore
+        boardConfig.roles = decodedTx.data.data.roles.map((r) => ({
+          ...r,
+          permissions: transformPermissions(r.permissions),
+        }));
+        break;
+      case "addBountyBoardTierConfig":
+        //@ts-ignore
+        boardConfig.tiers = decodedTx.data.data.tiers;
+        break;
+      case "addContributorWithRole":
+        //@ts-ignore
+        boardConfig.initialContributors.push(decodedTx.data.data);
+        break;
+      default:
+        try {
+          const decodedTransferIx = decodeSplTokenTransferIx(
+            tx.account.instructions[0]
+          );
+          boardConfig.amountToFundBountyBoardVault = new Number(
+            decodedTransferIx.data.amount
+          ).valueOf();
+
+          const ata = await getAccount(
+            program.provider.connection,
+            decodedTransferIx.keys.source.pubkey
+          );
+          boardConfig.firstVaultMint = ata.mint;
+
+          break;
+        } catch (e) {
+          console.error(e);
+        }
+        console.warn(`Unknown instruction ${decodedTx?.name}`);
+    }
+  }
+
+  return {
+    ...proposal,
+    account: {
+      ...proposal.account,
+      boardConfig,
+    },
+  };
 };
 
 export const getActiveBountyBoardProposal = async (
@@ -113,15 +221,20 @@ export const getActiveBountyBoardProposal = async (
     proposalsForAllGovernances.push(...proposals);
   }
 
-  return proposalsForAllGovernances.filter(
+  const activeProposals = proposalsForAllGovernances.filter(
     (p) =>
       p.account.name === INIT_BOUNTY_BOARD_PROPOSAL_NAME &&
       [
         ProposalState.Draft,
         ProposalState.SigningOff,
         ProposalState.Voting,
+        ProposalState.Succeeded,
         ProposalState.Executing,
       ].includes(p.account.state)
+  );
+
+  return Promise.all(
+    Array.from(activeProposals, (p) => attachProposedConfig(program, p))
   );
 };
 
@@ -140,6 +253,9 @@ export const proposeInitBountyBoard = async (
   initialContributorsWithRole: InitialContributorWithRole[]
 ) => {
   const provider = program.provider as AnchorProvider; // anchor provider is stored in program obj after being init
+
+  if (!userProposalEntity)
+    throw new Error("Please provide voting identity to use in DAO");
 
   // determine if proposal is to be created on council mint or community mint, and get user's representation acc in DAO
   const {

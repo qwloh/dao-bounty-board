@@ -173,6 +173,7 @@ export const _createProposal = async (
     return proposalAddress;
   } catch (err) {
     console.log("Send large tx fail. Error", err);
+    throw err;
   }
 };
 
