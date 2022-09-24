@@ -44,7 +44,7 @@ export const BountyDetails = ({ bountyPK }: { bountyPK: string }) => {
               Reward payout temporarily withheld in separate account to ensure
               there is fund available to pay contributor
             </p>
-            <div className="grid grid-cols-[max-content_1fr] gap-x-2 py-1">
+            <div className="grid grid-cols-[132px_1fr] gap-x-4 py-1">
               <p>Amount</p>
               <p className="text-slate-800 min-w-0 break-words">
                 {new Number(bounty.escrow.amount).valueOf() / 1000000}
@@ -52,6 +52,10 @@ export const BountyDetails = ({ bountyPK }: { bountyPK: string }) => {
               <p>Token address</p>
               <p className="text-slate-800 min-w-0 break-words">
                 {bounty.escrow.mint + ""}
+              </p>
+              <p>Escrow account address</p>
+              <p className="text-slate-800 min-w-0 break-words">
+                {bounty.escrow.address + ""}
               </p>
             </div>
           </div>

@@ -110,7 +110,7 @@ export const getTiersInVec = (PAYOUT_MINT: PublicKey) => [
     minRequiredSkillsPt: new BN(0),
     reputationReward: 10,
     skillsPtReward: new BN(10),
-    payoutReward: new BN(50),
+    payoutReward: new BN(50 * 1000000), // 50 usdc
     payoutMint: PAYOUT_MINT,
     taskSubmissionWindow: 7 * 24 * 3600, // 7 days
     submissionReviewWindow: 3 * 24 * 3600, // 3 days
@@ -123,7 +123,7 @@ export const getTiersInVec = (PAYOUT_MINT: PublicKey) => [
     minRequiredSkillsPt: new BN(50),
     reputationReward: 20,
     skillsPtReward: new BN(20),
-    payoutReward: new BN(200),
+    payoutReward: new BN(200 * 1000000),
     payoutMint: PAYOUT_MINT,
     taskSubmissionWindow: 14 * 24 * 3600, // 14 days
     submissionReviewWindow: 7 * 24 * 3600, // 7 days
@@ -136,7 +136,7 @@ export const getTiersInVec = (PAYOUT_MINT: PublicKey) => [
     minRequiredSkillsPt: new BN(100),
     reputationReward: 50,
     skillsPtReward: new BN(50),
-    payoutReward: new BN(500),
+    payoutReward: new BN(500 * 1000000),
     payoutMint: PAYOUT_MINT,
     taskSubmissionWindow: 30 * 24 * 3600, // 30 days
     submissionReviewWindow: 7 * 24 * 3600, // 7 days
@@ -149,7 +149,7 @@ export const getTiersInVec = (PAYOUT_MINT: PublicKey) => [
     minRequiredSkillsPt: new BN(500),
     reputationReward: 100,
     skillsPtReward: new BN(100),
-    payoutReward: new BN(2000),
+    payoutReward: new BN(2000 * 1000000),
     payoutMint: PAYOUT_MINT,
     taskSubmissionWindow: 60 * 24 * 3600, // 60 days
     submissionReviewWindow: 14 * 24 * 3600, // 14 days
