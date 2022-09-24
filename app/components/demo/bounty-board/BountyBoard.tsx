@@ -6,6 +6,7 @@ import { useBountyBoardByRealm } from "../../../hooks/bounty-board/useBountyBoar
 import { DEFAULT_CONFIG } from "../../../hooks/bounty-board/useProposeInitBountyBoard";
 import { useUserProposalEntitiesInRealm } from "../../../hooks/realm/useUserProposalEntitiesInRealm";
 import { ActiveProposals } from "./ActiveProposals";
+import { BountyBoardVaults } from "./BountyBoardVaults";
 import { ProposeInitBountyBoardBtn } from "./ProposeInitBountyBoardBtn";
 
 export const BountyBoard = ({ realm }: { realm: string }) => {
@@ -15,17 +16,26 @@ export const BountyBoard = ({ realm }: { realm: string }) => {
 
   return (
     <div className="flex flex-col gap-6 py-6">
-      <div className="h-48 p-6 bg-white break-words rounded-lg overflow-y-scroll">
-        <div className="text-lg font-bold">Bounty Board</div>
-        <p>The realm's bounty board (realm is Self DAO in this demo)</p>
-        {bountyBoard?.account && (
-          <div className="text-slate-800 py-2">
-            {JSON.stringify(bountyBoard)}
-          </div>
-        )}
-        {!bountyBoard?.account && !isLoading && (
-          <div className="text-slate-800 py-2">Bounty board not set up</div>
-        )}
+      <div className="flex gap-x-6">
+        <div className="basis-2/3 max-h-72 min-w-0 p-6 bg-white rounded-lg overflow-y-scroll">
+          <div className="text-lg font-bold">Bounty Board</div>
+          <p>The realm's bounty board (realm is Self DAO in this demo)</p>
+          {bountyBoard?.account && (
+            <div className="py-2">
+              <div className="text-slate-800 p-2 bg-slate-100 rounded-lg break-words">
+                {JSON.stringify(bountyBoard)}
+              </div>
+            </div>
+          )}
+          {!bountyBoard?.account && !isLoading && (
+            <div className="text-slate-800 py-2">Bounty board not set up</div>
+          )}
+        </div>
+        <div className="basis-1/3 max-h-72 min-w-0 p-6 rounded-lg bg-white overflow-y-scroll">
+          <div className="font-bold">Bounty board vaults</div>
+          <p>Token accounts that hold funds available for bounty payments</p>
+          <BountyBoardVaults realm={realm} />
+        </div>
       </div>
       <div className="h-64 p-6 flex flex-col gap-y-4 bg-white break-words rounded-lg overflow-y-scroll">
         <div className="text-lg font-bold">Active Proposals</div>
@@ -70,7 +80,7 @@ export const BountyBoard = ({ realm }: { realm: string }) => {
               }),
             },
             firstVaultMint: new PublicKey(DUMMY_MINT_PK.USDC),
-            amountToFundBountyBoardVault: 10000000, // 10 usdc
+            amountToFundBountyBoardVault: 100000000, // 100 usdc
             initialContributorsWithRole: [
               {
                 roleName: "Core",

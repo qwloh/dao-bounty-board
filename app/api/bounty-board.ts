@@ -153,7 +153,6 @@ const attachProposedConfig = async (
 
   const ixDecoder = new BorshInstructionCoder(program.idl);
   for (const tx of proposalTransactions) {
-    console.log(tx.account.instructions);
     const txBuffer = Buffer.from(tx.account.instructions[0].data);
     const decodedTx = ixDecoder.decode(txBuffer);
 

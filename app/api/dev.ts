@@ -55,7 +55,7 @@ export const restart = async (connection: Connection) => {
   const [bountyBoardPDA] = await getBountyBoardAddress(TEST_REALM_PK);
   console.log(`Bounty board ${bountyBoardPDA}`);
   const bountyBoardVaults = await getBountyBoardVaults(
-    paperProvider,
+    connection,
     bountyBoardPDA
   );
   console.log(
