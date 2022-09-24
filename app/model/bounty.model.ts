@@ -1,3 +1,4 @@
+import { Account } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 
@@ -46,4 +47,6 @@ export interface Bounty {
   activityIndex: number;
 
   completedAt: number | null;
+
+  escrow: Account;
 }

@@ -9,7 +9,7 @@ const statusColor: Record<keyof typeof BountyState, string> = {
   completeAndPaid: "green",
 };
 
-export const Bounty = ({ bountyPK }: { bountyPK: string }) => {
+export const BountyDetails = ({ bountyPK }: { bountyPK: string }) => {
   const { data: bounty } = useBounty(bountyPK);
   return (
     <>
@@ -32,7 +32,29 @@ export const Bounty = ({ bountyPK }: { bountyPK: string }) => {
               {_toSentenceCase(bounty.state)}
             </div>
           </div>
-          <p className="break-words">{JSON.stringify(bounty)}</p>
+          <p className="break-words">
+            {JSON.stringify(
+              bounty,
+              (key, value) =>
+                typeof value === "bigint" ? value.toString() : value // return everything else unchanged
+            )}
+          </p>
+          <div className="flex flex-col bg-white rounded-lg p-2">
+            <p>
+              Reward payout temporarily withheld in separate account to ensure
+              there is fund available to pay contributor
+            </p>
+            <div className="grid grid-cols-[max-content_1fr] gap-x-2 py-1">
+              <p>Amount</p>
+              <p className="text-slate-800 min-w-0 break-words">
+                {new Number(bounty.escrow.amount).valueOf() / 1000000}
+              </p>
+              <p>Token address</p>
+              <p className="text-slate-800 min-w-0 break-words">
+                {bounty.escrow.mint + ""}
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </>

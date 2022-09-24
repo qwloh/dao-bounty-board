@@ -19,6 +19,7 @@ import {
 } from "./utils";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAccount,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { BountyBoard } from "../model/bounty-board.model";
@@ -29,19 +30,30 @@ export const getBounty = async (
   bountyPK: PublicKey
 ): Promise<Bounty | null> => {
   const bounty = await program.account.bounty.fetchNullable(bountyPK);
-  
-  // @ts-ignore, return type is hard asserted
-  return bounty
-    ? {
-        ...bounty,
-        tier: bytesToStr(bounty.tier),
-        // convert rust enums into more convenient form
-        // original: state: {open: {}}
-        // after conversion: state: 'open'
-        state: BountyState[BountyState[Object.keys(bounty.state)[0]]],
-        skill: Skill[Skill[Object.keys(bounty.skill)[0]]],
-      }
-    : null;
+
+  if (!bounty) return null;
+
+  const bountyEscrowAddress = await getBountyEscrowAddress(
+    bountyPK,
+    bounty.rewardMint
+  );
+  const bountyEscrow = await getAccount(
+    program.provider.connection,
+    bountyEscrowAddress
+  );
+
+  return {
+    ...bounty,
+    tier: bytesToStr(bounty.tier),
+    // convert rust enums into more convenient form
+    // original: state: {open: {}}
+    // after conversion: state: 'open'
+    // @ts-ignore, return type is hard asserted
+    state: BountyState[BountyState[Object.keys(bounty.state)[0]]],
+    // @ts-ignore, return type is hard asserted
+    skill: Skill[Skill[Object.keys(bounty.skill)[0]]],
+    escrow: bountyEscrow,
+  };
 };
 
 export const getBounties = async (

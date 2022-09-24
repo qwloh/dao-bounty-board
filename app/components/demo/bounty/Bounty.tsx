@@ -1,4 +1,4 @@
-import { Bounty } from "../bounties/Bounty";
+import { BountyDetails } from "../bounties/BountyDetails";
 import { ApplyToBountyBtn } from "./buttons/ApplyToBountyBtn";
 import { BountyActivities } from "./BountyActivities";
 import { BountyApplications } from "./BountyApplications";
@@ -16,7 +16,7 @@ import { useState } from "react";
 import { ContributorRecord } from "../contributor-record/ContributorRecord";
 import { useAnchorContext } from "../../../hooks";
 
-export const BountyDetails = ({ realm }: { realm: string }) => {
+export const Bounty = ({ realm }: { realm: string }) => {
   // hard coded value
   const [bountyPK, setBountyPK] = useState("");
   const { wallet } = useAnchorContext();
@@ -53,7 +53,7 @@ export const BountyDetails = ({ realm }: { realm: string }) => {
               {/* Bounty details */}
               <div className="basis-1/2 min-w-0 flex flex-col gap-y-1 bg-white rounded-lg p-4">
                 <div className="font-bold">Bounty details</div>
-                <Bounty bountyPK={bountyPK} />
+                <BountyDetails bountyPK={bountyPK} />
               </div>
               {/* Bounty applications */}
               <div className="basis-1/2 min-w-0 bg-white rounded-lg p-4">
