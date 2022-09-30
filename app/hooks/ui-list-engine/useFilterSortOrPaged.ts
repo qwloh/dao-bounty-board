@@ -3,24 +3,31 @@ import { FilterParams, useFilter } from "./useFilter";
 import { usePaged } from "./usePaged";
 import { Sort, useSort } from "./useSort";
 
-interface UseFilterSortOrPagedArgs<T> {
+interface UseFilterSortOrPagedArgs<
+  T extends object,
+  FP extends FilterParams<T>
+> {
   data: T[];
-  initialFilters?: FilterParams<T>; // field name is key of T, value can be either boolean, string, array, or predicate function
+  blankFilters: FP; // field name is key of T, value can be either boolean, string, array, or predicate function
   initialSort?: Sort<T>; // no multi-sort functionality for now
   pageSize?: number; // no pagination if undefined
   // expose initialPage: number if required eventually
 }
 
-export const useFilterSortOrPaged = <T>({
+export const useFilterSortOrPaged = <
+  T extends object,
+  FP extends FilterParams<T>
+>({
   data,
-  initialFilters,
+  blankFilters,
   initialSort,
   pageSize,
-}: UseFilterSortOrPagedArgs<T>) => {
-  const { filtered, filter, clearFilter, clearAllFilters } = useFilter({
-    data,
-    initialFilters,
-  });
+}: UseFilterSortOrPagedArgs<T, FP>) => {
+  const { filtered, filterParams, filter, clearFilter, clearAllFilters } =
+    useFilter({
+      data,
+      blankFilters,
+    });
 
   const { sorted, updateSort, resetSort, clearSort } = useSort({
     filteredData: filtered,
@@ -35,6 +42,7 @@ export const useFilterSortOrPaged = <T>({
 
   return {
     // data: filtered,
+    filterParams,
     filter,
     clearFilter,
     clearAllFilters,

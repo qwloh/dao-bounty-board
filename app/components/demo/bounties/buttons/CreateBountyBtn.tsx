@@ -16,7 +16,7 @@ export const CreateBountyBtn = ({
     instructionToEnable,
     mutate: createBounty,
     isLoading,
-    data,
+    status,
   } = useCreateBounty(realm, {
     // UI based actions. Logging and refetching necessary data is already taken care of in the hook
     onSuccess: () => {},

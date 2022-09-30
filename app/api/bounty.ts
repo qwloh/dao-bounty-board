@@ -7,7 +7,7 @@ import {
 } from "@solana/web3.js";
 import { AnchorProvider, Program, BN } from "@project-serum/anchor";
 import { DUMMY_MINT_PK } from "./constants";
-import { Bounty, BountyState, Skill } from "../model/bounty.model";
+import { Bounty, BountyItem, BountyState, Skill } from "../model/bounty.model";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
 import {
   getBountyActivityAddress,
@@ -60,7 +60,7 @@ export const getBounties = async (
   connection: Connection,
   program: Program<DaoBountyBoard>,
   bountyBoardPK: PublicKey
-) => {
+): Promise<BountyItem[]> => {
   // filter by bounty board PK
   const bounties = await connection.getProgramAccounts(program.programId, {
     dataSlice: { offset: 8 + 32, length: 34 },
@@ -70,6 +70,7 @@ export const getBounties = async (
     ],
   });
   // Example data buffer: [0,0,0,0,0,0,0,0, 0, 69,110,116,114,121,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0]
+  // @ts-ignore, known ts issue for unexpected type loosening on reversing enum https://github.com/microsoft/TypeScript/issues/50933
   return bounties.map((b) => {
     const dataBuffer = b.account.data;
     return {

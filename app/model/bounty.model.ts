@@ -50,3 +50,13 @@ export interface Bounty {
 
   escrow: Account;
 }
+
+// light weight version to store as list
+export interface BountyItem {
+  pubkey: string;
+  account: {
+    state: keyof typeof BountyState;
+    skill: keyof typeof Skill;
+    tier: string;
+  };
+}
