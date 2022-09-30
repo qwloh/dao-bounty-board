@@ -1,6 +1,8 @@
+import { get } from "lodash";
 import { useMemo, useState } from "react";
+import { DeepKeys } from "../../model/util.model";
 
-export type Sort<T> = { field: keyof T; order: "asc" | "desc" };
+export type Sort<T> = { path: DeepKeys<T>; order: "asc" | "desc" };
 
 interface UseSortArgs<T> {
   filteredData: T[];
@@ -19,9 +21,9 @@ export const useSort = <T>({ filteredData, initialSort }: UseSortArgs<T>) => {
   }, [filteredData, sort]);
 
   // functions to expose to hook consumer
-  const updateSort = (field: keyof T, order: "asc" | "desc") => {
+  const updateSort = (path: DeepKeys<T>, order: "asc" | "desc") => {
     setSort({
-      field,
+      path,
       order,
     });
   };
@@ -36,6 +38,7 @@ export const useSort = <T>({ filteredData, initialSort }: UseSortArgs<T>) => {
 
   return {
     sorted,
+    activeSort: sort,
     updateSort,
     resetSort,
     clearSort,
@@ -48,11 +51,11 @@ export const getSortComparator = <T>(sort: Sort<T>[]) => {
     let res = 0;
     let i = 0;
     do {
-      const fieldToCompare = sort[i].field;
+      const path = sort[i].path;
       const desiredOrder = sort[i].order;
 
-      const fieldValueA = a[fieldToCompare];
-      const fieldValueB = b[fieldToCompare];
+      const fieldValueA = get(a, path);
+      const fieldValueB = get(b, path);
 
       if (typeof fieldValueA === "string" && typeof fieldValueB === "string") {
         // add method to handle when either value is undefined | null

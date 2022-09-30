@@ -29,7 +29,7 @@ export const useFilterSortOrPaged = <
       blankFilters,
     });
 
-  const { sorted, updateSort, resetSort, clearSort } = useSort({
+  const { sorted, activeSort, updateSort, resetSort, clearSort } = useSort({
     filteredData: filtered,
     initialSort,
   });
@@ -47,6 +47,7 @@ export const useFilterSortOrPaged = <
     clearFilter,
     clearAllFilters,
     // data: sorted,
+    activeSort,
     updateSort,
     resetSort,
     clearSort,

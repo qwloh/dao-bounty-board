@@ -73,7 +73,6 @@ const getFilterPredicate = <T extends object>(
       // dot notation access
       const val = get(d, key);
       const filterVal = filterParams[key];
-      console.log(d, key, val, filterVal);
       if (!isSelectedByFilter(val, filterVal)) return false;
     }
     // return true if the for loop above never evaluates to false

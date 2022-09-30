@@ -14,10 +14,7 @@ export const useRealmsWithBountyBoard = () => {
         !userRealms
           .map((uRealm) => uRealm.pubkey.toString())
           .includes(r.pubkey.toString())), // user not a member
-    sorts: [
-      { field: "bountyBoard", order: "desc" },
-      { field: "meta", order: "desc" },
-    ],
+    sorts: [{ path: "meta", order: "desc" }],
     selectorDependencies: [userRealms],
   });
 };

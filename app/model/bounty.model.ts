@@ -55,6 +55,7 @@ export interface Bounty {
 export interface BountyItem {
   pubkey: string;
   account: {
+    bountyIndex: bigint;
     state: keyof typeof BountyState;
     skill: keyof typeof Skill;
     tier: string;

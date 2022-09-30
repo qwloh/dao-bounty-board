@@ -35,6 +35,7 @@ export const Bounties = ({ realm }: { realm: string }) => {
     clearFilter,
     clearAllFilters,
     // sort related methods
+    activeSort,
     updateSort,
     clearSort,
     // pagination related methods
@@ -150,12 +151,25 @@ export const Bounties = ({ realm }: { realm: string }) => {
         {/* Sort */}
         <div className="py-2 flex gap-x-2 items-center">
           <div>Sort by</div>
-          <button className="py-1 px-2 rounded-lg bg-slate-100 block">
-            Newest
-          </button>
-          <button className="py-1 px-2 rounded-lg bg-slate-100 block">
-            Reward
-          </button>
+          <div className="flex gap-x-2">
+            <button
+              className={`text-xs p-1 rounded-full border ${
+                activeSort?.path === "account.bountyIndex"
+                  ? "bg-blue-100 text-blue-400 border-blue-400"
+                  : " bg-slate-100 border-slate-400"
+              } `}
+              onClick={() =>
+                activeSort?.path === "account.bountyIndex"
+                  ? clearSort()
+                  : updateSort("account.bountyIndex", "desc")
+              }
+            >
+              Newest
+            </button>
+            <button className="py-1 px-2 rounded-lg bg-slate-100 block">
+              Reward
+            </button>
+          </div>
         </div>
         {/* Bounty counts */}
         <div className="py-1">Bounties ({processedBounties?.length})</div>
