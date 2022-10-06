@@ -21,7 +21,7 @@ export const getBountyActivities = async (
   ]);
   // @ts-ignore, return type is hard asserted
   return anchorProgAccounts.map((acc) => ({
-    pubkey: acc.publicKey,
+    pubkey: acc.publicKey.toString(),
     account: {
       ...acc.account,
       type: BountyActivityType[

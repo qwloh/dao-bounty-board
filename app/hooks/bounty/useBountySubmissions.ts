@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { useQuery } from "@tanstack/react-query";
-import { getBountyActivities, getBountySubmissions } from "../../api";
+import { getBountySubmissions } from "../../api";
 import { useAnchorContext } from "../useAnchorContext";
 
 export const useBountySubmissions = (bountyPK: string) => {

@@ -80,7 +80,7 @@ export const useSubmitToBounty = (
           // @ts-ignore
           account: bounty,
         },
-        bountySubmissionPK: bountySubmissions[0].pubkey, // assume latest submission must be the active submission
+        bountySubmissionPK: new PublicKey(bountySubmissions[0].pubkey), // assume latest submission must be the active submission
         assigneeContributorRecordPK: contributorRecord.pubkey,
         linkToSubmission,
       }),

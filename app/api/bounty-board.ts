@@ -40,7 +40,6 @@ import {
   unpackAccount,
 } from "@solana/spl-token";
 import { UserProposalEntity } from "../hooks/realm/useUserProposalEntitiesInRealm";
-import { _getInitBountyBoardDescription } from "./utils/proposal-description-utils";
 import { BountyBoardProgramAccount } from "../model/util.model";
 import { bytesToAddressStr, bytesToStr } from "../utils/encoding";
 
@@ -55,7 +54,7 @@ export const getAllBountyBoards = async (
   });
   // Example data buffer: [0,0,0,0,0,0,0,0, 0, 69,110,116,114,121,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0]
   return bountyBoards.map((b) => ({
-    pubkey: b.pubkey,
+    pubkey: b.pubkey.toString(),
     account: {
       realm: bytesToAddressStr(b.account.data),
     },

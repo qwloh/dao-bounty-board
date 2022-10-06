@@ -28,7 +28,7 @@ export const getBountyApplications = async (
 
   // @ts-ignore, return type is hard asserted
   return anchorProgAccounts.map((acc) => ({
-    pubkey: acc.publicKey,
+    pubkey: acc.publicKey.toString(),
     account: {
       ...acc.account,
       // convert rust enums into more convenient form

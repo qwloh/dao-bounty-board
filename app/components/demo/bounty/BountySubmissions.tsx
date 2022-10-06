@@ -26,14 +26,12 @@ export const BountySubmissions = ({ bountyPK }: { bountyPK: string }) => {
       {!!bountySubmissions?.length &&
         bountySubmissions.map((s) => (
           <div
-            key={s.pubkey.toString()}
+            key={s.pubkey}
             className=" bg-slate-100 rounded-lg p-2 flex flex-col gap-y-2"
           >
             <div>
               <p>Submission object address</p>
-              <p className="text-slate-800 break-words">
-                {s.pubkey.toString()}
-              </p>
+              <p className="text-slate-800 break-words">{s.pubkey}</p>
             </div>
             <div className="flex gap-x-2 items-center">
               <p>Status</p>

@@ -15,7 +15,7 @@ export const BountyActivities = ({ bountyPK }: { bountyPK: string }) => {
       {!!bountyActivities?.length &&
         bountyActivities.map((a) => (
           <div
-            key={a.pubkey.toString()}
+            key={a.pubkey}
             className=" bg-slate-100 rounded-lg p-2 flex flex-col gap-y-2"
           >
             <p className="text-xs">

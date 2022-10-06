@@ -1,7 +1,5 @@
-import { PublicKey } from "@solana/web3.js";
-
 export interface BountyBoardProgramAccount<T> {
-  pubkey: PublicKey;
+  pubkey: string; // changed from PublicKey to string to encapsulate type conversion in the hooks layer
   account: T;
 }
 

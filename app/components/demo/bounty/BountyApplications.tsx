@@ -69,14 +69,12 @@ export const BountyApplications = ({
       {!!bountyApplications?.length &&
         bountyApplications.map((a) => (
           <div
-            key={a.pubkey.toString()}
+            key={a.pubkey}
             className="bg-slate-100 rounded-lg p-2 flex flex-col gap-y-2"
           >
             <div>
               <p>Application object address</p>
-              <p className="text-slate-800 break-words">
-                {a.pubkey.toString()}
-              </p>
+              <p className="text-slate-800 break-words">{a.pubkey}</p>
             </div>
             <div className="flex gap-x-2 items-center">
               <p>Status</p>

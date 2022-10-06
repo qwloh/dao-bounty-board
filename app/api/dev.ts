@@ -78,22 +78,22 @@ export const restart = async (connection: Connection) => {
   const bounties = await getBounties(connection, program, bountyBoardPDA);
   const bountyPKs = bounties.map((b) => new PublicKey(b.pubkey));
   console.log(`Bounties ${bountyPKs.length}`, bounties);
-  const bountyEscrowPKs = [];
+  const bountyEscrowPKs: PublicKey[] = [];
 
-  const bountyApplicationPKs = [];
-  const bountySubmissionPKs = [];
-  const bountyActivityPKs = [];
+  const bountyApplicationPKs: PublicKey[] = [];
+  const bountySubmissionPKs: PublicKey[] = [];
+  const bountyActivityPKs: PublicKey[] = [];
   for (const bountyPK of bountyPKs) {
     const escrowPK = await getBountyEscrowAddress(bountyPK, TEST_MINT_PK);
     bountyEscrowPKs.push(escrowPK);
     const applications = await getBountyApplications(program, bountyPK);
-    const applicationPKs = applications.map((a) => a.pubkey);
+    const applicationPKs = applications.map((a) => new PublicKey(a.pubkey));
     bountyApplicationPKs.push(...applicationPKs);
     const submissions = await getBountySubmissions(program, bountyPK);
-    const submissionPKs = submissions.map((s) => s.pubkey);
+    const submissionPKs = submissions.map((s) => new PublicKey(s.pubkey));
     bountySubmissionPKs.push(...submissionPKs);
     const activities = await getBountyActivities(program, bountyPK);
-    const activityPKs = activities.map((a) => a.pubkey);
+    const activityPKs = activities.map((a) => new PublicKey(a.pubkey));
     bountyActivityPKs.push(...activityPKs);
   }
   console.log(
