@@ -9,12 +9,12 @@ export const ApplicantRecord = ({
   applicantWalletPK,
 }: {
   realm: string;
-  applicantWalletPK: PublicKey;
+  applicantWalletPK: string;
 }) => {
-  const { data: contributorRecord, isLoading } = useContributorRecord(
-    realm,
-    applicantWalletPK
-  );
+  // TODO: pull resume from multiple realms
+  const { data: contributorRecord, isLoading } = useContributorRecord(realm, {
+    walletPK: applicantWalletPK,
+  });
 
   return (
     <>
@@ -90,7 +90,7 @@ export const BountyApplications = ({
             {/* possible to pull applicant's resume in DAO here */}
             <ApplicantRecord
               realm={realm}
-              applicantWalletPK={a.account.applicant}
+              applicantWalletPK={a.account.applicant.toString()}
             />
           </div>
         ))}

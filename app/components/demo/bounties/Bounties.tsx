@@ -1,13 +1,7 @@
-import { useState } from "react";
 import { useBountiesByRealm } from "../../../hooks/bounty/useBountiesByRealm";
-import {
-  isSelectedByFilter,
-  useFilter,
-} from "../../../hooks/ui-list-engine/useFilter";
-import { useFilterSortOrPaged } from "../../../hooks/ui-list-engine/useFilterSortOrPaged";
-import { useSearch } from "../../../hooks/ui-list-engine/useSearch";
-import { Bounty, BountyState, Skill } from "../../../model/bounty.model";
+import { BountyState, Skill } from "../../../model/bounty.model";
 import { _toSentenceCase } from "../../../utils/str-transform";
+import { PaginationBar } from "../PaginationBar";
 import { BountyDetails } from "./BountyDetails";
 import { CreateBountyBtn } from "./buttons/CreateBountyBtn";
 import { DeleteBounty } from "./DeleteBounty";
@@ -16,7 +10,7 @@ const filterOptionsSkills: (keyof typeof Skill)[] = [
   "development",
   "design",
   "marketing",
-  "operation",
+  "operations",
 ];
 const filterOptionsState: (keyof typeof BountyState)[] = [
   "open",
@@ -26,9 +20,9 @@ const filterOptionsState: (keyof typeof BountyState)[] = [
 ];
 
 export const Bounties = ({ realm }: { realm: string }) => {
-  const { data: bounties, isLoading } = useBountiesByRealm(realm);
   const {
-    data: processedBounties,
+    data: bounties,
+    isLoading,
     // filter related methods
     filterParams,
     filter,
@@ -39,19 +33,45 @@ export const Bounties = ({ realm }: { realm: string }) => {
     updateSort,
     clearSort,
     // pagination related methods
+    pageParams,
     prevPage,
     nextPage,
     toPage,
-  } = useFilterSortOrPaged({
-    data: bounties,
+  } = useBountiesByRealm({
+    realm,
     blankFilters: {
       "account.skill": [] as (keyof typeof Skill)[], // typescript has problem inferencing empty arrays, other values are fine
       "account.state": [] as (keyof typeof BountyState)[],
       "account.tier": [] as string[],
     },
-    // initialSort: {}
-    // pageSize: 10,
+    pageSize: 3,
   });
+
+  // const {
+  //   data: processedBounties,
+  //   // filter related methods
+  //   filterParams,
+  //   filter,
+  //   clearFilter,
+  //   clearAllFilters,
+  //   // sort related methods
+  //   activeSort,
+  //   updateSort,
+  //   clearSort,
+  //   // pagination related methods
+  //   prevPage,
+  //   nextPage,
+  //   toPage,
+  // } = useFilterSortOrPaged({
+  //   data: bounties,
+  //   blankFilters: {
+  //     "account.skill": [] as (keyof typeof Skill)[], // typescript has problem inferencing empty arrays, other values are fine
+  //     "account.state": [] as (keyof typeof BountyState)[],
+  //     "account.tier": [] as string[],
+  //   },
+  //   // initialSort: {}
+  //   // pageSize: 10,
+  // });
 
   return (
     <div className="flex gap-x-4 py-4 items-start">
@@ -166,20 +186,40 @@ export const Bounties = ({ realm }: { realm: string }) => {
             >
               Newest
             </button>
-            <button className="py-1 px-2 rounded-lg bg-slate-100 block">
+            {/* <button
+              className={`text-xs p-1 rounded-full border ${
+                activeSort?.path === "account.bountyIndex"
+                  ? "bg-blue-100 text-blue-400 border-blue-400"
+                  : " bg-slate-100 border-slate-400"
+              } `}
+            >
               Reward
-            </button>
+            </button> */}
           </div>
         </div>
-        {/* Bounty counts */}
-        <div className="py-1">Bounties ({processedBounties?.length})</div>
-        {!!processedBounties?.length &&
-          processedBounties.map((b) => (
-            <BountyDetails key={b.pubkey} bountyPK={b.pubkey} />
-          ))}
-        {!isLoading && !processedBounties?.length && (
+        {/* Bounty counts & paging solution*/}
+        <div className="py-2 flex justify-between items-center">
+          <div>
+            Bounties {bounties?.length !== undefined && `(${bounties?.length})`}
+          </div>
+          <PaginationBar
+            pageParams={pageParams}
+            prevPage={prevPage}
+            nextPage={nextPage}
+            toPage={toPage}
+          />
+        </div>
+        {isLoading && (
+          <div className="text-s text-slate-800 py-2">Loading...</div>
+        )}
+        {!isLoading && !bounties?.length && (
           <div className="text-s text-slate-800 py-2">No bounty</div>
         )}
+        {!isLoading &&
+          !!bounties?.length &&
+          bounties.map((b) => (
+            <BountyDetails key={b.pubkey} bountyPK={b.pubkey} />
+          ))}
       </div>
       {/* Create and delete buttons */}
       <div className="basis-1/3 bg-white rounded-lg p-4">
@@ -193,7 +233,7 @@ export const Bounties = ({ realm }: { realm: string }) => {
                 args={{
                   title: "First bounty",
                   description: "Give me a website with marquee",
-                  skill: Skill.development,
+                  skill: Skill.operations,
                   tier: "Entry",
                 }}
               />

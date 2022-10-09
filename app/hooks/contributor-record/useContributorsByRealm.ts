@@ -1,94 +1,56 @@
-import { PublicKey } from "@solana/web3.js";
-import {
-  useInfiniteQuery,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import {
-  getAllContributorRecordsForRealm,
-  getPagedContributorRecords,
-} from "../../api";
-import {
-  getSliceFromAllElements,
-  getNextPageParam,
-} from "../../api/utils/pagination-utils";
-import { useRealm } from "../realm/useRealm";
-import { useAnchorContext } from "../useAnchorContext";
+import { ContributorRecordItem } from "../../model/contributor-record.model";
+import { BountyBoardProgramAccount } from "../../model/util.model";
+import { FilterParams } from "../ui-list-engine/useFilter";
+import { useFilterSortOrPaged } from "../ui-list-engine/useFilterSortOrPaged";
+import { Sort } from "../ui-list-engine/useSort";
+import { _useContributorRecordsByRealm } from "./_useContributorRecordsByRealm";
+import { _usePagedContributorRecords } from "./_usePagedContributorRecords";
 
-export const usePagedContributorsByRealm = (
-  // can be symbol or address
-  realm: string,
-  pageSize: number
-) => {
-  const queryClient = useQueryClient();
-  const { provider, program } = useAnchorContext();
-  const { data: realmAccount } = useRealm(realm);
+interface useContributorsByRealmArgs<
+  FP extends FilterParams<BountyBoardProgramAccount<ContributorRecordItem>>
+> {
+  realm: string; // can be address or symbol
+  blankFilters?: FP;
+  initialSort?: Sort<BountyBoardProgramAccount<ContributorRecordItem>>;
+  pageSize?: number;
+}
 
-  // get a list of public keys
-  const { data: allContributorsOfRealmPK } = useQuery(
-    ["contributor-records-all", realmAccount?.pubkey],
-    () => {
-      console.log(
-        "[UsePagedContributorsByRealm] getAllContributorRecordsForRealm run"
-      );
-      return getAllContributorRecordsForRealm(
-        provider.connection,
-        program,
-        realmAccount.pubkey
-      );
-    },
-    {
-      enabled: !!realmAccount,
-      // for use by global onError
-      meta: {
-        hookName: "UsePagedContributorsByRealm",
-        methodName: "getAllContributorRecordsForRealm",
-      },
-    }
-  );
+export const useContributorsByRealm = <
+  FP extends FilterParams<BountyBoardProgramAccount<ContributorRecordItem>>
+>({
+  realm,
+  blankFilters,
+  initialSort,
+  pageSize,
+}: useContributorsByRealmArgs<FP>) => {
+  const {
+    data: contributorRecordItems,
+    isLoading: isLoadingBountyItems,
+    error: errorLoadingBountyItems,
+    ...restQueryResult
+  } = _useContributorRecordsByRealm(realm);
 
-  return useInfiniteQuery(
-    ["contributor-records-paged", realmAccount?.pubkey],
-    async ({ pageParam = { page: 0, size: pageSize } }) => {
-      console.log(
-        "[UsePagedContributorsByRealm] getPagedContributorRecords run",
-        allContributorsOfRealmPK.length
-      );
-      const { page, size } = pageParam;
-      const pagedAddresses = getSliceFromAllElements(
-        allContributorsOfRealmPK.map((c) => c.pubkey),
-        page,
-        size
-      );
+  const {
+    data: processed,
+    isProcessing,
+    ...restMethods
+  } = useFilterSortOrPaged({
+    data: contributorRecordItems,
+    blankFilters,
+    initialSort,
+    pageSize,
+  });
 
-      const pagedResult = await getPagedContributorRecords(
-        program,
-        pagedAddresses.map((pk) => new PublicKey(pk))
-      );
+  const { isLoading: isFetchingMultiple, error: errorFetchingMultiple } =
+    _usePagedContributorRecords(
+      processed ? processed.map((p) => p.pubkey) : []
+    );
 
-      // data normalization
-      for (const res of pagedResult) {
-        queryClient.setQueryData(
-          ["contributor-record", res.pubkey.toString()],
-          res
-        );
-      }
-
-      return {
-        page,
-        size,
-        totalElements: allContributorsOfRealmPK.length,
-        content: pagedResult.map((res) => res.pubkey.toString()),
-      };
-    },
-    {
-      enabled: !!realmAccount && !!allContributorsOfRealmPK,
-      getNextPageParam,
-      // for use by global onError
-      meta: {
-        hookName: "UsePagedContributorsByRealm",
-        methodName: "getPagedContributorRecords",
-      },
-    }
-  );
+  return {
+    data: processed,
+    isLoading: isLoadingBountyItems || isProcessing || isFetchingMultiple,
+    // error: errorLoadingBountyItems || errorFetchingMultiple,
+    ...restQueryResult,
+    ...restMethods,
+  };
 };

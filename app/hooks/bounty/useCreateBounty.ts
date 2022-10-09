@@ -5,7 +5,7 @@ import { Skill } from "../../model/bounty.model";
 import { CallbacksForUI } from "../../model/util.model";
 import { useBountyBoardByRealm } from "../bounty-board/useBountyBoardByRealm";
 import { useAnchorContext } from "../useAnchorContext";
-import { useBountiesByRealm } from "./useBountiesByRealm";
+import { _useBountiesByRealm } from "./_useBountiesByRealm";
 
 export interface CreateBountyArgs {
   title: string;
@@ -20,9 +20,12 @@ export const useCreateBounty = (
   callbacks: CallbacksForUI = { onSuccess: undefined, onError: undefined }
 ) => {
   const { program, walletConnected } = useAnchorContext();
-  const { data: bountyBoard, refetch: refetchBountyBoard } =
-    useBountyBoardByRealm(realm);
-  const { refetch: refetchBounties } = useBountiesByRealm(realm);
+  const {
+    data: bountyBoard,
+    refetch: refetchBountyBoard,
+    isLoading: isLoadingBountyBoard,
+  } = useBountyBoardByRealm(realm);
+  const { refetch: refetchBounties } = _useBountiesByRealm(realm);
 
   const { enabled, instructionToEnable } = useMemo(() => {
     if (!walletConnected)
@@ -30,7 +33,11 @@ export const useCreateBounty = (
         enabled: false,
         instructionToEnable: "Connect your wallet first",
       };
-
+    if (isLoadingBountyBoard)
+      return {
+        enabled: false,
+        instructionToEnable: "Loading...",
+      };
     if (!bountyBoard?.account)
       return {
         enabled: false,

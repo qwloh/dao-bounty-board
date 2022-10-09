@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { deleteBounty } from "../../api";
 import { CallbacksForUI } from "../../model/util.model";
 import { useAnchorContext } from "../useAnchorContext";
-import { useBountiesByRealm } from "./useBountiesByRealm";
+import { _useBountiesByRealm } from "./_useBountiesByRealm";
 import { useBounty } from "./useBounty";
 
 export const useDeleteBounty = (
@@ -15,14 +15,22 @@ export const useDeleteBounty = (
   const { program, walletConnected } = useAnchorContext();
   const { data: bounty, flushDeletedBounty } = useBounty(bountyPK);
 
-  const { data: bounties, refetch: refetchBounties } =
-    useBountiesByRealm(realm);
+  const {
+    data: bounties,
+    refetch: refetchBounties,
+    isLoading: isLoadingBounties,
+  } = _useBountiesByRealm(realm);
 
   const { enabled, instructionToEnable } = useMemo(() => {
     if (!walletConnected)
       return {
         enabled: false,
         instructionToEnable: "Connect your wallet first",
+      };
+    if (isLoadingBounties)
+      return {
+        enabled: false,
+        instructionToEnable: "Loading...",
       };
     if (!bounties?.length)
       return {

@@ -20,3 +20,8 @@ export interface ContributorRecord {
   bountyCompleted: number;
   recentRepChange: BN;
 }
+
+export interface ContributorRecordItem {
+  role: string;
+  reputation: bigint;
+}

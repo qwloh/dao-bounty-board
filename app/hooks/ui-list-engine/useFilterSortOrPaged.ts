@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { _toMap } from "../../utils/data-transform";
 import { FilterParams, useFilter } from "./useFilter";
 import { usePaged } from "./usePaged";
@@ -23,22 +24,36 @@ export const useFilterSortOrPaged = <
   initialSort,
   pageSize,
 }: UseFilterSortOrPagedArgs<T, FP>) => {
-  const { filtered, filterParams, filter, clearFilter, clearAllFilters } =
-    useFilter({
-      data,
-      blankFilters,
-    });
-
-  const { sorted, activeSort, updateSort, resetSort, clearSort } = useSort({
-    filteredData: filtered,
-    initialSort,
+  const {
+    filtered,
+    isFiltering,
+    filterParams,
+    filter,
+    clearFilter,
+    clearAllFilters,
+  } = useFilter({
+    data,
+    blankFilters,
   });
 
-  const { currentPage, pageParams, prevPage, nextPage, toPage, addPage } =
-    usePaged({
-      sortedData: sorted,
-      pageSize,
+  const { sorted, isSorting, activeSort, updateSort, resetSort, clearSort } =
+    useSort({
+      filteredData: filtered,
+      initialSort,
     });
+
+  const {
+    currentPage,
+    isPaging,
+    pageParams,
+    prevPage,
+    nextPage,
+    toPage,
+    addPage,
+  } = usePaged({
+    sortedData: sorted,
+    pageSize,
+  });
 
   return {
     // data: filtered,
@@ -57,5 +72,7 @@ export const useFilterSortOrPaged = <
     nextPage,
     toPage,
     addPage,
+
+    isProcessing: isFiltering || isSorting || isPaging,
   };
 };

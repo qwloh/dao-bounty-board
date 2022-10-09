@@ -1,28 +1,54 @@
-import { useQuery } from "@tanstack/react-query";
-import { getBounties } from "../../api";
-import { useBountyBoardByRealm } from "../bounty-board/useBountyBoardByRealm";
-import { useAnchorContext } from "../useAnchorContext";
+import { BountyItem } from "../../model/bounty.model";
+import { BountyBoardProgramAccount } from "../../model/util.model";
+import { FilterParams } from "../ui-list-engine/useFilter";
+import { useFilterSortOrPaged } from "../ui-list-engine/useFilterSortOrPaged";
+import { Sort } from "../ui-list-engine/useSort";
+import { _useBountiesByRealm } from "./_useBountiesByRealm";
+import { _usePagedBounties } from "./_usePagedBounties";
 
-export const useBountiesByRealm = (
-  // can be either address or symbol
-  realm: string
-) => {
-  const { connection, program } = useAnchorContext();
-  const { data: bountyBoard } = useBountyBoardByRealm(realm);
+interface UseBountiesByRealmArgs<
+  FP extends FilterParams<BountyBoardProgramAccount<BountyItem>>
+> {
+  realm: string; // can be address or symbol
+  blankFilters?: FP;
+  initialSort?: Sort<BountyBoardProgramAccount<BountyItem>>;
+  pageSize?: number;
+}
 
-  return useQuery(
-    ["bounties", bountyBoard?.account?.realm + ""],
-    async () => {
-      console.log("[UseBountiesByRealm] getBounties run");
-      return getBounties(connection, program, bountyBoard?.pubkey);
-    },
-    {
-      enabled: !!program && !!bountyBoard,
-      // for use by global onError
-      meta: {
-        hookName: "UseBountiesByRealm",
-        methodName: "getBounties",
-      },
-    }
-  );
+export const useBountiesByRealm = <
+  FP extends FilterParams<BountyBoardProgramAccount<BountyItem>>
+>({
+  realm,
+  blankFilters,
+  initialSort,
+  pageSize,
+}: UseBountiesByRealmArgs<FP>) => {
+  const {
+    data: bountyItems,
+    isLoading: isLoadingBountyItems,
+    error: errorLoadingBountyItems,
+    ...restQueryResult
+  } = _useBountiesByRealm(realm);
+
+  const {
+    data: processed,
+    isProcessing,
+    ...restMethods
+  } = useFilterSortOrPaged({
+    data: bountyItems,
+    blankFilters,
+    initialSort,
+    pageSize,
+  });
+
+  const { isLoading: isFetchingMultiple, error: errorFetchingMultiple } =
+    _usePagedBounties(processed ? processed.map((p) => p.pubkey) : []);
+
+  return {
+    data: processed,
+    isLoading: isLoadingBountyItems || isProcessing || isFetchingMultiple,
+    // error: errorLoadingBountyItems || errorFetchingMultiple,
+    ...restQueryResult,
+    ...restMethods,
+  };
 };

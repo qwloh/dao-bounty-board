@@ -1,23 +1,31 @@
-import { PublicKey } from "@solana/web3.js";
 import { useContributorRecord } from "../../../hooks/contributor-record/useContributorRecord";
+
+interface ContributorRecordArgs {
+  realm: string;
+  walletOrContributorRecordPK: {
+    walletPK?: string;
+    contributorRecordPK?: string;
+  };
+}
 
 export const ContributorRecord = ({
   realm,
-  walletPK,
-}: {
-  realm: string;
-  walletPK: PublicKey;
-}) => {
+  walletOrContributorRecordPK,
+}: ContributorRecordArgs) => {
   const { data: contributorRecord, isLoading } = useContributorRecord(
     realm,
-    walletPK
+    walletOrContributorRecordPK
   );
+
+  const { walletPK, contributorRecordPK } = walletOrContributorRecordPK;
+
   return (
     <>
       {isLoading && <div>Loading...</div>}
       {!isLoading && !contributorRecord?.account && (
         <div className="text-slate-800">
-          Record does not exist for wallet {walletPK + ""} in this realm
+          Record does not exist for{" "}
+          {walletPK ? `wallet ${walletPK}` : contributorRecordPK} in this realm
         </div>
       )}
       {contributorRecord?.account && (
@@ -28,7 +36,9 @@ export const ContributorRecord = ({
               {contributorRecord?.pubkey + ""}
             </p>
             <p>Associated wallet</p>
-            <p className="text-slate-800 break-words">{walletPK + ""}</p>
+            <p className="text-slate-800 break-words">
+              {contributorRecord?.account?.associatedWallet + ""}
+            </p>
             <p>Reputation</p>
             <p className="text-slate-800 break-words">
               {contributorRecord?.account.reputation.toNumber()}

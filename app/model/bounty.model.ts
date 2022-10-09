@@ -13,12 +13,45 @@ export enum Skill {
   development,
   design,
   marketing,
-  operation,
+  operations,
+}
+
+export interface BountyOnChain {
+  bountyBoard: PublicKey;
+  bountyIndex: BN;
+
+  state: Record<keyof typeof BountyState, {}>;
+
+  tier: Iterable<number>;
+  skill: Record<keyof typeof Skill, {}>;
+  title: string;
+  description: string; // max char 400 first. Implement IPFS if possible
+
+  creator: PublicKey;
+  createdAt: number; // date in epoch seconds
+
+  taskSubmissionWindow: number; // how much time the assignee has to submit work
+  submissionReviewWindow: number; // how much time the reviewer has to respond to submission
+  addressChangeReqWindow: number; // how much time the assignee has to respond to change requested by reviewer
+
+  rewardMint: PublicKey; // address of payout token
+  rewardPayout: BN;
+  rewardSkillPt: BN;
+  rewardReputation: number;
+  minRequiredReputation: number;
+  minRequiredSkillsPt: BN;
+
+  assignCount: number;
+  unassignCount: number;
+
+  activityIndex: number;
+
+  completedAt: number | null;
 }
 
 export interface Bounty {
   bountyBoard: PublicKey;
-  bountyIndex: BN;
+  bountyIndex: bigint;
 
   state: keyof typeof BountyState;
 
@@ -35,11 +68,11 @@ export interface Bounty {
   addressChangeReqWindow: number; // how much time the assignee has to respond to change requested by reviewer
 
   rewardMint: PublicKey; // address of payout token
-  rewardPayout: BN;
-  rewardSkillPt: BN;
-  rewardReputation: BN;
+  rewardPayout: bigint;
+  rewardSkillPt: bigint;
+  rewardReputation: number;
   minRequiredReputation: number;
-  minRequiredSkillsPt: BN;
+  minRequiredSkillsPt: bigint;
 
   assignCount: number;
   unassignCount: number;
@@ -53,11 +86,8 @@ export interface Bounty {
 
 // light weight version to store as list
 export interface BountyItem {
-  pubkey: string;
-  account: {
-    bountyIndex: bigint;
-    state: keyof typeof BountyState;
-    skill: keyof typeof Skill;
-    tier: string;
-  };
+  bountyIndex: bigint;
+  state: keyof typeof BountyState;
+  skill: keyof typeof Skill;
+  tier: string;
 }

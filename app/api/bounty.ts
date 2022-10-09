@@ -7,7 +7,13 @@ import {
 } from "@solana/web3.js";
 import { AnchorProvider, Program, BN } from "@project-serum/anchor";
 import { DUMMY_MINT_PK } from "./constants";
-import { Bounty, BountyItem, BountyState, Skill } from "../model/bounty.model";
+import {
+  Bounty,
+  BountyItem,
+  BountyOnChain,
+  BountyState,
+  Skill,
+} from "../model/bounty.model";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
 import {
   getBountyActivityAddress,
@@ -25,6 +31,21 @@ import {
 import { BountyBoard } from "../model/bounty-board.model";
 import { bytesToStr } from "../utils/encoding";
 import { _BNtoBigInt } from "../utils/number-transform";
+import { BountyBoardProgramAccount } from "../model/util.model";
+
+// GET methods
+
+const getBountyEscrow = async (
+  program: Program<DaoBountyBoard>,
+  bountyPK: PublicKey,
+  rewardMint: PublicKey
+) => {
+  const bountyEscrowAddress = await getBountyEscrowAddress(
+    bountyPK,
+    rewardMint
+  );
+  return getAccount(program.provider.connection, bountyEscrowAddress);
+};
 
 export const getBounty = async (
   program: Program<DaoBountyBoard>,
@@ -34,18 +55,15 @@ export const getBounty = async (
 
   if (!bounty) return null;
 
-  const bountyEscrowAddress = await getBountyEscrowAddress(
+  const bountyEscrow = await getBountyEscrow(
+    program,
     bountyPK,
     bounty.rewardMint
-  );
-  const bountyEscrow = await getAccount(
-    program.provider.connection,
-    bountyEscrowAddress
   );
 
   return {
     ...bounty,
-    tier: bytesToStr(bounty.tier),
+    bountyIndex: _BNtoBigInt(bounty.bountyIndex),
     // convert rust enums into more convenient form
     // original: state: {open: {}}
     // after conversion: state: 'open'
@@ -53,15 +71,52 @@ export const getBounty = async (
     state: BountyState[BountyState[Object.keys(bounty.state)[0]]],
     // @ts-ignore, return type is hard asserted
     skill: Skill[Skill[Object.keys(bounty.skill)[0]]],
+    tier: bytesToStr(bounty.tier),
+    rewardPayout: _BNtoBigInt(bounty.rewardPayout),
+    rewardSkillPt: _BNtoBigInt(bounty.rewardSkillPt),
+    minRequiredSkillsPt: _BNtoBigInt(bounty.minRequiredSkillsPt),
     escrow: bountyEscrow,
   };
+};
+
+export const getPagedBounties = async (
+  program: Program<DaoBountyBoard>,
+  bountyPKs: PublicKey[]
+): Promise<BountyBoardProgramAccount<Bounty>[]> => {
+  const bounties = (await program.account.bounty.fetchMultiple(
+    bountyPKs
+  )) as BountyOnChain[];
+
+  const escrows = await Promise.all(
+    bounties.map((b, i) =>
+      b == null
+        ? new Promise((resolve) => resolve(null))
+        : getBountyEscrow(program, bountyPKs[i], b.rewardMint)
+    )
+  );
+
+  // @ts-ignore: known enum casting issue in ts for state, skill
+  return bounties.map((b, i) => ({
+    pubkey: bountyPKs[i].toString(),
+    account: {
+      ...b,
+      bountyIndex: _BNtoBigInt(b.bountyIndex),
+      state: BountyState[BountyState[Object.keys(b.state)[0]]],
+      skill: Skill[Skill[Object.keys(b.skill)[0]]],
+      tier: bytesToStr(b.tier),
+      rewardPayout: _BNtoBigInt(b.rewardPayout),
+      rewardSkillPt: _BNtoBigInt(b.rewardSkillPt),
+      minRequiredSkillsPt: _BNtoBigInt(b.minRequiredSkillsPt),
+      escrow: escrows[i],
+    },
+  }));
 };
 
 export const getBounties = async (
   connection: Connection,
   program: Program<DaoBountyBoard>,
   bountyBoardPK: PublicKey
-): Promise<BountyItem[]> => {
+): Promise<BountyBoardProgramAccount<BountyItem>[]> => {
   // filter by bounty board PK
   const bounties = await connection.getProgramAccounts(program.programId, {
     dataSlice: { offset: 8 + 32, length: 34 },
@@ -85,6 +140,8 @@ export const getBounties = async (
     };
   });
 };
+
+// UPDATE methods
 
 interface CreateBountyArgs {
   program: Program<DaoBountyBoard>;

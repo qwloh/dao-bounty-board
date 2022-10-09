@@ -17,7 +17,6 @@ import { ContributorRecord } from "../contributor-record/ContributorRecord";
 import { useAnchorContext } from "../../../hooks";
 
 export const Bounty = ({ realm }: { realm: string }) => {
-  // hard coded value
   const [bountyPK, setBountyPK] = useState("");
   const { wallet } = useAnchorContext();
 
@@ -42,9 +41,13 @@ export const Bounty = ({ realm }: { realm: string }) => {
           View
         </button>
       </div>
+      {/* My identity */}
       <div className="bg-white rounded-lg p-4">
         <div className="font-bold">Me as contributor in realm</div>
-        <ContributorRecord realm={realm} walletPK={wallet?.publicKey} />
+        <ContributorRecord
+          realm={realm}
+          walletOrContributorRecordPK={{ walletPK: wallet?.publicKey + "" }}
+        />
       </div>
       {bountyPK && bountyPK.trim() && (
         <div className="flex gap-x-4  items-start">
