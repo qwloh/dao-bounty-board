@@ -10,11 +10,14 @@ const statusColor: Record<keyof typeof BountyState, string> = {
 };
 
 export const BountyDetails = ({ bountyPK }: { bountyPK: string }) => {
-  const { data: bounty } = useBounty(bountyPK);
+  const { data: bounty, isLoading } = useBounty(bountyPK); // in the case of loading a list of bounties, this value should be prefilled by useBountiesByRealm
   return (
     <>
-      {!bounty && (
-        <div className="text-slate-800">Bounty {bountyPK} does not exist</div>
+      {isLoading && <div>Loading...</div>}
+      {!isLoading && !bounty && (
+        <div className="text-slate-800 break-words">
+          Bounty {bountyPK} does not exist
+        </div>
       )}
       {bounty && (
         <div className="flex flex-col gap-y-2 rounded-lg p-4 bg-slate-100">

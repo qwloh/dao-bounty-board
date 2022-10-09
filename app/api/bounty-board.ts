@@ -10,7 +10,11 @@ import {
   INIT_BOUNTY_BOARD_PROPOSAL_NAME,
   UPDATE_BOUNTY_BOARD_PROPOSAL_NAME,
 } from "./constants";
-import { BountyBoardConfig, Permission } from "../model/bounty-board.model";
+import {
+  BountyBoard,
+  BountyBoardConfig,
+  Permission,
+} from "../model/bounty-board.model";
 import {
   InitialContributorWithRole,
   _createProposal,
@@ -64,7 +68,7 @@ export const getAllBountyBoards = async (
 export const getBountyBoard = async (
   program: Program<DaoBountyBoard>,
   bountyBoardPubkey: PublicKey
-) => {
+): Promise<{ pubkey: PublicKey; account: null | BountyBoard }> => {
   const bountyBoardAcc = await program.account.bountyBoard.fetchNullable(
     bountyBoardPubkey
   );

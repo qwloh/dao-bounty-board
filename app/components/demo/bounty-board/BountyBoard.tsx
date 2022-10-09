@@ -80,7 +80,7 @@ export const BountyBoard = ({ realm }: { realm: string }) => {
               }),
             },
             firstVaultMint: new PublicKey(DUMMY_MINT_PK.USDC),
-            amountToFundBountyBoardVault: 100000000, // 100 usdc
+            amountToFundBountyBoardVault: 10000000000, // 10000 usdc
             initialContributorsWithRole: [
               {
                 roleName: "Core",
