@@ -46,8 +46,8 @@ describe("add bounty board tier config", () => {
 
   //  Test realm public key F1UQeTStc4r8tSXhTKF8Ms2zJt4L2Dtv5SNwNruCZwqt
   //  Test realm governance public key xkpe744XA3B95aiPNz98rUqdcdaUnLR5wej1i4sd9wf
-  //  Bounty board PDA Fe13wMhcWkUu4LVxjgQKeKfPsFfKkxWZDZ4sTM9VEtW5
-  //  Bounty board vault PDA CqRBrtTU3WQMm1YydksZ2nDhe7eKYyUMqum1hYLECLXq
+  //  Bounty board PDA GiX5x7QFZ6YVXq1ELa5MLTZ4nyGrSvhB9oqizyZH2iGv
+  //  Bounty board vault PDA 735JtkREUmnzdeH5RV8BA2pULX2JJUtUswUpfydWTxX3
 
   /**
    * TEST

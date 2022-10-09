@@ -23,7 +23,7 @@ export const getBountySubmissions = async (
   ]);
   // @ts-ignore, return type is hard asserted
   return anchorProgAccounts.map((acc) => ({
-    pubkey: acc.publicKey,
+    pubkey: acc.publicKey.toString(),
     account: {
       ...acc.account,
       // convert rust enums into more convenient form
@@ -146,7 +146,6 @@ export const rejectStaleSubmission = async ({
   bountySubmissionPK,
   assigneeContributorRecordPK,
   reviewerContributorRecordPK,
-  comment,
 }: RejectStaleSubmissionArgs) => {
   console.log("Bounty Submission PK", bountySubmissionPK.toString());
   const { pubkey: bountyPK, account: bountyAcc } = bounty;
@@ -162,9 +161,7 @@ export const rejectStaleSubmission = async ({
   );
 
   return program.methods
-    .rejectStaleSubmission({
-      comment,
-    })
+    .rejectStaleSubmission()
     .accounts({
       bounty: bountyPK,
       bountySubmission: bountySubmissionPK,

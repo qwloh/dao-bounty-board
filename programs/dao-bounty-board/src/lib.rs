@@ -10,7 +10,11 @@ pub mod errors;
 pub mod instructions;
 pub mod state;
 
-declare_id!("8wEnvDw8rQoWQXsCvE3ALt5bEuB8FeA8A52N5Uacjayh");
+// declare_id!("5A1DLgMJbQPUnhfFR6pCpDYVTuGn9YBjiW4aCatm41tH"); // closed
+// declare_id!("8wEnvDw8rQoWQXsCvE3ALt5bEuB8FeA8A52N5Uacjayh");
+// declare_id!("F4GNsY9Wae7weSsbHCXNCRphkVXoMKLec41cJFBdcchc"); // closed
+// declare_id!("6LUtVzemMML7XkeNv7B3RktnqvVTrigD5DNKCenjVctB"); // ?
+declare_id!("FiAbzUcY3jG3qRLRkeR6hxe88DXn9CV3cvR9vKHP2SEN");
 
 #[program]
 pub mod dao_bounty_board {
@@ -82,11 +86,8 @@ pub mod dao_bounty_board {
         instructions::reject_submission(ctx, data)
     }
 
-    pub fn reject_stale_submission(
-        ctx: Context<RejectStaleSubmission>,
-        data: RejectStaleSubmissionVM,
-    ) -> Result<()> {
-        instructions::reject_stale_submission(ctx, data)
+    pub fn reject_stale_submission(ctx: Context<RejectStaleSubmission>) -> Result<()> {
+        instructions::reject_stale_submission(ctx)
     }
 
     // "contributor fn"

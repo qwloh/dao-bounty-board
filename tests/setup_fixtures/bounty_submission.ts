@@ -520,8 +520,7 @@ export const rejectStaleSubmission = async (
   bountySubmissionPubkey: PublicKey,
   assigneeContributorRecordPubkey: PublicKey,
   contributorRecordPubkey: PublicKey,
-  contributorWallet: Keypair = undefined,
-  comment: string = ""
+  contributorWallet: Keypair = undefined
 ) => {
   const TEST_BOUNTY_PK = bountyPubkey;
   const TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPubkey;
@@ -546,9 +545,7 @@ export const rejectStaleSubmission = async (
 
   try {
     const tx = await program.methods
-      .rejectStaleSubmission({
-        comment,
-      })
+      .rejectStaleSubmission()
       .accounts({
         bounty: TEST_BOUNTY_PK,
         bountySubmission: TEST_BOUNTY_SUBMISSION_PK,
