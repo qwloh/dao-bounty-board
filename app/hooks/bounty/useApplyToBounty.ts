@@ -16,10 +16,10 @@ export const useApplyToBounty = (
   callbacks: CallbacksForUI = { onSuccess: undefined, onError: undefined }
 ) => {
   const { provider, program, wallet, walletConnected } = useAnchorContext();
-  const { data: contributorRecord } = useContributorRecord(
-    realm,
-    wallet?.publicKey
-  );
+  const { data: contributorRecord, refetch: refetchContributors } =
+    useContributorRecord(realm, {
+      walletPK: wallet?.publicKey + "",
+    });
   const { data: bounty, refetch: refetchBounty } = useBounty(bountyPK);
   const { refetch: refetchBountyApplications } =
     useBountyApplications(bountyPK);
@@ -45,7 +45,7 @@ export const useApplyToBounty = (
           // @ts-ignore
           account: bounty,
         },
-        applicantContributorRecordPK: contributorRecord?.pubkey,
+        applicantContributorRecordPK: new PublicKey(contributorRecord?.pubkey),
         validity,
       }),
     {
@@ -53,6 +53,7 @@ export const useApplyToBounty = (
         refetchBounty();
         refetchBountyApplications();
         refetchBountyActivities();
+        refetchContributors();
         if (callbacks?.onSuccess) {
           callbacks.onSuccess(data, variables, context);
         }

@@ -25,8 +25,8 @@ export const useContributorsByRealm = <
 }: useContributorsByRealmArgs<FP>) => {
   const {
     data: contributorRecordItems,
-    isLoading: isLoadingBountyItems,
-    error: errorLoadingBountyItems,
+    isLoading: isLoadingContributorRecordItems,
+    error: errorLoadingContributorRecordItems,
     ...restQueryResult
   } = _useContributorRecordsByRealm(realm);
 
@@ -48,7 +48,8 @@ export const useContributorsByRealm = <
 
   return {
     data: processed,
-    isLoading: isLoadingBountyItems || isProcessing || isFetchingMultiple,
+    isLoading:
+      isLoadingContributorRecordItems || isProcessing || isFetchingMultiple,
     // error: errorLoadingBountyItems || errorFetchingMultiple,
     ...restQueryResult,
     ...restMethods,

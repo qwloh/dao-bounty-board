@@ -30,17 +30,17 @@ export const ContributorRecord = ({
       )}
       {contributorRecord?.account && (
         <div className="flex flex-col gap-y-2">
-          <div className="grid grid-cols-[max-content_1fr] gap-x-2 items-center">
+          <div className="grid grid-cols-[max-content_1fr] gap-x-2 items-start">
             <p>Record address</p>
-            <p className="text-slate-800 break-words">
+            <p className="text-slate-800 break-words min-w-0">
               {contributorRecord?.pubkey + ""}
             </p>
             <p>Associated wallet</p>
-            <p className="text-slate-800 break-words">
+            <p className="text-slate-800 break-words min-w-0">
               {contributorRecord?.account?.associatedWallet + ""}
             </p>
             <p>Reputation</p>
-            <p className="text-slate-800 break-words">
+            <p className="text-slate-800 break-words min-w-0">
               {contributorRecord?.account.reputation.toNumber()}
             </p>
           </div>

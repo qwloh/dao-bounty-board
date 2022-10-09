@@ -25,6 +25,7 @@ export const Contributors = ({ realm }: { realm: string }) => {
     blankFilters: { "account.role": [] },
     pageSize: 2,
   });
+
   return (
     <div className="flex gap-x-4 py-4 items-start">
       <div className="basis-2/3 min-w-0 p-6 bg-white break-words flex flex-col gap-y-2 rounded-lg">
@@ -89,21 +90,6 @@ export const Contributors = ({ realm }: { realm: string }) => {
         {/* Sort */}
         {/* <div className="py-2 flex gap-x-2 items-center">
           <div>Sort by</div>
-          <div className="flex gap-x-2">
-            <button
-              className={`text-xs p-1 rounded-full border ${
-                activeSort?.path === "account.bountyIndex"
-                  ? "bg-blue-100 text-blue-400 border-blue-400"
-                  : " bg-slate-100 border-slate-400"
-              } `}
-              onClick={() =>
-                activeSort?.path === "account.bountyIndex"
-                  ? clearSort()
-                  : updateSort("account.bountyIndex", "desc")
-              }
-            >
-              Newest
-            </button>
             <button
               className={`text-xs p-1 rounded-full border ${
                 activeSort?.path === "account.bountyIndex"
@@ -131,18 +117,36 @@ export const Contributors = ({ realm }: { realm: string }) => {
         {!isLoading && !contributors?.length && (
           <div className="text-s text-slate-800 py-2">No contributors</div>
         )}
-        {!isLoading &&
-          !!contributors?.length &&
-          contributors.map((b) => (
-            <ContributorRecord
-              key={b.pubkey}
-              realm={realm}
-              walletOrContributorRecordPK={{ contributorRecordPK: b.pubkey }}
-            />
-          ))}
+        {!isLoading && !!contributors?.length && (
+          <div className="flex flex-col gap-y-6 py-3">
+            {contributors.map((b) => (
+              <ContributorRecord
+                key={b.pubkey}
+                realm={realm}
+                walletOrContributorRecordPK={{ contributorRecordPK: b.pubkey }}
+              />
+            ))}
+          </div>
+        )}
       </div>
       {/* Instructions to add contributors */}
-      <div className="basis-1/3 bg-white rounded-lg p-4"></div>
+      <div className="basis-1/3 bg-white rounded-lg p-4 flex flex-col gap-y-6">
+        <div>Two ways to add contributors</div>
+        <div className="flex flex-col gap-y-1">
+          <div className="text-slate-800">
+            1. Add contributor record with default role when non-contributor
+            applies to a bounty
+          </div>
+          <div>Change a wallet and apply to any bounty</div>
+        </div>
+        <div className="w-full h-px bg-slate-200"></div>
+        <div className="flex flex-col gap-y-1">
+          <div className="text-slate-800">
+            2. Add / promote contributors with specified role via Proposal
+          </div>
+          <div>To do</div>
+        </div>
+      </div>
     </div>
   );
 };
