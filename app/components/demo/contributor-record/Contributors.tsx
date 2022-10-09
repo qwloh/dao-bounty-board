@@ -117,10 +117,7 @@ export const Contributors = ({ realm }: { realm: string }) => {
         </div> */}
         {/* Bounty counts & paging solution*/}
         <div className="py-2 flex justify-between items-center">
-          <div>
-            Contributors{" "}
-            {contributors?.length !== undefined && `(${contributors?.length})`}
-          </div>
+          <div>Contributors</div>
           <PaginationBar
             pageParams={pageParams}
             prevPage={prevPage}

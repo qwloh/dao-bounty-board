@@ -1,3 +1,4 @@
+import { debounce } from "lodash";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { _chunk } from "../../utils/data-transform";
 import { makeNonBlocking } from "../../utils/promisify";
@@ -23,7 +24,6 @@ interface UsePagedArgs<T> {
 
 interface UsePagedState<T> {
   page: Page<T>;
-  isPaging: boolean;
   paged: T[][];
 }
 
@@ -47,6 +47,9 @@ export const usePaged = <T>({ sortedData, pageSize }: UsePagedArgs<T>) => {
   //   isPaging: true,
   // });
 
+  const [isPaging, setIsPaging] = useState(false);
+  const setIsPagingDebounced = debounce((bool) => setIsPaging(bool), 500);
+
   const [pageState, setPageState] = useState<UsePagedState<T>>({
     page: {
       content: [],
@@ -61,7 +64,6 @@ export const usePaged = <T>({ sortedData, pageSize }: UsePagedArgs<T>) => {
         pageCount: 0,
       },
     },
-    isPaging: true,
     paged: [],
   });
 
@@ -72,7 +74,8 @@ export const usePaged = <T>({ sortedData, pageSize }: UsePagedArgs<T>) => {
       setPageState((p) => ({ ...p, isPaging: false }));
       return;
     }
-    setPageState((p) => ({ ...p, isPaging: true }));
+
+    setIsPagingDebounced(true);
     makeNonBlocking(() => _chunk(sortedData, pageSize))
       .then((paged) => {
         // compute pageParams
@@ -105,12 +108,12 @@ export const usePaged = <T>({ sortedData, pageSize }: UsePagedArgs<T>) => {
             },
           },
           paged,
-          isPaging: false,
         }));
+        setIsPagingDebounced(false);
       })
       .catch((e) => {
         console.error(e);
-        setPageState((p) => ({ ...p, isPaging: false }));
+        setIsPagingDebounced(false);
       });
   }, [sortedData, pageSize]);
 
@@ -161,8 +164,8 @@ export const usePaged = <T>({ sortedData, pageSize }: UsePagedArgs<T>) => {
 
   const prevPage = () => {
     if (!pageSize) throw new Error("prevPage() called on non-paginated data");
-
     if (!pageState.page.pageParams.hasPrevPage) return; // do nothing
+
     setPageState((p) => {
       const newPage = p.page.pageParams.page - 1;
       return {
@@ -201,6 +204,7 @@ export const usePaged = <T>({ sortedData, pageSize }: UsePagedArgs<T>) => {
   const nextPage = () => {
     if (!pageSize) throw new Error("nextPage() called on non-paginated data");
     if (!pageState.page.pageParams.hasNextPage) return; // do nothing
+
     setPageState((p) => {
       const newPage = p.page.pageParams.page + 1;
       return {
@@ -245,6 +249,7 @@ export const usePaged = <T>({ sortedData, pageSize }: UsePagedArgs<T>) => {
           pageState.page.pageParams.totalPages - 1
         }`
       ); // do nothing
+
     setPageState((p) => ({
       ...p,
       page: {
@@ -282,6 +287,7 @@ export const usePaged = <T>({ sortedData, pageSize }: UsePagedArgs<T>) => {
   const addPage = () => {
     if (!pageSize) throw new Error("toPage() called on non-paginated data");
     if (!pageState.page.pageParams.hasNextPage) return; // do nothing
+
     setPageState((p) => {
       const newPage = p.page.pageParams.page + 1;
       const appendedContent = [...p.page.content, ...p.paged[newPage]];
@@ -304,7 +310,7 @@ export const usePaged = <T>({ sortedData, pageSize }: UsePagedArgs<T>) => {
 
   return {
     currentPage: pageSize ? pageState.page.content : sortedData, // if pageSize undefined, no pagination, return original data
-    isPaging: pageState.isPaging,
+    isPaging,
     pageParams: pageState.page.pageParams,
     prevPage,
     nextPage,

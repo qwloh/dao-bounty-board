@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { _toMap } from "../../utils/data-transform";
-import { clone, get, setWith } from "lodash";
+import { clone, debounce, get, setWith } from "lodash";
 import { DeepKeys, DeepValue, SimpleObject } from "../../model/util.model";
 import { makeNonBlocking } from "../../utils/promisify";
 
@@ -20,7 +20,6 @@ interface UseFilterArgs<T extends object, FP extends FilterParams<T>> {
 
 interface UseFilterState<T extends object, FP extends FilterParams<T>> {
   filterParams: FP;
-  isFiltering: boolean;
   filtered: T[];
 }
 
@@ -28,13 +27,13 @@ export const useFilter = <T extends SimpleObject, FP extends FilterParams<T>>({
   data,
   blankFilters,
 }: UseFilterArgs<T, FP>) => {
+  const [isFiltering, setIsFiltering] = useState(false);
+  const setIsFilteringDebounced = debounce((bool) => setIsFiltering(bool), 500);
+
   const [filterState, setFilterState] = useState<UseFilterState<T, FP>>({
     filterParams: blankFilters,
-    isFiltering: true,
     filtered: data,
   });
-
-  // const [isFiltering, setIsFiltering] = useState(true);
 
   // filtered data based on filterParams
   // const filtered = useMemo(() => {
@@ -54,17 +53,18 @@ export const useFilter = <T extends SimpleObject, FP extends FilterParams<T>>({
     if (!data) return;
     if (!blankFilters) setFilterState((fs) => ({ ...fs, isFiltering: false })); // equivalent to hook disabled if blankFilters is not provided
 
-    setFilterState((fs) => ({ ...fs, isFiltering: true }));
+    setIsFilteringDebounced(true);
 
     makeNonBlocking(() =>
       data.filter(getFilterPredicate(filterState.filterParams))
     )
       .then((filtered) => {
-        setFilterState((fs) => ({ ...fs, filtered, isFiltering: false }));
+        setFilterState((fs) => ({ ...fs, filtered }));
+        setIsFilteringDebounced(false);
       })
       .catch((e) => {
         console.error("Filter error", e);
-        setFilterState((fs) => ({ ...fs, isFiltering: false }));
+        setIsFilteringDebounced(false);
       });
   }, [data, filterState?.filterParams]);
 
@@ -75,6 +75,8 @@ export const useFilter = <T extends SimpleObject, FP extends FilterParams<T>>({
   ) => {
     if (!blankFilters)
       throw new Error("blankFilters needed for filter operation");
+
+    setIsFilteringDebounced(true);
     setFilterState((fs) => {
       let updatedFilterParams;
       if (typeof valueOrFn === "function") {
@@ -97,7 +99,6 @@ export const useFilter = <T extends SimpleObject, FP extends FilterParams<T>>({
       }
       return {
         ...fs,
-        isFiltering: true,
         filterParams: updatedFilterParams,
       };
     });
@@ -126,6 +127,7 @@ export const useFilter = <T extends SimpleObject, FP extends FilterParams<T>>({
   const clearFilter = (path: keyof FP) => {
     if (!blankFilters)
       throw new Error("blankFilters needed for filter operation");
+    setIsFilteringDebounced(true);
     setFilterState((fs) => {
       const blankFilterValue = get(blankFilters, path);
       return {
@@ -136,7 +138,6 @@ export const useFilter = <T extends SimpleObject, FP extends FilterParams<T>>({
           blankFilterValue,
           clone
         ),
-        isFiltering: true,
       };
     });
   };
@@ -151,8 +152,12 @@ export const useFilter = <T extends SimpleObject, FP extends FilterParams<T>>({
   const clearAllFilters = () => {
     if (!blankFilters)
       throw new Error("blankFilters needed for filter operation");
+    setIsFilteringDebounced(true);
     setFilterState((fs) => {
-      return { ...fs, filterParams: blankFilters, isFiltering: true };
+      return {
+        ...fs,
+        filterParams: blankFilters,
+      };
     });
   };
 
@@ -163,6 +168,7 @@ export const useFilter = <T extends SimpleObject, FP extends FilterParams<T>>({
     // isFiltering: filterResult.isFiltering,
     // filterParams: filterState,
     ...filterState,
+    isFiltering,
     filter,
     clearFilter,
     clearAllFilters,

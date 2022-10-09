@@ -1,3 +1,4 @@
+import { debounce } from "lodash";
 import { useMemo, useState } from "react";
 
 interface SearchOptions<T> {
@@ -26,9 +27,9 @@ export const useSearch = <T>(
     );
   }, [data, searchTerm]); // searchOptions is not a dependency because we don't expect searchOptions to change
 
-  const updateSearchTerm = (searchTerm: string) => {
+  const updateSearchTerm = debounce((searchTerm: string) => {
     setSearchTerm(searchTerm);
-  };
+  }, 500);
 
   const clearSearch = () => {
     setSearchTerm("");

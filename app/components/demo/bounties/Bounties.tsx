@@ -199,9 +199,7 @@ export const Bounties = ({ realm }: { realm: string }) => {
         </div>
         {/* Bounty counts & paging solution*/}
         <div className="py-2 flex justify-between items-center">
-          <div>
-            Bounties {bounties?.length !== undefined && `(${bounties?.length})`}
-          </div>
+          <div>Bounties</div>
           <PaginationBar
             pageParams={pageParams}
             prevPage={prevPage}
@@ -233,8 +231,8 @@ export const Bounties = ({ realm }: { realm: string }) => {
                 args={{
                   title: "First bounty",
                   description: "Give me a website with marquee",
-                  skill: Skill.operations,
-                  tier: "Entry",
+                  skill: Skill.development,
+                  tier: "S",
                 }}
               />
               <div className="text-xs px-2">

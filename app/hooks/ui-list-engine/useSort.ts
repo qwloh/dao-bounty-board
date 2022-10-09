@@ -1,4 +1,4 @@
-import { get } from "lodash";
+import { debounce, get } from "lodash";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { DeepKeys } from "../../model/util.model";
 import { makeNonBlocking } from "../../utils/promisify";
@@ -12,14 +12,15 @@ interface UseSortArgs<T> {
 
 interface UseSortState<T> {
   sort?: Sort<T>;
-  isSorting: boolean;
   sorted: T[];
 }
 
 export const useSort = <T>({ filteredData, initialSort }: UseSortArgs<T>) => {
+  const [isSorting, setIsSorting] = useState(false);
+  const setIsSortingDebounced = debounce((bool) => setIsSorting(bool), 500);
+
   const [sortState, setSortState] = useState<UseSortState<T>>({
     sort: initialSort,
-    isSorting: true,
     sorted: filteredData,
   });
 
@@ -41,27 +42,29 @@ export const useSort = <T>({ filteredData, initialSort }: UseSortArgs<T>) => {
   useEffect(() => {
     console.log("Run: sort", sortState);
     if (!filteredData) return;
-    setSortState((s) => ({ ...s, isSorting: true }));
+
+    setIsSortingDebounced(true);
     makeNonBlocking(() =>
       sortState.sort
         ? [...filteredData].sort(getSortComparator([sortState.sort]))
         : filteredData
     )
-      .then((sorted) =>
-        setSortState((s) => ({ ...s, sorted, isSorting: false }))
-      )
+      .then((sorted) => {
+        setSortState((s) => ({ ...s, sorted }));
+        setIsSortingDebounced(false);
+      })
       .catch((e) => {
         console.error("Sort error", e);
-        setSortState((s) => ({ ...s, isSorting: false }));
+        setIsSortingDebounced(false);
       });
   }, [filteredData, sortState.sort]);
 
   // functions to expose to hook consumer
   const updateSort = (path: DeepKeys<T>, order: "asc" | "desc") => {
+    setIsSortingDebounced(true);
     setSortState((s) => ({
       ...s,
       sort: { path, order },
-      isSorting: true,
     }));
     // setSort({
     //   path,
@@ -70,19 +73,19 @@ export const useSort = <T>({ filteredData, initialSort }: UseSortArgs<T>) => {
   };
 
   const resetSort = () => {
+    setIsSortingDebounced(true);
     setSortState((s) => ({
       ...s,
       sort: initialSort,
-      isSorting: true,
     }));
     // setSort(initialSort);
   };
 
   const clearSort = () => {
+    setIsSortingDebounced(true);
     setSortState((s) => ({
       ...s,
       sort: undefined,
-      isSorting: true,
     }));
     // setSort(undefined);
   };
@@ -90,8 +93,8 @@ export const useSort = <T>({ filteredData, initialSort }: UseSortArgs<T>) => {
   return {
     // sorted,
     sorted: sortState.sorted,
-    isSorting: sortState.isSorting,
     activeSort: sortState.sort,
+    isSorting,
     // sorted: sortResult.sorted,
     // isSorting: sortResult.isSorting,
     // activeSort: sort,
