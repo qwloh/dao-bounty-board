@@ -9,7 +9,6 @@ import {
   getBountyBoardVaultAddress,
   getBountyEscrowAddress,
 } from "./utils";
-import { getAllContributorRecordsForRealm } from "./contributor-record";
 import { getBounties } from "./bounty";
 import { getBountyApplications } from "./bounty-application";
 import { getBountySubmissions } from "./bounty-submission";
@@ -17,6 +16,7 @@ import { getBountyActivities } from "./bounty-activity";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { bs58 } from "@project-serum/anchor/dist/cjs/utils/bytes";
 import { MockWallet } from "../utils/mock-wallet";
+import { getContributorRecords } from "./contributor-record";
 
 export const restart = async (connection: Connection) => {
   // setup
@@ -62,7 +62,7 @@ export const restart = async (connection: Connection) => {
     `Bounty board vaults ${bountyBoardVaults.length}`,
     bountyBoardVaults.map((v) => v.address.toString())
   );
-  const contributorRecords = await getAllContributorRecordsForRealm(
+  const contributorRecords = await getContributorRecords(
     connection,
     program,
     TEST_REALM_PK

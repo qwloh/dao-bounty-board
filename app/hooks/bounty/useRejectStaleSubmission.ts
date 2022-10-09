@@ -17,7 +17,9 @@ export const useRejectStaleSubmission = (
 ) => {
   const { provider, program, wallet, walletConnected } = useAnchorContext();
   const { data: contributorRecord, refetch: refetchContributorRecord } =
-    useContributorRecord(realm, wallet?.publicKey);
+    useContributorRecord(realm, {
+      walletPK: wallet?.publicKey + "",
+    });
   const { data: bounty, refetch: refetchBounty } = useBounty(bountyPK);
   const { data: bountySubmissions, refetch: refetchBountySubmissions } =
     useBountySubmissions(bountyPK);
@@ -81,7 +83,7 @@ export const useRejectStaleSubmission = (
         },
         bountySubmissionPK: new PublicKey(bountySubmissions[0].pubkey), // assume latest submission must be the active submission
         assigneeContributorRecordPK: bountySubmissions[0].account.assignee,
-        reviewerContributorRecordPK: contributorRecord.pubkey,
+        reviewerContributorRecordPK: new PublicKey(contributorRecord.pubkey),
         comment,
       }),
     {
