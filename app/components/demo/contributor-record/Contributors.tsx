@@ -15,6 +15,9 @@ export const Contributors = ({ realm }: { realm: string }) => {
     clearFilter,
     clearAllFilters,
     // sort related
+    activeSort,
+    updateSort,
+    clearSort,
     // paging related
     pageParams,
     prevPage,
@@ -35,23 +38,23 @@ export const Contributors = ({ realm }: { realm: string }) => {
           demo)
         </p>
         {/* Filter */}
-        <div className="py-2 flex flex-col gap-y-2">
-          <div className="flex gap-x-2 items-center">
-            <div>Filter by</div>
-            <button
-              className="text-xs p-1 text-rose-400"
-              onClick={() => {
-                clearAllFilters();
-              }}
-            >
-              Clear all filters
-            </button>
-          </div>
-          <div className="flex gap-x-4">
-            <div>Role</div>
-            <div className="flex gap-x-2">
-              {bountyBoard?.account?.config?.roles &&
-                bountyBoard?.account?.config?.roles
+        {bountyBoard?.account?.config?.roles && (
+          <div className="py-2 flex flex-col gap-y-2">
+            <div className="flex gap-x-2 items-center">
+              <div>Filter by</div>
+              <button
+                className="text-xs p-1 text-rose-400"
+                onClick={() => {
+                  clearAllFilters();
+                }}
+              >
+                Clear all filters
+              </button>
+            </div>
+            <div className="flex gap-x-4">
+              <div>Role</div>
+              <div className="flex gap-x-2">
+                {bountyBoard?.account?.config?.roles
                   .map((r) => r.roleName)
                   .map((rn) => (
                     <button
@@ -76,31 +79,37 @@ export const Contributors = ({ realm }: { realm: string }) => {
                       {_toSentenceCase(rn)}
                     </button>
                   ))}
-              <button
-                className="text-xs p-1 text-rose-400"
-                onClick={() => {
-                  clearFilter("account.role");
-                }}
-              >
-                Clear role filter
-              </button>
+
+                <button
+                  className="text-xs p-1 text-rose-400"
+                  onClick={() => {
+                    clearFilter("account.role");
+                  }}
+                >
+                  Clear role filter
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
         {/* Sort */}
-        {/* <div className="py-2 flex gap-x-2 items-center">
+        <div className="py-2 flex gap-x-2 items-center">
           <div>Sort by</div>
-            <button
-              className={`text-xs p-1 rounded-full border ${
-                activeSort?.path === "account.bountyIndex"
-                  ? "bg-blue-100 text-blue-400 border-blue-400"
-                  : " bg-slate-100 border-slate-400"
-              } `}
-            >
-              Reward
-            </button>
-          </div>
-        </div> */}
+          <button
+            className={`text-xs p-1 rounded-full border ${
+              activeSort?.path === "account.reputation"
+                ? "bg-blue-100 text-blue-400 border-blue-400"
+                : " bg-slate-100 border-slate-400"
+            } `}
+            onClick={() =>
+              activeSort?.path === "account.reputation"
+                ? clearSort()
+                : updateSort("account.reputation", "desc")
+            }
+          >
+            Highest reputation
+          </button>
+        </div>
         {/* Bounty counts & paging solution*/}
         <div className="py-2 flex justify-between items-center">
           <div>Contributors</div>
