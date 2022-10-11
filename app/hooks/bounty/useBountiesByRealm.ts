@@ -42,7 +42,7 @@ export const useBountiesByRealm = <
   });
 
   const { isLoading: isFetchingMultiple, error: errorFetchingMultiple } =
-    _usePagedBounties(processed ? processed.map((p) => p.pubkey) : []);
+    _usePagedBounties(processed && processed.map((p) => p.pubkey));
 
   return {
     data: processed,

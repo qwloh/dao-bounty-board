@@ -1,4 +1,5 @@
 import { useBountiesByRealm } from "../../../hooks/bounty/useBountiesByRealm";
+import { useDebouncedLoader } from "../../../hooks/helper/useDebouncedLoader";
 import { BountyState, Skill } from "../../../model/bounty.model";
 import { _toSentenceCase } from "../../../utils/str-transform";
 import { PaginationBar } from "../PaginationBar";
@@ -44,8 +45,10 @@ export const Bounties = ({ realm }: { realm: string }) => {
       "account.state": [] as (keyof typeof BountyState)[],
       "account.tier": [] as string[],
     },
-    pageSize: 3,
+    pageSize: 2,
   });
+
+  const { isLoading: debouncedLoading } = useDebouncedLoader({ isLoading });
 
   return (
     <div className="flex gap-x-4 py-4 items-start">
@@ -188,13 +191,13 @@ export const Bounties = ({ realm }: { realm: string }) => {
             toPage={toPage}
           />
         </div>
-        {isLoading && (
+        {debouncedLoading && (
           <div className="text-s text-slate-800 py-2">Loading...</div>
         )}
-        {!isLoading && !bounties?.length && (
+        {!debouncedLoading && !bounties?.length && (
           <div className="text-s text-slate-800 py-2">No bounty</div>
         )}
-        {!isLoading &&
+        {!debouncedLoading &&
           !!bounties?.length &&
           bounties.map((b) => (
             <BountyDetails key={b.pubkey} bountyPK={b.pubkey} />
@@ -212,7 +215,7 @@ export const Bounties = ({ realm }: { realm: string }) => {
                 args={{
                   title: "First bounty",
                   description: "Give me a website with marquee",
-                  skill: Skill.design,
+                  skill: Skill.development,
                   tier: "Entry",
                 }}
               />

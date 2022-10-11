@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { _toMap } from "../../utils/data-transform";
-import { clone, debounce, get, setWith } from "lodash";
+import { clone, get, setWith } from "lodash";
 import { DeepKeys, DeepValue, SimpleObject } from "../../model/util.model";
 import { makeNonBlocking } from "../../utils/promisify";
 
@@ -18,55 +18,34 @@ interface UseFilterArgs<T extends object, FP extends FilterParams<T>> {
   // TODO: implement initialFilters in the future
 }
 
-interface UseFilterState<T extends object, FP extends FilterParams<T>> {
-  filterParams: FP;
-  filtered: T[];
-}
-
 export const useFilter = <T extends SimpleObject, FP extends FilterParams<T>>({
   data,
   blankFilters,
 }: UseFilterArgs<T, FP>) => {
-  const [isFiltering, setIsFiltering] = useState(false);
-  const setIsFilteringDebounced = debounce((bool) => setIsFiltering(bool), 500);
-
-  const [filterState, setFilterState] = useState<UseFilterState<T, FP>>({
-    filterParams: blankFilters,
-    filtered: data,
-  });
-
-  // filtered data based on filterParams
-  // const filtered = useMemo(() => {
-  //   if (!data) return [];
-  //   if (!blankFilters) return data; // equivalent to hook disabled if blankFilters is not provided
-
-  //   setIsFiltering(true);
-  //   console.log("Filtering", isFiltering);
-  //   const filtered = data.filter(getFilterPredicate(filterParams));
-  //   setIsFiltering(false);
-  //   return filtered;
-  //   // return data.filter(getFilterPredicate(filterParams));
-  // }, [data, filterParams]);
+  // splitting states doesn't matter anymore because multiple `setStates` calls in an effect are batched since React 18
+  const [isFiltering, setIsFiltering] = useState(true);
+  const [filterParams, setFilterParams] = useState<FP>(blankFilters);
+  const [filtered, setFiltered] = useState(data);
 
   useEffect(() => {
-    console.log("Run: filter");
+    console.log("Run: filter", data?.length, isFiltering);
     if (!data) return;
-    if (!blankFilters) setFilterState((fs) => ({ ...fs, isFiltering: false })); // equivalent to hook disabled if blankFilters is not provided
+    if (data && !blankFilters) {
+      setIsFiltering(false); // equivalent to hook disabled if blankFilters is not provided
+      return;
+    }
 
-    setIsFilteringDebounced(true);
-
-    makeNonBlocking(() =>
-      data.filter(getFilterPredicate(filterState.filterParams))
-    )
+    setIsFiltering(true);
+    makeNonBlocking(() => data.filter(getFilterPredicate(filterParams)))
       .then((filtered) => {
-        setFilterState((fs) => ({ ...fs, filtered }));
-        setIsFilteringDebounced(false);
+        setFiltered(filtered);
+        setIsFiltering(false);
       })
       .catch((e) => {
         console.error("Filter error", e);
-        setIsFilteringDebounced(false);
+        setIsFiltering(false);
       });
-  }, [data, filterState?.filterParams]);
+  }, [data, filterParams]);
 
   // functions to expose to hook consumer
   const filter = <F extends keyof FP>(
@@ -75,99 +54,41 @@ export const useFilter = <T extends SimpleObject, FP extends FilterParams<T>>({
   ) => {
     if (!blankFilters)
       throw new Error("blankFilters needed for filter operation");
-
-    setIsFilteringDebounced(true);
-    setFilterState((fs) => {
-      let updatedFilterParams;
+    setIsFiltering(true);
+    setFilterParams((fp) => {
       if (typeof valueOrFn === "function") {
-        const currentFilterValue = get(fs.filterParams, path);
+        const currentFilterValue = get(fp, path);
         // @ts-ignore: known bug https://github.com/microsoft/TypeScript/issues/37663
         const newFilterValue = valueOrFn(currentFilterValue);
-        updatedFilterParams = setWith(
-          clone(fs.filterParams),
-          path,
-          newFilterValue,
-          clone
-        );
+        return setWith(clone(fp), path, newFilterValue, clone);
       } else {
-        updatedFilterParams = setWith(
-          clone(fs.filterParams),
-          path,
-          valueOrFn,
-          clone
-        );
+        return setWith(clone(fp), path, valueOrFn, clone);
       }
-      return {
-        ...fs,
-        filterParams: updatedFilterParams,
-      };
     });
-    // };
-
-    // setFilterResult({ filtered: data, isFiltering: true });
-    // setFilterState((fp) => {
-    //   if (typeof valueOrFn === "function") {
-    //     const currentFilterValue = get(filterState, path);
-    //     // @ts-ignore: known bug https://github.com/microsoft/TypeScript/issues/37663
-    //     const newFilterValue = valueOrFn(currentFilterValue);
-    //     return setWith(clone(fp), path, newFilterValue, clone);
-    //   }
-    //   return setWith(clone(fp), path, valueOrFn, clone);
-    // });
-    // clone required as setWith mutates fp by default, first clone shallow-copies first level keys, second clone copies only nested value on the path
   };
 
-  // const clearFilter = (path: keyof FP) => {
-  //   if (!blankFilters)
-  //     throw new Error("blankFilters needed for filter operation");
-  //   setFilterResult({ filtered: data, isFiltering: true });
-  //   const blankFilterValue = get(blankFilters, path);
-  //   setFilterState((fp) => setWith(clone(fp), path, blankFilterValue, clone));
-  // };
   const clearFilter = (path: keyof FP) => {
     if (!blankFilters)
       throw new Error("blankFilters needed for filter operation");
-    setIsFilteringDebounced(true);
-    setFilterState((fs) => {
+
+    setIsFiltering(true);
+    setFilterParams((fp) => {
       const blankFilterValue = get(blankFilters, path);
-      return {
-        ...fs,
-        filterParams: setWith(
-          clone(fs.filterParams),
-          path,
-          blankFilterValue,
-          clone
-        ),
-      };
+      return setWith(clone(fp), path, blankFilterValue, clone);
     });
   };
-
-  // const clearAllFilters = () => {
-  //   if (!blankFilters)
-  //     throw new Error("blankFilters needed for filter operation");
-  //   setFilterResult({ filtered: data, isFiltering: true });
-  //   setFilterState(blankFilters);
-  // };
 
   const clearAllFilters = () => {
     if (!blankFilters)
       throw new Error("blankFilters needed for filter operation");
-    setIsFilteringDebounced(true);
-    setFilterState((fs) => {
-      return {
-        ...fs,
-        filterParams: blankFilters,
-      };
-    });
+
+    setIsFiltering(true);
+    setFilterParams(blankFilters);
   };
 
   return {
-    // filtered,
-    // isFiltering,
-    // filtered: filterResult.filtered,
-    // isFiltering: filterResult.isFiltering,
-    // filterParams: filterState,
-    ...filterState,
+    filtered,
+    filterParams,
     isFiltering,
     filter,
     clearFilter,
@@ -206,3 +127,42 @@ export const isSelectedByFilter = (val, filterVal) => {
   }
   return true;
 };
+
+// filtered data based on filterParams
+// const filtered = useMemo(() => {
+//   if (!data) return [];
+//   if (!blankFilters) return data; // equivalent to hook disabled if blankFilters is not provided
+
+//   setIsFiltering(true);
+//   console.log("Filtering", isFiltering);
+//   const filtered = data.filter(getFilterPredicate(filterParams));
+//   setIsFiltering(false);
+//   return filtered;
+//   // return data.filter(getFilterPredicate(filterParams));
+// }, [data, filterParams]);
+
+// setFilterState((fp) => {
+//   if (typeof valueOrFn === "function") {
+//     const currentFilterValue = get(filterState, path);
+//     // @ts-ignore: known bug https://github.com/microsoft/TypeScript/issues/37663
+//     const newFilterValue = valueOrFn(currentFilterValue);
+//     return setWith(clone(fp), path, newFilterValue, clone);
+//   }
+//   return setWith(clone(fp), path, valueOrFn, clone);
+// });
+// clone required as setWith mutates fp by default, first clone shallow-copies first level keys, second clone copies only nested value on the path
+
+// const clearFilter = (path: keyof FP) => {
+//   if (!blankFilters)
+//     throw new Error("blankFilters needed for filter operation");
+//   setFilterResult({ filtered: data, isFiltering: true });
+//   const blankFilterValue = get(blankFilters, path);
+//   setFilterState((fp) => setWith(clone(fp), path, blankFilterValue, clone));
+// };
+
+// const clearAllFilters = () => {
+//   if (!blankFilters)
+//     throw new Error("blankFilters needed for filter operation");
+//   setFilterResult({ filtered: data, isFiltering: true });
+//   setFilterState(blankFilters);
+// };

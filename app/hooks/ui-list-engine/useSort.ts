@@ -1,5 +1,5 @@
-import { debounce, get } from "lodash";
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { get } from "lodash";
+import { useEffect, useState } from "react";
 import { DeepKeys } from "../../model/util.model";
 import { makeNonBlocking } from "../../utils/promisify";
 
@@ -10,94 +10,56 @@ interface UseSortArgs<T> {
   initialSort?: Sort<T>; // not enabling multi-sort for now
 }
 
-interface UseSortState<T> {
-  sort?: Sort<T>;
-  sorted: T[];
-}
-
 export const useSort = <T>({ filteredData, initialSort }: UseSortArgs<T>) => {
-  const [isSorting, setIsSorting] = useState(false);
-  const setIsSortingDebounced = debounce((bool) => setIsSorting(bool), 500);
-
-  const [sortState, setSortState] = useState<UseSortState<T>>({
-    sort: initialSort,
-    sorted: filteredData,
-  });
-
-  // const [sort, setSort] = useState<Sort<T> | undefined>(initialSort);
-
-  // sorted data based on Sort
-  // const sorted = useMemo(() => {
-  //   if (!filteredData) return [];
-  //   return sort
-  //     ? [...filteredData].sort(getSortComparator([sort])) // create a new reference every time a sort happens to notify downstream users
-  //     : filteredData; // if sort is undefined, do nothing
-  // }, [filteredData, sort]);
-
-  // const [sortResult, setSortResult] = useState({
-  //   sorted: [],
-  //   isSorting: true,
-  // });
+  // splitting states doesn't matter anymore because multiple `setStates` calls in an effect are batched since React 18
+  const [isSorting, setIsSorting] = useState(true);
+  const [activeSort, setActiveSort] = useState(initialSort);
+  const [sorted, setSorted] = useState(filteredData);
 
   useEffect(() => {
-    console.log("Run: sort", sortState);
+    if (activeSort) setIsSorting(true);
+  }, [filteredData]);
+
+  useEffect(() => {
+    console.log("Run: sort", filteredData?.length, isSorting);
     if (!filteredData) return;
 
-    setIsSortingDebounced(true);
+    setIsSorting(true);
     makeNonBlocking(() =>
-      sortState.sort
-        ? [...filteredData].sort(getSortComparator([sortState.sort]))
+      activeSort
+        ? [...filteredData].sort(getSortComparator([activeSort]))
         : filteredData
     )
       .then((sorted) => {
-        setSortState((s) => ({ ...s, sorted }));
-        setIsSortingDebounced(false);
+        setSorted(sorted);
+        setIsSorting(false);
       })
       .catch((e) => {
         console.error("Sort error", e);
-        setIsSortingDebounced(false);
+        setIsSorting(false);
       });
-  }, [filteredData, sortState.sort]);
+  }, [filteredData, activeSort]);
 
   // functions to expose to hook consumer
   const updateSort = (path: DeepKeys<T>, order: "asc" | "desc") => {
-    setIsSortingDebounced(true);
-    setSortState((s) => ({
-      ...s,
-      sort: { path, order },
-    }));
-    // setSort({
-    //   path,
-    //   order,
-    // });
+    setIsSorting(true);
+    setActiveSort({ path, order });
   };
 
   const resetSort = () => {
-    setIsSortingDebounced(true);
-    setSortState((s) => ({
-      ...s,
-      sort: initialSort,
-    }));
-    // setSort(initialSort);
+    setIsSorting(true);
+    setActiveSort(initialSort);
   };
 
   const clearSort = () => {
-    setIsSortingDebounced(true);
-    setSortState((s) => ({
-      ...s,
-      sort: undefined,
-    }));
-    // setSort(undefined);
+    setIsSorting(true);
+    setActiveSort(undefined);
   };
 
   return {
-    // sorted,
-    sorted: sortState.sorted,
-    activeSort: sortState.sort,
+    sorted,
+    activeSort,
     isSorting,
-    // sorted: sortResult.sorted,
-    // isSorting: sortResult.isSorting,
-    // activeSort: sort,
     updateSort,
     resetSort,
     clearSort,
@@ -150,3 +112,33 @@ export const getSortComparator = <T>(sort: Sort<T>[]) => {
     return res;
   };
 };
+
+// const [sort, setSort] = useState<Sort<T> | undefined>(initialSort);
+
+// sorted data based on Sort
+// const sorted = useMemo(() => {
+//   if (!filteredData) return [];
+//   return sort
+//     ? [...filteredData].sort(getSortComparator([sort])) // create a new reference every time a sort happens to notify downstream users
+//     : filteredData; // if sort is undefined, do nothing
+// }, [filteredData, sort]);
+
+// const [sortResult, setSortResult] = useState({
+//   sorted: [],
+//   isSorting: true,
+// });
+
+// const updateSort = (path: DeepKeys<T>, order: "asc" | "desc") => {
+//   setSort({
+//     path,
+//     order,
+//   });
+// };
+
+// const resetSort = () => {
+//   setSort(initialSort);
+// };
+
+// const clearSort = () => {
+//   setSort(undefined);
+// };
