@@ -1,7 +1,7 @@
-use crate::state::{bounty_bookmark::*, bounty::*};
+use crate::state::{bounty::*, bounty_bookmark::*};
 use anchor_lang::prelude::*;
 
-pub fn bookmark_bounty(ctx: Context<BookmarkBounty>, data: BookmarkBountyVM) -> Result<()> {
+pub fn bookmark_bounty(_ctx: Context<BookmarkBounty>, _data: BookmarkBountyVM) -> Result<()> {
     Ok(())
 }
 
