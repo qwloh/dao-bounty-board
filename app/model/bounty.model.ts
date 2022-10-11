@@ -90,4 +90,5 @@ export interface BountyItem {
   state: keyof typeof BountyState;
   skill: keyof typeof Skill;
   tier: string;
+  rewardReputation: number;
 }

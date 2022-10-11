@@ -46,6 +46,7 @@ pub fn create_bounty(ctx: Context<CreateBounty>, data: BountyVM) -> Result<()> {
 
     bounty.tier = map_str_to_bytes::<24>(&data.tier[..]);
     bounty.skill = data.skill;
+
     bounty.title = data.title;
     bounty.description = data.description;
 
@@ -58,13 +59,16 @@ pub fn create_bounty(ctx: Context<CreateBounty>, data: BountyVM) -> Result<()> {
         .iter()
         .find(|t| t.tier_name == bounty.tier)
         .unwrap();
+
+    bounty.reward_reputation = tier_config.reputation_reward;
+    bounty.reward_skill_pt = tier_config.skills_pt_reward;
+    bounty.reward_mint = tier_config.payout_mint;
+    bounty.reward_payout = tier_config.payout_reward;
+
     bounty.task_submission_window = tier_config.task_submission_window;
     bounty.submission_review_window = tier_config.submission_review_window;
     bounty.address_change_req_window = tier_config.address_change_req_window;
-    bounty.reward_mint = tier_config.payout_mint;
-    bounty.reward_payout = tier_config.payout_reward;
-    bounty.reward_skill_pt = tier_config.skills_pt_reward;
-    bounty.reward_reputation = tier_config.reputation_reward;
+
     bounty.min_required_reputation = tier_config.min_required_reputation;
     bounty.min_required_skills_pt = tier_config.min_required_skills_pt;
 

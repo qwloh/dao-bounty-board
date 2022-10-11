@@ -47,32 +47,6 @@ export const Bounties = ({ realm }: { realm: string }) => {
     pageSize: 3,
   });
 
-  // const {
-  //   data: processedBounties,
-  //   // filter related methods
-  //   filterParams,
-  //   filter,
-  //   clearFilter,
-  //   clearAllFilters,
-  //   // sort related methods
-  //   activeSort,
-  //   updateSort,
-  //   clearSort,
-  //   // pagination related methods
-  //   prevPage,
-  //   nextPage,
-  //   toPage,
-  // } = useFilterSortOrPaged({
-  //   data: bounties,
-  //   blankFilters: {
-  //     "account.skill": [] as (keyof typeof Skill)[], // typescript has problem inferencing empty arrays, other values are fine
-  //     "account.state": [] as (keyof typeof BountyState)[],
-  //     "account.tier": [] as string[],
-  //   },
-  //   // initialSort: {}
-  //   // pageSize: 10,
-  // });
-
   return (
     <div className="flex gap-x-4 py-4 items-start">
       {/* Bounties */}
@@ -186,15 +160,22 @@ export const Bounties = ({ realm }: { realm: string }) => {
             >
               Newest
             </button>
-            {/* <button
+            <button
               className={`text-xs p-1 rounded-full border ${
-                activeSort?.path === "account.bountyIndex"
+                // cheat -> assume highest reward reputation also = highest skill pts / rewards
+                // since sort by payout will involve currency conversion if it were to be meaningful
+                activeSort?.path === "account.rewardReputation"
                   ? "bg-blue-100 text-blue-400 border-blue-400"
                   : " bg-slate-100 border-slate-400"
               } `}
+              onClick={() =>
+                activeSort?.path === "account.rewardReputation"
+                  ? clearSort()
+                  : updateSort("account.rewardReputation", "desc")
+              }
             >
-              Reward
-            </button> */}
+              Highest reward
+            </button>
           </div>
         </div>
         {/* Bounty counts & paging solution*/}
@@ -231,8 +212,8 @@ export const Bounties = ({ realm }: { realm: string }) => {
                 args={{
                   title: "First bounty",
                   description: "Give me a website with marquee",
-                  skill: Skill.development,
-                  tier: "S",
+                  skill: Skill.design,
+                  tier: "Entry",
                 }}
               />
               <div className="text-xs px-2">
@@ -249,3 +230,29 @@ export const Bounties = ({ realm }: { realm: string }) => {
     </div>
   );
 };
+
+// const {
+//   data: processedBounties,
+//   // filter related methods
+//   filterParams,
+//   filter,
+//   clearFilter,
+//   clearAllFilters,
+//   // sort related methods
+//   activeSort,
+//   updateSort,
+//   clearSort,
+//   // pagination related methods
+//   prevPage,
+//   nextPage,
+//   toPage,
+// } = useFilterSortOrPaged({
+//   data: bounties,
+//   blankFilters: {
+//     "account.skill": [] as (keyof typeof Skill)[], // typescript has problem inferencing empty arrays, other values are fine
+//     "account.state": [] as (keyof typeof BountyState)[],
+//     "account.tier": [] as string[],
+//   },
+//   // initialSort: {}
+//   // pageSize: 10,
+// });

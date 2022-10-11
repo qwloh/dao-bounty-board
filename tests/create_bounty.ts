@@ -62,10 +62,10 @@ describe("create bounty", () => {
 
   // Test realm public key 9MEf1ogzSCr4YCneQ53WuFcqaiF4f95JxGLrt3rnSjDL
   // Test realm governance public key AcA9bZqnc1CBKCSP1ZzQJ3hj4xCriy7QnWM7TiKPqPt1
-  // Bounty board PDA Hdg9bA8UWrfGiSKaCHSMXEJaQpvXA8id1xaHQRahv5n7
-  // Bounty board vault PDA 57RDcJsNJGFS1RJSxrcfun9tdLgAC4DHN9yrbmjeTstA
-  // Bounty PDA 5xT7816aQ8kpJzVNWDBaMYS8GTmcF3qd4zN1tC3njaXM
-  // Bounty Escrow PDA 77ByK52JEothrMCFu4HRiPhobXWHbPH9P2uKKmMqL7uj
+  // Bounty board PDA FGbXsiJDVYgvBihNY5Wqbk5zuJaRovJnAQDN1Y9eHqtR
+  // Bounty board vault PDA 7XCNcthWfFDT3CikJ8GWkWGn8ZG22fhdq3FtgRJK5XFL
+  // Bounty PDA FRJ8srpqaeJHfoyJaR3MCWNPhynVYQubEeoiZRzHrMMN
+  // Bounty Escrow PDA 4EHdHApy9REXFe3TJcmC9UVMkv3u2LVDvBRbU6hk6gko
 
   // data to help assertion
   let TEST_BOUNTY_BOARD_BOUNTY_INDEX;
@@ -134,12 +134,13 @@ describe("create bounty", () => {
 
     assert.deepEqual(bountyAcc.state, { open: {} });
 
+    assert.deepEqual(bountyAcc.skill, DEFAULT_BOUNTY_DETAILS.skill);
     const tierDecoded = utils.bytes.utf8
       .decode(Uint8Array.from(bountyAcc.tier))
       .trim()
       .replace(/\0/g, "");
     assert.equal(tierDecoded, DEFAULT_BOUNTY_DETAILS.tier);
-    assert.deepEqual(bountyAcc.skill, DEFAULT_BOUNTY_DETAILS.skill);
+
     assert.equal(bountyAcc.title, DEFAULT_BOUNTY_DETAILS.title);
     assert.equal(bountyAcc.description, DEFAULT_BOUNTY_DETAILS.description);
 
@@ -152,6 +153,21 @@ describe("create bounty", () => {
     const tierConfig = defaultTiers.find(
       (t) => t.tierName === DEFAULT_BOUNTY_DETAILS.tier
     );
+
+    assert.equal(bountyAcc.rewardReputation, tierConfig.reputationReward);
+    assert.equal(
+      bountyAcc.rewardSkillPt.toNumber(),
+      tierConfig.skillsPtReward.toNumber()
+    );
+    assert.equal(
+      bountyAcc.rewardMint.toString(),
+      tierConfig.payoutMint.toString()
+    );
+    assert.equal(
+      bountyAcc.rewardPayout.toNumber(),
+      tierConfig.payoutReward.toNumber()
+    );
+
     assert.equal(
       bountyAcc.taskSubmissionWindow,
       tierConfig.taskSubmissionWindow
@@ -164,19 +180,7 @@ describe("create bounty", () => {
       bountyAcc.addressChangeReqWindow,
       tierConfig.addressChangeReqWindow
     );
-    assert.equal(
-      bountyAcc.rewardMint.toString(),
-      tierConfig.payoutMint.toString()
-    );
-    assert.equal(
-      bountyAcc.rewardPayout.toNumber(),
-      tierConfig.payoutReward.toNumber()
-    );
-    assert.equal(
-      bountyAcc.rewardSkillPt.toNumber(),
-      tierConfig.skillsPtReward.toNumber()
-    );
-    assert.equal(bountyAcc.rewardReputation, tierConfig.reputationReward);
+
     assert.equal(
       bountyAcc.minRequiredReputation,
       tierConfig.minRequiredReputation

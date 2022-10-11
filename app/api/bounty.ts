@@ -29,7 +29,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { BountyBoard } from "../model/bounty-board.model";
-import { bytesToStr } from "../utils/encoding";
+import { bytesToNumber, bytesToStr } from "../utils/encoding";
 import { _BNtoBigInt } from "../utils/number-transform";
 import { BountyBoardProgramAccount } from "../model/util.model";
 
@@ -119,7 +119,7 @@ export const getBounties = async (
 ): Promise<BountyBoardProgramAccount<BountyItem>[]> => {
   // filter by bounty board PK
   const bounties = await connection.getProgramAccounts(program.programId, {
-    dataSlice: { offset: 8 + 32, length: 34 },
+    dataSlice: { offset: 8 + 32, length: 38 },
     filters: [
       { memcmp: program.coder.accounts.memcmp("bounty") },
       { memcmp: { offset: 8, bytes: bountyBoardPK.toString() } },
@@ -134,8 +134,9 @@ export const getBounties = async (
       account: {
         bountyIndex: _BNtoBigInt(new BN(dataBuffer.subarray(0, 8), "le")),
         state: BountyState[dataBuffer[8]],
-        tier: bytesToStr(dataBuffer.subarray(9, 9 + 24)),
-        skill: Skill[dataBuffer[33]],
+        skill: Skill[dataBuffer[9]],
+        tier: bytesToStr(dataBuffer.subarray(10, 10 + 24)),
+        rewardReputation: bytesToNumber(dataBuffer.subarray(34, 34 + 4)),
       },
     };
   });
