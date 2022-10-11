@@ -1,12 +1,13 @@
 import { useRealms } from "./useRealms";
-import { useSelector } from "../useSelector";
 import { useUserRealms } from "./useUserRealms";
+import { useSelector } from "../useSelector";
 
 export const useRestRealms = () => {
-  const { data: realms } = useRealms();
-  const { data: userRealms } = useUserRealms();
+  const { data: realms, isLoading: isLoadingRealms } = useRealms();
+  const { data: userRealms, isLoading: isLoadingUserRealms } = useUserRealms();
 
-  return useSelector({
+  // no `isLoading` feedback available from `useSelector` yet
+  const data = useSelector({
     data: realms,
     selector: (r) =>
       !r.bountyBoard && // no bounty board
@@ -17,4 +18,9 @@ export const useRestRealms = () => {
     sorts: [{ path: "meta", order: "desc" }],
     selectorDependencies: [userRealms],
   });
+
+  return {
+    data,
+    isLoading: isLoadingRealms || isLoadingUserRealms,
+  };
 };

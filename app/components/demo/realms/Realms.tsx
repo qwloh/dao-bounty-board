@@ -13,11 +13,14 @@ export const Realms = () => {
     }
   );
 
-  const { data: userRealms } = useUserRealms();
+  const { data: userRealms, isLoading: isLoadingUserRealms } = useUserRealms();
   // convenient wrappers. Can remove them if not needed
   // const userRealms = useUserRealms();
-  const realmsWithBountyBoard = useRealmsWithBountyBoard();
-  const restRealms = useRestRealms();
+  const {
+    data: realmsWithBountyBoard,
+    isLoading: isLoadingRealmsWBountyBoard,
+  } = useRealmsWithBountyBoard();
+  const { data: restRealms, isLoading: isLoadingRestRealms } = useRestRealms();
 
   return (
     <div className="flex flex-col gap-6 py-6">
@@ -43,7 +46,9 @@ export const Realms = () => {
             <div className="text-lg font-bold">
               User realms ({userRealms?.length || 0})
             </div>
-            {userRealms?.length ? (
+            {isLoadingUserRealms ? (
+              <div>Loading...</div>
+            ) : userRealms?.length ? (
               userRealms.map((r) => (
                 <div key={r.pubkey.toString()} className="py-2">
                   <p>Name: {r.name}</p>
@@ -60,7 +65,9 @@ export const Realms = () => {
             <div className="text-lg font-bold">
               Realms with bounty board ({realmsWithBountyBoard?.length || 0})
             </div>
-            {realmsWithBountyBoard?.length ? (
+            {isLoadingRealmsWBountyBoard ? (
+              <div>Loading...</div>
+            ) : realmsWithBountyBoard?.length ? (
               realmsWithBountyBoard.map((r) => (
                 <div key={r.pubkey.toString()} className="py-2">
                   <p>Name: {r.name}</p>
@@ -77,14 +84,18 @@ export const Realms = () => {
             <div className="text-lg font-bold">
               Rest realms ({restRealms?.length || 0})
             </div>
-            {restRealms.map((r) => (
-              <div key={r.pubkey.toString()} className="py-2">
-                <p>Name: {r.name}</p>
-                <p>Bounty board: {r.bountyBoard + ""}</p>
-                <p>User in realm? {!!r.userIdentities}</p>
-                <p>Metadata: {JSON.stringify(r.meta)}</p>
-              </div>
-            ))}
+            {isLoadingRestRealms ? (
+              <div>Loading...</div>
+            ) : (
+              restRealms.map((r) => (
+                <div key={r.pubkey.toString()} className="py-2">
+                  <p>Name: {r.name}</p>
+                  <p>Bounty board: {r.bountyBoard + ""}</p>
+                  <p>User in realm? {!!r.userIdentities}</p>
+                  <p>Metadata: {JSON.stringify(r.meta)}</p>
+                </div>
+              ))
+            )}
           </div>
         </>
       )}

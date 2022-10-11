@@ -30,18 +30,31 @@ export const useProposeInitBountyBoard = (
   callbacks: CallbacksForUI = { onSuccess: undefined, onError: undefined }
 ) => {
   const { program, walletConnected } = useAnchorContext();
-  const { data: realmAccount } = useRealm(realm);
-  const { data: userProposalEntitiesInRealm } =
-    useUserProposalEntitiesInRealm(realm);
+  const { data: realmAccount, isLoading: isLoadingRealmAccount } =
+    useRealm(realm);
+  const {
+    data: userProposalEntitiesInRealm,
+    isLoading: isLoadingUserProposalEntities,
+  } = useUserProposalEntitiesInRealm(realm);
   const { refetch: refetchActiveProposals } =
     useActiveBountyBoardProposals(realm);
-  const { data: bountyBoard } = useBountyBoardByRealm(realm);
+  const { data: bountyBoard, isLoading: isLoadingBountyBoard } =
+    useBountyBoardByRealm(realm);
 
   const { enabled, instructionToEnable } = useMemo(() => {
     if (!walletConnected)
       return {
         enabled: false,
         instructionToEnable: "Connect your wallet first",
+      };
+    if (
+      isLoadingRealmAccount ||
+      isLoadingUserProposalEntities ||
+      isLoadingBountyBoard
+    )
+      return {
+        enabled: false,
+        instructionToEnable: "Loading...",
       };
     if (!userProposalEntitiesInRealm?.length)
       return {
