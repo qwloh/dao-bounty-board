@@ -14,6 +14,7 @@ export const useRealm = (
 
   // use react-query for caching instead of useMemo
   // since only a single cache will be created for multiple hooks call
+  // TODO: think of a better solution
   const { data: mapped } = useQuery(
     ["realm-mapping", realm],
     () => {

@@ -10,7 +10,7 @@ export const useDebouncedLoader = ({
   const [loading, setLoading] = useState<boolean>(undefined);
   const setLoadingTrueDebounced = useCallback(
     debounce(() => {
-      console.log("Set true debounced run", Date.now());
+      console.log("Debounced: Set loading true run", Date.now());
       setLoading(true);
     }, waitTime), // wait at least 300ms before showing loader
     [waitTime]
@@ -18,7 +18,7 @@ export const useDebouncedLoader = ({
 
   const setLoadingFalseDebounced = useCallback(
     debounce(() => {
-      console.log("Set false debounced run", Date.now());
+      console.log("Debounced: Set loading false run", Date.now());
       setLoading(false);
     }, persistTime), // wait at least `persistTime` before hiding loader
     [persistTime]
@@ -30,11 +30,11 @@ export const useDebouncedLoader = ({
       return;
     }
     if (isLoading) {
-      console.log("isLoading changed", "toggling to true", Date.now());
+      console.log("Debounced: isLoading toggled to true", Date.now());
       setLoadingFalseDebounced.cancel();
       setLoadingTrueDebounced();
     } else {
-      console.log("isLoading changed", "toggling to false", Date.now());
+      console.log("Debounced: isLoading toggled to false", Date.now());
       setLoadingTrueDebounced.cancel();
       setLoadingFalseDebounced();
     }
