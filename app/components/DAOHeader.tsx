@@ -1,12 +1,12 @@
-import Link from 'next/link';
-import React from 'react';
+import Link from "next/link";
+import React from "react";
 
-import { RealmInfo } from '../api';
-import { H1 } from './H1';
-import { Globe } from './Icons/Globe';
-import { MoreIcon } from './Icons/MoreIcon';
-import { SettingIcon } from './Icons/SettingIcon';
-import { TwitterPlain } from './Icons/TwitterPlain';
+import { RealmInfoAsJSON } from "../model/realm.model";
+import { H1 } from "./H1";
+import { Globe } from "./Icons/Globe";
+import { MoreIcon } from "./Icons/MoreIcon";
+import { SettingIcon } from "./Icons/SettingIcon";
+import { TwitterPlain } from "./Icons/TwitterPlain";
 
 export const DAOHeader = ({
   displayName,
@@ -15,7 +15,7 @@ export const DAOHeader = ({
   ogImage,
   website,
   twitter,
-}: RealmInfo) => {
+}: RealmInfoAsJSON) => {
   return (
     <div className="flex justify-between">
       <div className="flex gap-4 items-center w-full">
@@ -29,7 +29,7 @@ export const DAOHeader = ({
         </div>
         <div className="flex flex-col gap-1 flex-1">
           <div className="w-full flex justify-between">
-            <H1>{displayName || symbol || ''}</H1>
+            <H1>{displayName || symbol || ""}</H1>
             <div className="ml-auto flex gap-4 items-center justify-center">
               {website && (
                 <Link href={website} passHref>
@@ -72,5 +72,5 @@ export const DAOHeader = ({
         </div>
       </div>
     </div>
-  )
-}
+  );
+};

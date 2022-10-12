@@ -1,46 +1,152 @@
 import {
+  Connection,
   PublicKey,
   SystemProgram,
   SYSVAR_CLOCK_PUBKEY,
   SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
-
-import { AnchorProvider, Program } from "@project-serum/anchor";
+import { AnchorProvider, Program, BN } from "@project-serum/anchor";
 import { DUMMY_MINT_PK } from "./constants";
-import { Bounty, Skill } from "../model/bounty.model";
+import {
+  Bounty,
+  BountyItem,
+  BountyOnChain,
+  BountyState,
+  Skill,
+} from "../model/bounty.model";
 import { DaoBountyBoard } from "../../target/types/dao_bounty_board";
 import {
+  getBountyActivityAddress,
   getBountyAddress,
   getBountyBoardVaultAddress,
   getBountyEscrowAddress,
+  getBountySubmissionAddress,
   getContributorRecordAddress,
 } from "./utils";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAccount,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { BountyBoard } from "../model/bounty-board.model";
+import { bytesToNumber, bytesToStr } from "../utils/encoding";
+import { _BNtoBigInt } from "../utils/number-transform";
+import { BountyBoardProgramAccount } from "../model/util.model";
 
-// export const getBounty = (
-//   program: Program<DaoBountyBoard>,
-//   bountyPDA: PublicKey
-// ) => program.account.bounty.fetch(bountyPDA);
+// GET methods
 
-export const getBountiesForBoard = (
+const getBountyEscrow = async (
   program: Program<DaoBountyBoard>,
-  bountyBoardPDA: PublicKey
+  bountyPK: PublicKey,
+  rewardMint: PublicKey
 ) => {
-  // add filter by DAO (bountyboardPDA)
-  // discriminator takes up 8 bytes
-  // anchor handle the filter by discriminator for us
-  return program.account.bounty.all([
-    { memcmp: { offset: 8, bytes: bountyBoardPDA.toString() } },
-  ]);
+  const bountyEscrowAddress = await getBountyEscrowAddress(
+    bountyPK,
+    rewardMint
+  );
+  return getAccount(program.provider.connection, bountyEscrowAddress);
 };
+
+export const getBounty = async (
+  program: Program<DaoBountyBoard>,
+  bountyPK: PublicKey
+): Promise<Bounty | null> => {
+  const bounty = await program.account.bounty.fetchNullable(bountyPK);
+
+  if (!bounty) return null;
+
+  const bountyEscrow = await getBountyEscrow(
+    program,
+    bountyPK,
+    bounty.rewardMint
+  );
+
+  return {
+    ...bounty,
+    bountyIndex: _BNtoBigInt(bounty.bountyIndex),
+    // convert rust enums into more convenient form
+    // original: state: {open: {}}
+    // after conversion: state: 'open'
+    // @ts-ignore, return type is hard asserted
+    state: BountyState[BountyState[Object.keys(bounty.state)[0]]],
+    // @ts-ignore, return type is hard asserted
+    skill: Skill[Skill[Object.keys(bounty.skill)[0]]],
+    tier: bytesToStr(bounty.tier),
+    rewardPayout: _BNtoBigInt(bounty.rewardPayout),
+    rewardSkillPt: _BNtoBigInt(bounty.rewardSkillPt),
+    minRequiredSkillsPt: _BNtoBigInt(bounty.minRequiredSkillsPt),
+    escrow: bountyEscrow,
+  };
+};
+
+export const getPagedBounties = async (
+  program: Program<DaoBountyBoard>,
+  bountyPKs: PublicKey[]
+): Promise<BountyBoardProgramAccount<Bounty>[]> => {
+  const bounties = (await program.account.bounty.fetchMultiple(
+    bountyPKs
+  )) as BountyOnChain[];
+
+  const escrows = await Promise.all(
+    bounties.map((b, i) =>
+      b == null
+        ? new Promise((resolve) => resolve(null))
+        : getBountyEscrow(program, bountyPKs[i], b.rewardMint)
+    )
+  );
+
+  // @ts-ignore: known enum casting issue in ts for state, skill
+  return bounties.map((b, i) => ({
+    pubkey: bountyPKs[i].toString(),
+    account: {
+      ...b,
+      bountyIndex: _BNtoBigInt(b.bountyIndex),
+      state: BountyState[BountyState[Object.keys(b.state)[0]]],
+      skill: Skill[Skill[Object.keys(b.skill)[0]]],
+      tier: bytesToStr(b.tier),
+      rewardPayout: _BNtoBigInt(b.rewardPayout),
+      rewardSkillPt: _BNtoBigInt(b.rewardSkillPt),
+      minRequiredSkillsPt: _BNtoBigInt(b.minRequiredSkillsPt),
+      escrow: escrows[i],
+    },
+  }));
+};
+
+export const getBounties = async (
+  connection: Connection,
+  program: Program<DaoBountyBoard>,
+  bountyBoardPK: PublicKey
+): Promise<BountyBoardProgramAccount<BountyItem>[]> => {
+  // filter by bounty board PK
+  const bounties = await connection.getProgramAccounts(program.programId, {
+    dataSlice: { offset: 8 + 32, length: 38 },
+    filters: [
+      { memcmp: program.coder.accounts.memcmp("bounty") },
+      { memcmp: { offset: 8, bytes: bountyBoardPK.toString() } },
+    ],
+  });
+  // Example data buffer: [0,0,0,0,0,0,0,0, 0, 69,110,116,114,121,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0]
+  // @ts-ignore, known ts issue for unexpected type loosening on reversing enum https://github.com/microsoft/TypeScript/issues/50933
+  return bounties.map((b) => {
+    const dataBuffer = b.account.data;
+    return {
+      pubkey: b.pubkey.toString(),
+      account: {
+        bountyIndex: _BNtoBigInt(new BN(dataBuffer.subarray(0, 8), "le")),
+        state: BountyState[dataBuffer[8]],
+        skill: Skill[dataBuffer[9]],
+        tier: bytesToStr(dataBuffer.subarray(10, 10 + 24)),
+        rewardReputation: bytesToNumber(dataBuffer.subarray(34, 34 + 4)),
+      },
+    };
+  });
+};
+
+// UPDATE methods
 
 interface CreateBountyArgs {
   program: Program<DaoBountyBoard>;
-  bountyBoard: { publicKey: PublicKey; account: BountyBoard };
+  bountyBoard: { pubkey: PublicKey; account: BountyBoard };
   skill: Skill;
   tier: string;
   title: string;
@@ -68,12 +174,13 @@ export const createBounty = async ({
   console.log("Bounty index", bountyIndex.toNumber());
 
   const bountyBoardVault = await getBountyBoardVaultAddress(
-    bountyBoard.publicKey,
+    bountyBoard.pubkey,
     rewardMint
   );
   console.log("Bounty board vault PDA", bountyBoardVault.toString());
+
   const [bountyPDA] = await getBountyAddress(
-    bountyBoard.publicKey,
+    bountyBoard.pubkey,
     bountyIndex.toNumber()
   );
   console.log("Bounty PDA", bountyPDA.toString());
@@ -82,7 +189,7 @@ export const createBounty = async ({
   console.log("Bounty Escrow PDA", bountyEscrowPDA.toString());
 
   const [contributorRecordPDA] = await getContributorRecordAddress(
-    bountyBoard.publicKey,
+    bountyBoard.pubkey,
     provider.wallet.publicKey
   );
   console.log("Contributor Record PDA", contributorRecordPDA.toString());
@@ -93,12 +200,12 @@ export const createBounty = async ({
       .createBounty({
         title,
         description, // to be replaced with ipfs impl
-        bountyBoard: bountyBoard.publicKey,
+        bountyBoard: bountyBoard.pubkey,
         tier,
-        skill: { [skill as string]: {} },
+        skill: { [Skill[skill]]: {} },
       })
       .accounts({
-        bountyBoard: bountyBoard.publicKey,
+        bountyBoard: bountyBoard.pubkey,
         bountyBoardVault,
         bounty: bountyPDA,
         bountyEscrow: bountyEscrowPDA,
@@ -117,16 +224,12 @@ export const createBounty = async ({
 
 interface DeleteBountyArgs {
   program: Program<DaoBountyBoard>;
-  bounty: { publicKey: PublicKey; account: Bounty };
-  bountyBoardPubkey: PublicKey;
+  bounty: { pubkey: PublicKey; account: Bounty };
 }
 
-export const deleteBounty = async ({
-  program,
-  bountyBoardPubkey, // to derive bounty baord vault address
-  bounty,
-}: DeleteBountyArgs) => {
+export const deleteBounty = async ({ program, bounty }: DeleteBountyArgs) => {
   const provider = program.provider as AnchorProvider;
+  const bountyBoardPubkey = bounty.account.bountyBoard;
 
   // const rewardMint = bounty.account.rewardMint;
   console.log("Bounty board PDA", bountyBoardPubkey.toString());
@@ -139,7 +242,7 @@ export const deleteBounty = async ({
   console.log("Bounty board vault PDA", bountyBoardVaultPDA.toString());
 
   const bountyEscrowPDA = await getBountyEscrowAddress(
-    bounty.publicKey,
+    bounty.pubkey,
     rewardMint
   );
   console.log("Bounty escrow PDA", bountyEscrowPDA.toString());
@@ -153,7 +256,7 @@ export const deleteBounty = async ({
   return program.methods
     .deleteBounty()
     .accounts({
-      bounty: bounty.publicKey,
+      bounty: bounty.pubkey,
       bountyBoardVault: bountyBoardVaultPDA,
       bountyEscrow: bountyEscrowPDA,
       contributorRecord: contributorRecordPDA,
@@ -164,59 +267,138 @@ export const deleteBounty = async ({
     .rpc();
 };
 
-// Test realm public key 885LdWunq8rh7oUM6kMjeGV56T6wYNMgb9o6P7BiT5yX
-// Test realm governance public key 25N47DNLjSt7LZS2HrvHVG1Qq1mCeLMy74YsWDAQfr4Y
-// Bounty board PDA 3q3na9snfaaVi5e4qNNFRzQiXyRF6RiFQ15aSPBWxtKf
-// Bounty board vault PDA HpM2sETmKVfnbZ4Hz8vdQpXnCrVdwEeQHgfGUyQUy9Kp
-// Bounty PDA 3gG77UevaCzSXC1uEe7DPRvpCEFmhxr3RREmoPFhjoLQ
-// Bounty Escrow PDA BW9AGwi59q7HWJAga4ErFtpD2WFtNNBpDmmhUhL2h1j5
+interface AssignBountyArgs {
+  provider: AnchorProvider;
+  program: Program<DaoBountyBoard>;
+  bounty: { pubkey: PublicKey; account: Bounty };
+  bountyApplicationPK: PublicKey;
+  contributorRecordPK: PublicKey;
+}
 
-// (async () => {
-//   // test script
-//   const paperWalletKeypair = Keypair.fromSecretKey(
-//     bs58.decode(process.env.SK as string)
-//   );
-//   const connection = new Connection(clusterApiUrl("devnet"), "recent");
-//   const provider = new AnchorProvider(
-//     connection,
-//     new Wallet(paperWalletKeypair),
-//     { commitment: "recent" }
-//   );
-//   setProvider(provider);
+export const assignBounty = async ({
+  provider,
+  program,
+  bounty,
+  bountyApplicationPK,
+  contributorRecordPK,
+}: AssignBountyArgs) => {
+  const { pubkey: bountyPK, account: bountyAcc } = bounty;
 
-//   const programId = new PublicKey(BOUNTY_BOARD_PROGRAM_ID);
-//   const program = new Program(
-//     JSON.parse(JSON.stringify(idl)),
-//     programId
-//   ) as Program<DaoBountyBoard>;
+  console.log("Current assign count", bountyAcc.assignCount);
+  const [bountySubmissionPDA] = await getBountySubmissionAddress(
+    bountyPK,
+    bountyAcc.assignCount
+  );
+  console.log("Bounty submission PDA", bountySubmissionPDA.toString());
 
-//   const REALM_PK = new PublicKey(TEST_REALM_PK);
-//   console.log("Test realm public key", REALM_PK.toString());
+  console.log("Current activity index", bountyAcc.activityIndex);
+  const [bountyActivityPDA] = await getBountyActivityAddress(
+    bountyPK,
+    bountyAcc.activityIndex
+  );
+  console.log("Bounty activity (Assign) PDA", bountyActivityPDA.toString());
 
-//   const { bountyBoardPDA, bountyBoardVaultPDA } = await setupBountyBoard(
-//     provider,
-//     program,
-//     REALM_PK
-//   );
+  return program.methods
+    .assignBounty()
+    .accounts({
+      bounty: bountyPK,
+      bountyApplication: bountyApplicationPK,
+      bountySubmission: bountySubmissionPDA,
+      bountyActivity: bountyActivityPDA,
+      contributorRecord: contributorRecordPK,
+      contributorWallet: provider.wallet.publicKey,
+      systemProgram: SystemProgram.programId,
+      clock: SYSVAR_CLOCK_PUBKEY,
+    })
+    .rpc();
+};
 
-//   // pre-populate with bounties
-//   const { bountyPDA, bountyEscrowPDA } = await setupBounty(
-//     provider,
-//     program,
-//     bountyBoardPDA,
-//     bountyBoardVaultPDA
-//   );
+interface UnassignOverdueBountyArgs {
+  provider: AnchorProvider;
+  program: Program<DaoBountyBoard>;
+  bounty: { pubkey: PublicKey; account: Bounty };
+  bountySubmissionPK: PublicKey;
+  assigneeContributorRecordPK: PublicKey;
+  reviewerContributorRecordPK: PublicKey;
+}
 
-//   // testing the method
-//   const bounties = await getBountiesForBoard(program, bountyBoardPDA);
-//   console.log("Bounties", bounties);
+export const unassignOverdueBounty = async ({
+  provider,
+  program,
+  bounty,
+  bountySubmissionPK,
+  assigneeContributorRecordPK,
+  reviewerContributorRecordPK,
+}: UnassignOverdueBountyArgs) => {
+  console.log("Bounty Submission PK", bountySubmissionPK.toString());
+  const { pubkey: bountyPK, account: bountyAcc } = bounty;
 
-//   console.log("--- Clenup logs ---");
-//   await cleanUpBounty(provider, program, bountyPDA, bountyEscrowPDA);
-//   await cleanUpBountyBoard(
-//     provider,
-//     program,
-//     bountyBoardPDA,
-//     bountyBoardVaultPDA
-//   );
-// })();
+  console.log("Current activity index", bountyAcc.activityIndex);
+  const [bountyActivityPDA] = await getBountyActivityAddress(
+    bountyPK,
+    bountyAcc.activityIndex
+  );
+  console.log(
+    "Bounty activity (Unassign Overdue) PDA",
+    bountyActivityPDA.toString()
+  );
+
+  return (
+    program.methods
+      //@ts-ignore
+      .unassignOverdueBounty()
+      .accounts({
+        bounty: bountyPK,
+        bountySubmission: bountySubmissionPK,
+        bountyActivity: bountyActivityPDA,
+        assigneeContributorRecord: assigneeContributorRecordPK,
+        contributorRecord: reviewerContributorRecordPK,
+        contributorWallet: provider.wallet.publicKey,
+        clock: SYSVAR_CLOCK_PUBKEY,
+      })
+      .rpc()
+  );
+};
+
+interface SubmitToBountyArgs {
+  provider: AnchorProvider;
+  program: Program<DaoBountyBoard>;
+  bounty: { pubkey: PublicKey; account: Bounty };
+  bountySubmissionPK: PublicKey;
+  assigneeContributorRecordPK: PublicKey;
+  linkToSubmission: string;
+}
+
+export const submitToBounty = async ({
+  provider,
+  program,
+  bounty,
+  bountySubmissionPK,
+  assigneeContributorRecordPK,
+  linkToSubmission,
+}: SubmitToBountyArgs) => {
+  console.log("Bounty Submission PK", bountySubmissionPK.toString());
+  const { pubkey: bountyPK, account: bountyAcc } = bounty;
+
+  console.log("Current activity index", bountyAcc.activityIndex);
+  const [bountyActivityPDA] = await getBountyActivityAddress(
+    bountyPK,
+    bountyAcc.activityIndex
+  );
+  console.log("Bounty activity (Submit) PDA", bountyActivityPDA.toString());
+
+  return program.methods
+    .submitToBounty({
+      linkToSubmission,
+    })
+    .accounts({
+      bounty: bountyPK,
+      bountySubmission: bountySubmissionPK,
+      bountyActivity: bountyActivityPDA,
+      contributorRecord: assigneeContributorRecordPK,
+      contributorWallet: provider.wallet.publicKey,
+      systemProgram: SystemProgram.programId,
+      clock: SYSVAR_CLOCK_PUBKEY,
+    })
+    .rpc();
+};

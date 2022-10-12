@@ -178,7 +178,9 @@ describe("reject stale submission", () => {
       TEST_BOUNTY_PK,
       TEST_BOUNTY_ASSIGN_COUNT,
       CURRENT_BOUNTY_ACTIVITY_INDEX,
-      TEST_BOUNTY_APPLICATION_PK
+      TEST_BOUNTY_APPLICATION_PK,
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
+      undefined // use provider.wallet to sign
     );
     TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPDA;
     TEST_BOUNTY_ACTIVITY_ASSIGN_PK = bountyActivityAssignPDA;

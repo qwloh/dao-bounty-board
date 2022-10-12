@@ -16,6 +16,11 @@ module.exports = {
     "./components/**/*.{js,ts,jsx,tsx}",
     "./sub-pages/**/*.{js,ts,jsx,tsx}",
   ],
+  safelist: [
+    {
+      pattern: /orange/,
+    },
+  ],
   theme: {
     extend: {
       keyframes: {

@@ -17,18 +17,10 @@ import {
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
+import { _chunk } from "../../utils/data-transform";
 import { sendLargeTx } from "./send-large-tx-utils";
 
 const chunkBy = 2;
-
-export function chunks<T>(array: T[], size: number): T[][] {
-  const result: Array<T[]> = [];
-  let i, j;
-  for (i = 0, j = array.length; i < j; i += size) {
-    result.push(array.slice(i, i + size));
-  }
-  return result;
-}
 
 export const _createProposal = async (
   provider: AnchorProvider,
@@ -168,7 +160,7 @@ export const _createProposal = async (
           [instructions[0], instructions[1]],
           [instructions[2]], // make init ix standalone as it's huge
           [instructions[3]], // make tier config ix standalone as it's huge too
-          ...chunks(instructions.slice(4), chunkBy),
+          ..._chunk(instructions.slice(4), chunkBy),
         ]
       : [instructions];
 
@@ -181,6 +173,7 @@ export const _createProposal = async (
     return proposalAddress;
   } catch (err) {
     console.log("Send large tx fail. Error", err);
+    throw err;
   }
 };
 

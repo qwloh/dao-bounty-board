@@ -3,10 +3,7 @@ use crate::state::{bounty::*, bounty_activity::*, bounty_submission::*, contribu
 use crate::PROGRAM_AUTHORITY_SEED;
 use anchor_lang::prelude::*;
 
-pub fn reject_stale_submission(
-    ctx: Context<RejectStaleSubmission>,
-    data: RejectStaleSubmissionVM,
-) -> Result<()> {
+pub fn reject_stale_submission(ctx: Context<RejectStaleSubmission>) -> Result<()> {
     let bounty = &mut ctx.accounts.bounty;
     let bounty_submission = &mut ctx.accounts.bounty_submission;
     let bounty_activity = &mut ctx.accounts.bounty_activity;
@@ -88,9 +85,4 @@ pub struct RejectStaleSubmission<'info> {
 
     pub system_program: Program<'info, System>,
     pub clock: Sysvar<'info, Clock>,
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
-pub struct RejectStaleSubmissionVM {
-    pub comment: String,
 }

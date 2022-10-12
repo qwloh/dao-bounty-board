@@ -18,8 +18,6 @@ export const getBountyBoardVaultAddress = (
   bountyBoardPubkey: PublicKey,
   mintPubkey: PublicKey
 ) => {
-  console.log("[QW log] First vault mint in pda_utils", mintPubkey);
-  console.log("[QW log] Bounty board pubkey in pda_utils", bountyBoardPubkey);
   return getAssociatedTokenAddress(
     mintPubkey,
     bountyBoardPubkey,
@@ -38,7 +36,7 @@ export const getBountyAddress = (
       utils.bytes.utf8.encode(PROGRAM_AUTHORITY_SEED),
       bountyBoardPubkey.toBytes(),
       utils.bytes.utf8.encode("bounty"),
-      new BN(bountyIndex).toBuffer("le", 8),
+      new BN(bountyIndex).toArrayLike(Buffer, "le", 8),
     ],
     new PublicKey(BOUNTY_BOARD_PROGRAM_ID)
   );
@@ -95,14 +93,14 @@ export const getPayoutRecordAddress = (bountyPubkey: PublicKey) =>
 
 export const getBountySubmissionAddress = (
   bountyPubkey: PublicKey,
-  contributorRecordPubkey: PublicKey
+  bountyAssignCount: number
 ) =>
   PublicKey.findProgramAddress(
     [
       utils.bytes.utf8.encode(PROGRAM_AUTHORITY_SEED),
       bountyPubkey.toBytes(),
       utils.bytes.utf8.encode("bounty_submission"),
-      contributorRecordPubkey.toBytes(),
+      new BN(bountyAssignCount).toArrayLike(Buffer, "le", 1),
     ],
     new PublicKey(BOUNTY_BOARD_PROGRAM_ID)
   );
@@ -116,7 +114,7 @@ export const getBountyActivityAddress = (
       utils.bytes.utf8.encode(PROGRAM_AUTHORITY_SEED),
       bountyPubkey.toBytes(),
       utils.bytes.utf8.encode("bounty_activity"),
-      new BN(activityIndex).toBuffer("le", 4),
+      new BN(activityIndex).toArrayLike(Buffer, "le", 2),
     ],
     new PublicKey(BOUNTY_BOARD_PROGRAM_ID)
   );

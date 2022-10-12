@@ -298,6 +298,7 @@ export const updateSubmission = async (
         bountyActivity: TEST_BOUNTY_ACTIVITY_UPDATE_SUB_PDA,
         contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
         contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
+        systemProgram: SystemProgram.programId,
         clock: SYSVAR_CLOCK_PUBKEY,
       })
       .signers(SIGNERS)
@@ -428,6 +429,7 @@ export const rejectSubmission = async (
         bountyActivity: TEST_BOUNTY_ACTIVITY_REJECT_PDA,
         contributorRecord: TEST_CONTRIBUTOR_RECORD_PK,
         contributorWallet: TEST_CONTRIBUTOR_WALLET.publicKey,
+        systemProgram: SystemProgram.programId,
         clock: SYSVAR_CLOCK_PUBKEY,
       })
       .signers(SIGNERS)
@@ -518,8 +520,7 @@ export const rejectStaleSubmission = async (
   bountySubmissionPubkey: PublicKey,
   assigneeContributorRecordPubkey: PublicKey,
   contributorRecordPubkey: PublicKey,
-  contributorWallet: Keypair = undefined,
-  comment: string = ""
+  contributorWallet: Keypair = undefined
 ) => {
   const TEST_BOUNTY_PK = bountyPubkey;
   const TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPubkey;
@@ -544,9 +545,7 @@ export const rejectStaleSubmission = async (
 
   try {
     const tx = await program.methods
-      .rejectStaleSubmission({
-        comment,
-      })
+      .rejectStaleSubmission()
       .accounts({
         bounty: TEST_BOUNTY_PK,
         bountySubmission: TEST_BOUNTY_SUBMISSION_PK,

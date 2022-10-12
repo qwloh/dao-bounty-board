@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from 'react';
-import { useQuery } from 'react-query';
+import { useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 
-import { queryClient } from '../queryClient';
+import { queryClient } from "../queryClient";
 
 type ITheme = "light" | "dark";
 

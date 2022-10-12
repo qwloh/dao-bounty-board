@@ -3,6 +3,7 @@ import {
   web3,
   setProvider,
   AnchorProvider,
+  utils,
 } from "@project-serum/anchor";
 
 import idl from "../target/idl/dao_bounty_board.json";
@@ -45,8 +46,8 @@ describe("add bounty board tier config", () => {
 
   //  Test realm public key F1UQeTStc4r8tSXhTKF8Ms2zJt4L2Dtv5SNwNruCZwqt
   //  Test realm governance public key xkpe744XA3B95aiPNz98rUqdcdaUnLR5wej1i4sd9wf
-  //  Bounty board PDA Fe13wMhcWkUu4LVxjgQKeKfPsFfKkxWZDZ4sTM9VEtW5
-  //  Bounty board vault PDA CqRBrtTU3WQMm1YydksZ2nDhe7eKYyUMqum1hYLECLXq
+  //  Bounty board PDA GiX5x7QFZ6YVXq1ELa5MLTZ4nyGrSvhB9oqizyZH2iGv
+  //  Bounty board vault PDA 735JtkREUmnzdeH5RV8BA2pULX2JJUtUswUpfydWTxX3
 
   /**
    * TEST
@@ -73,10 +74,13 @@ describe("add bounty board tier config", () => {
     );
 
     for (const [idx, tier] of DEFAULT_TIERS.entries()) {
-      assert.equal(
-        tier.tierName,
-        updatedBountyBoardAcc.config.tiers[idx].tierName
-      );
+      const tierNameDecoded = utils.bytes.utf8
+        .decode(
+          Uint8Array.from(updatedBountyBoardAcc.config.tiers[idx].tierName)
+        )
+        .trim()
+        .replace(/\0/g, "");
+      assert.equal(tier.tierName, tierNameDecoded);
       assert.equal(
         tier.difficultyLevel,
         updatedBountyBoardAcc.config.tiers[idx].difficultyLevel

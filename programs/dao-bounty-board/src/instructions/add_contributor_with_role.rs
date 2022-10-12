@@ -1,3 +1,4 @@
+use crate::errors::BountyBoardError;
 use crate::state::{bounty_board::*, contributor_record::*};
 use crate::PROGRAM_AUTHORITY_SEED;
 use anchor_lang::prelude::*;
@@ -10,20 +11,30 @@ pub fn add_contributor_with_role(
     let bounty_board = &ctx.accounts.bounty_board;
     let contributor_record = &mut ctx.accounts.contributor_record;
 
-    contributor_record.initialized = true;
-    contributor_record.bounty_board = bounty_board.key();
-    contributor_record.realm = bounty_board.realm;
-    contributor_record.associated_wallet = data.contributor_wallet;
-
     // require data.role_name is present in bounty_board.config.roles
-    contributor_record.role = data.role_name;
+    let role_name_in_bytes = map_str_to_bytes::<24>(&data.role_name[..]);
+    require!(
+        bounty_board
+            .config
+            .roles
+            .iter()
+            .any(|r| r.role_name == role_name_in_bytes),
+        BountyBoardError::InvalidRole
+    );
 
+    contributor_record.realm = bounty_board.realm;
+    contributor_record.role = role_name_in_bytes;
     // initialize to 0
     contributor_record.reputation = 0;
+
     contributor_record.skills_pt = Vec::new();
 
     contributor_record.bounty_completed = 0;
     contributor_record.recent_rep_change = 0;
+
+    contributor_record.bounty_board = bounty_board.key();
+    contributor_record.associated_wallet = data.contributor_wallet;
+    contributor_record.initialized = true;
 
     Ok(())
 }

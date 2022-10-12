@@ -66,21 +66,19 @@ pub fn apply_to_bounty(ctx: Context<ApplyToBounty>, data: ApplyToBountyVM) -> Re
             contributor_record.key()
         );
         // run initialization code
-        contributor_record.initialized = true;
-
-        contributor_record.bounty_board = bounty_board.key();
         contributor_record.realm = bounty_board.realm;
-        contributor_record.associated_wallet = applicant.key();
-
-        // require data.role_name is present in bounty_board.config.roles
         contributor_record.role = get_default_role(bounty_board)?;
-
         // initialize to 0
         contributor_record.reputation = 0;
+
         contributor_record.skills_pt = Vec::new();
 
         contributor_record.bounty_completed = 0;
         contributor_record.recent_rep_change = 0;
+
+        contributor_record.bounty_board = bounty_board.key();
+        contributor_record.associated_wallet = applicant.key();
+        contributor_record.initialized = true;
     }
 
     Ok(())

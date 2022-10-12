@@ -1,9 +1,9 @@
 import { PublicKey } from "@solana/web3.js";
+import { BN } from "bn.js";
 import React, { useMemo, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { DEV_WALLET_2 } from "../../../api/constants";
+import { DEV_WALLET_2, DUMMY_MINT_PK } from "../../../api/constants";
 
-import { DEFAULT_CONFIG } from "../../../api/utils/test-assist/bounty_board";
 import { AddButton } from "../../../components/AddButton";
 import { Card } from "../../../components/Card";
 import { H2 } from "../../../components/H2";
@@ -14,8 +14,12 @@ import { Input } from "../../../components/Input";
 import { PrimaryButton } from "../../../components/PrimaryButton";
 import { Select } from "../../../components/Select";
 import { Tag, TagColors } from "../../../components/Tag";
-import { useBountyBoard } from "../../../hooks";
-import { useRealmInfoBySymbol } from "../../../hooks/useRealmInfoBySymbol";
+import {
+  DEFAULT_CONFIG,
+  useProposeInitBountyBoard,
+} from "../../../hooks/bounty-board/useProposeInitBountyBoard";
+import { useRealm } from "../../../hooks/realm/useRealm";
+import { useUserProposalEntitiesInRealm } from "../../../hooks/realm/useUserProposalEntitiesInRealm";
 import { useRouter } from "../../../hooks/useRouter";
 import { BountyTier, RoleSetting } from "../../../model/bounty-board.model";
 
@@ -175,11 +179,12 @@ const recordExist = (records: any, search: string) =>
 
 export const ProposeBountyBoard = () => {
   const { symbol } = useRouter();
-  const { realmInfo } = useRealmInfoBySymbol(symbol);
+  const { data: realm } = useRealm(symbol);
+  const realmInfo = realm?.metadata;
 
-  const { proposeInitBountyBoard, bountyBoard } = useBountyBoard(
-    realmInfo?.realmId
-  );
+  const { data: userProposalEntitiesInRealm } =
+    useUserProposalEntitiesInRealm(symbol);
+  const { mutate: proposeInitBountyBoard } = useProposeInitBountyBoard(symbol);
 
   const [tiers, setTiers] = useState<BountyTier[]>(defaultFormValues.tiers);
   // const [confirming, setConfirming] = useState(false)
@@ -196,12 +201,30 @@ export const ProposeBountyBoard = () => {
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     methods.handleSubmit((data) => {
+      const priorityProposalEntity = userProposalEntitiesInRealm.find(
+        (p) => p.council
+      );
       // console.log("send values", data);
       proposeInitBountyBoard({
-        // @ts-ignore
-        boardConfig: DEFAULT_CONFIG,
-        fundingAmount: 10000000, // 10 USDC
-        // make ourselves core contributor so we are authorized to createBounty
+        userProposalEntity: priorityProposalEntity,
+        boardConfig: {
+          roles: DEFAULT_CONFIG.roles,
+          tiers: DEFAULT_CONFIG.tiers.map((t) => {
+            switch (t.tierName) {
+              case "Entry":
+                t.taskSubmissionWindow = 1;
+                t.submissionReviewWindow = 1;
+                t.addressChangeReqWindow = 1;
+              case "A":
+                t.minRequiredSkillsPt = new BN(0);
+                t.minRequiredReputation = 0;
+              default:
+            }
+            return t;
+          }),
+        },
+        firstVaultMint: new PublicKey(DUMMY_MINT_PK.USDC),
+        amountToFundBountyBoardVault: 10000000, // 10 usdc
         initialContributorsWithRole: [
           {
             roleName: "Core",
@@ -289,7 +312,7 @@ export const ProposeBountyBoard = () => {
                           <Input
                             className="w-1/2 text-right rounded-tr-none rounded-br-none"
                             prefix="$"
-                            defaultValue={payoutReward}
+                            defaultValue={payoutReward.toNumber()}
                             name={`tier-${tierName}-payoutReward`}
                             onChange={onChange}
                             disabled={confirming}
@@ -313,7 +336,7 @@ export const ProposeBountyBoard = () => {
                           <Input
                             className="w-1/2 text-right rounded outline outline-1 outline-white/20 flex-shrink-0"
                             prefixLogo={<Suitcase />}
-                            defaultValue={skillsPtReward}
+                            defaultValue={skillsPtReward.toNumber()}
                             name={`tier-${tierName}-skillsPtReward`}
                             onChange={onChange}
                             disabled={confirming}
@@ -342,7 +365,7 @@ export const ProposeBountyBoard = () => {
                             <Input
                               className="w-1/2 text-right rounded outline outline-1 outline-white/20 flex-shrink-0"
                               prefixLogo={<Suitcase />}
-                              defaultValue={minRequiredSkillsPt}
+                              defaultValue={minRequiredSkillsPt.toNumber()}
                               name={`tier-${tierName}-minRequiredSkillsPt`}
                               disabled={confirming}
                             />

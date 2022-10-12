@@ -8,10 +8,13 @@ export const DUMMY_MINT_PK = Object.freeze({
 
 // Web3 TEch CPSNssLAf2Gms5pv6DnnSwKYqS9sMUr3XHHo7v2sUSWv
 export const TEST_REALM_PK = "885LdWunq8rh7oUM6kMjeGV56T6wYNMgb9o6P7BiT5yX";
+// export const BOUNTY_BOARD_PROGRAM_ID =
+//   "8wEnvDw8rQoWQXsCvE3ALt5bEuB8FeA8A52N5Uacjayh";
 export const BOUNTY_BOARD_PROGRAM_ID =
-  "8wEnvDw8rQoWQXsCvE3ALt5bEuB8FeA8A52N5Uacjayh";
+  "FiAbzUcY3jG3qRLRkeR6hxe88DXn9CV3cvR9vKHP2SEN";
 export const INIT_BOUNTY_BOARD_PROPOSAL_NAME =
-  "Set up a bounty board for our DAO";
+  // "Set up a bounty board for our DAO";
+  "Set up bounty board for our DAO";
 export const UPDATE_BOUNTY_BOARD_PROPOSAL_NAME = "Update Bounty Board Config";
 export const DEV_WALLET_1 = "EviTKmj3DbuZBkUzrh5e38KjqZXepsWw6FPgCtVVuA5K";
 export const DEV_WALLET_2 = "CxhnAJoZYEhgQzyCfpfEmmuCaLHzBVr2bQSNmQDWDhrj";

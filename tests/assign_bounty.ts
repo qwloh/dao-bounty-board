@@ -197,7 +197,9 @@ describe("assign bounty", () => {
       TEST_BOUNTY_PK,
       TEST_BOUNTY_ASSIGN_COUNT,
       CURRENT_BOUNTY_ACTIVITY_INDEX,
-      TEST_BOUNTY_APPLICATION_PK
+      TEST_BOUNTY_APPLICATION_PK,
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
+      undefined // use provider.wallet to sign
     );
     TEST_BOUNTY_SUBMISSION_PDA = bountySubmissionPDA;
     TEST_BOUNTY_ACTIVITY_ASSIGN_PDA = bountyActivityAssignPDA;
@@ -262,6 +264,23 @@ describe("assign bounty", () => {
     );
   });
 
+  it("should not let non-creator assign bounty", async () => {
+    await assertReject(
+      () =>
+        assignBounty(
+          provider,
+          program,
+          TEST_BOUNTY_PK,
+          TEST_BOUNTY_ASSIGN_COUNT,
+          CURRENT_BOUNTY_ACTIVITY_INDEX,
+          TEST_BOUNTY_APPLICATION_PK,
+          TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+          TEST_APPLICANT_WALLET
+        ),
+      /NotAuthorizedToAssignBounty/
+    );
+  });
+
   it("fails if attempt to assign for an assigned bounty", async () => {
     // assign first
     const {
@@ -274,7 +293,9 @@ describe("assign bounty", () => {
       TEST_BOUNTY_PK,
       TEST_BOUNTY_ASSIGN_COUNT,
       CURRENT_BOUNTY_ACTIVITY_INDEX,
-      TEST_BOUNTY_APPLICATION_PK
+      TEST_BOUNTY_APPLICATION_PK,
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
+      undefined // use provider.wallet to sign
     );
     TEST_BOUNTY_SUBMISSION_PDA = bountySubmissionPDA;
     TEST_BOUNTY_ACTIVITY_ASSIGN_PDA = bountyActivityAssignPDA;
@@ -317,7 +338,9 @@ describe("assign bounty", () => {
           TEST_BOUNTY_PK,
           bountyAccAfterAssign.assignCount,
           CURRENT_BOUNTY_ACTIVITY_INDEX,
-          TEST_2ND_BOUNTY_APPLICATION_PK
+          TEST_2ND_BOUNTY_APPLICATION_PK,
+          TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
+          undefined // use provider.wallet to sign
         ),
       /BountyAlreadyAssigned/
     );
@@ -376,7 +399,9 @@ describe("assign bounty", () => {
           TEST_BOUNTY_PK,
           TEST_BOUNTY_ASSIGN_COUNT,
           CURRENT_BOUNTY_ACTIVITY_INDEX,
-          TEST_2ND_BOUNTY_APPLICATION_PK
+          TEST_2ND_BOUNTY_APPLICATION_PK,
+          TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
+          undefined // use provider.wallet to sign
         ),
       /BountyApplicationExpired/
     );
@@ -406,34 +431,54 @@ describe("assign bounty", () => {
     }
 
     // clean up bounty application created
-    await cleanUpApplyToBounty(
-      provider,
-      program,
-      TEST_BOUNTY_APPLICATION_PK,
-      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+    if (
+      TEST_BOUNTY_APPLICATION_PK ||
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK ||
       TEST_BOUNTY_ACTIVITY_APPLY_PK
-    );
+    ) {
+      await cleanUpApplyToBounty(
+        provider,
+        program,
+        TEST_BOUNTY_APPLICATION_PK,
+        TEST_APPLICANT_CONTRIBUTOR_RECORD_PK,
+        TEST_BOUNTY_ACTIVITY_APPLY_PK
+      );
+      TEST_BOUNTY_APPLICATION_PK = undefined;
+      TEST_APPLICANT_CONTRIBUTOR_RECORD_PK = undefined;
+      TEST_BOUNTY_ACTIVITY_APPLY_PK = undefined;
+    }
     // clean up bounty-related accounts
-    await cleanUpCreateBounty(
-      provider,
-      program,
-      TEST_BOUNTY_PK,
-      TEST_BOUNTY_ESCROW_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK
-    );
+    if (TEST_BOUNTY_PK || TEST_BOUNTY_ESCROW_PK) {
+      await cleanUpCreateBounty(
+        provider,
+        program,
+        TEST_BOUNTY_PK,
+        TEST_BOUNTY_ESCROW_PK,
+        TEST_BOUNTY_BOARD_VAULT_PK
+      );
+      TEST_BOUNTY_PK = undefined;
+      TEST_BOUNTY_ESCROW_PK = undefined;
+    }
     // clean up creator contributor record
-    await cleanUpContributorRecord(
-      provider,
-      program,
-      TEST_CREATOR_CONTRIBUTOR_RECORD_PK
-    );
+    if (TEST_CREATOR_CONTRIBUTOR_RECORD_PK) {
+      await cleanUpContributorRecord(
+        provider,
+        program,
+        TEST_CREATOR_CONTRIBUTOR_RECORD_PK
+      );
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK = undefined;
+    }
     // clean up bounty board-related accounts
-    await cleanUpBountyBoard(
-      provider,
-      program,
-      TEST_BOUNTY_BOARD_PK,
-      TEST_BOUNTY_BOARD_VAULT_PK,
-      TEST_REALM_TREASURY_USDC_ATA
-    );
+    if (TEST_BOUNTY_BOARD_PK || TEST_BOUNTY_BOARD_VAULT_PK) {
+      await cleanUpBountyBoard(
+        provider,
+        program,
+        TEST_BOUNTY_BOARD_PK,
+        TEST_BOUNTY_BOARD_VAULT_PK,
+        TEST_REALM_TREASURY_USDC_ATA
+      );
+      TEST_BOUNTY_BOARD_PK = undefined;
+      TEST_BOUNTY_BOARD_VAULT_PK = undefined;
+    }
   });
 });

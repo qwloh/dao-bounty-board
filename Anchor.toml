@@ -3,7 +3,7 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-dao_bounty_board = "8wEnvDw8rQoWQXsCvE3ALt5bEuB8FeA8A52N5Uacjayh"
+dao_bounty_board = "FiAbzUcY3jG3qRLRkeR6hxe88DXn9CV3cvR9vKHP2SEN"
 
 [registry]
 url = "https://api.apr.dev"
@@ -11,7 +11,7 @@ url = "https://api.apr.dev"
 [provider]
 # cluster = "localnet"
 cluster = "devnet"
-wallet = "~/.config/solana/id_2.json"
+wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

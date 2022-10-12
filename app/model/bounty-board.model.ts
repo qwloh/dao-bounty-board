@@ -14,19 +14,31 @@ export interface BountyBoardConfig {
   lastRevised: BN; // date in epoch seconds
 }
 
-export type Permission =
-  | "createBounty"
-  | "updateBounty"
-  | "deleteBounty"
-  | "assignBounty"
-  | "requestChangeToSubmission"
-  | "acceptSubmission"
-  | "rejectSubmission";
+export enum Permission {
+  createBounty,
+  updateBounty,
+  deleteBounty,
+  assignBounty,
+  requestChangeToSubmission,
+  acceptSubmission,
+  rejectSubmission,
+}
+
+// to allow looping of permission in useProposeInitBountyBoard
+export namespace Permission {
+  const _names: string[] = Object.values(Permission).filter(
+    (v): v is string => typeof v === "string"
+  );
+
+  export function names(): string[] {
+    return _names;
+  }
+}
 
 export interface RoleSetting {
   roleName: string;
   default: boolean;
-  permissions: Partial<Record<Permission, {}>>[];
+  permissions: Partial<Record<keyof typeof Permission, {}>>[];
 }
 
 export interface BountyTier {

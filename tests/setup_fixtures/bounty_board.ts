@@ -159,6 +159,7 @@ export const setupBountyBoard = async (
     console.log("Bounty board init successfully.");
   } catch (err) {
     console.log("[InitBountyBoard] Transaction / Simulation fail.", err);
+    throw err;
   }
 
   let bountyBoardAcc;

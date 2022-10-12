@@ -138,7 +138,7 @@ describe("reject submission", () => {
   };
 
   beforeEach(async () => {
-    await sleep(800); // delay 800ms between each test
+    await sleep(1200); // delay 1200ms between each test
     console.log("-----------------------------");
 
     console.log("Test realm public key", TEST_REALM_PK.toString());
@@ -231,7 +231,9 @@ describe("reject submission", () => {
       TEST_BOUNTY_PK,
       TEST_BOUNTY_ASSIGN_COUNT,
       CURRENT_BOUNTY_ACTIVITY_INDEX,
-      TEST_BOUNTY_APPLICATION_PK
+      TEST_BOUNTY_APPLICATION_PK,
+      TEST_CREATOR_CONTRIBUTOR_RECORD_PK,
+      undefined // use provider.wallet to sign
     );
     TEST_BOUNTY_SUBMISSION_PK = bountySubmissionPDA;
     TEST_BOUNTY_ACTIVITY_ASSIGN_PK = bountyActivityAssignPDA;

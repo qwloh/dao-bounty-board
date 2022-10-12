@@ -1,10 +1,14 @@
-import { AnchorProvider, Program, setProvider } from "@project-serum/anchor";
+import {
+  AnchorProvider,
+  Program,
+  setProvider,
+  utils,
+} from "@project-serum/anchor";
 import { bs58 } from "@project-serum/anchor/dist/cjs/utils/bytes";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { assert } from "chai";
 import { BOUNTY_BOARD_PROGRAM_ID, DUMMY_MINT_PK } from "../app/api/constants";
-import { setupContributorRecord } from "../app/api/utils";
 import idl from "../target/idl/dao_bounty_board.json";
 import { DaoBountyBoard } from "../target/types/dao_bounty_board";
 import {
@@ -24,7 +28,10 @@ import {
   seedBountyBoardVault,
   setupBountyBoard,
 } from "./setup_fixtures/bounty_board";
-import { cleanUpContributorRecord } from "./setup_fixtures/contributor_record";
+import {
+  cleanUpContributorRecord,
+  setupContributorRecord,
+} from "./setup_fixtures/contributor_record";
 import { assertReject } from "./utils/assert-promise-utils";
 import { sleep } from "./utils/common";
 
@@ -210,26 +217,33 @@ describe("apply to bounty", () => {
     assert.deepEqual(bountyApplicationAcc.status, { notAssigned: {} });
 
     // assert contributorRecordAcc is created
-    assert.isTrue(applicantContributorRecordAcc.initialized);
+    assert.equal(
+      applicantContributorRecordAcc.realm.toString(),
+      TEST_REALM_PK.toString()
+    );
+    const defaultRole = getRolesInVec().find((r) => r.default);
+    const roleDecoded = utils.bytes.utf8
+      .decode(Uint8Array.from(applicantContributorRecordAcc.role))
+      .trim()
+      .replace(/\0/g, "");
+    assert.equal(roleDecoded, defaultRole.roleName);
+
+    assert.equal(applicantContributorRecordAcc.reputation.toNumber(), 0);
+
+    assert.isEmpty(applicantContributorRecordAcc.skillsPt);
+
+    assert.equal(applicantContributorRecordAcc.bountyCompleted, 0);
+    assert.equal(applicantContributorRecordAcc.recentRepChange, 0);
+
     assert.equal(
       applicantContributorRecordAcc.bountyBoard.toString(),
       TEST_BOUNTY_BOARD_PK.toString()
     );
     assert.equal(
-      applicantContributorRecordAcc.realm.toString(),
-      TEST_REALM_PK.toString()
-    );
-    assert.equal(
       applicantContributorRecordAcc.associatedWallet.toString(),
       TEST_APPLICANT_WALLET.publicKey.toString()
     );
-    const defaultRole = getRolesInVec().find((r) => r.default);
-    assert.equal(applicantContributorRecordAcc.role, defaultRole.roleName);
-
-    assert.equal(applicantContributorRecordAcc.reputation.toNumber(), 0);
-    assert.isEmpty(applicantContributorRecordAcc.skillsPt);
-    assert.equal(applicantContributorRecordAcc.bountyCompleted, 0);
-    assert.equal(applicantContributorRecordAcc.recentRepChange, 0);
+    assert.isTrue(applicantContributorRecordAcc.initialized);
 
     // assert bounty activity is created
     assert.equal(
