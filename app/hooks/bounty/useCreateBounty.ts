@@ -45,6 +45,8 @@ export const useCreateBounty = (
           "Your realm does not have a bounty board set up. You can submit a proposal to set up one.",
       };
 
+    // TODO: Check contributor roles and permissions
+
     return { enabled: true };
   }, [walletConnected, bountyBoard?.account]);
 
