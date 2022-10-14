@@ -1,5 +1,6 @@
 import { useBountyBoardByRealm } from "../../../hooks/bounty-board/useBountyBoardByRealm";
 import { useContributorsByRealm } from "../../../hooks/contributor-record/useContributorsByRealm";
+import { useDebouncedLoader } from "../../../hooks/helper/useDebouncedLoader";
 import { _toSentenceCase } from "../../../utils/str-transform";
 import { PaginationBar } from "../PaginationBar";
 import { ContributorRecord } from "./ContributorRecord";
@@ -28,6 +29,8 @@ export const Contributors = ({ realm }: { realm: string }) => {
     blankFilters: { "account.role": [] },
     pageSize: 2,
   });
+
+  const { isLoading: debouncedLoading } = useDebouncedLoader({ isLoading });
 
   return (
     <div className="flex gap-x-4 py-4 items-start">
@@ -120,13 +123,13 @@ export const Contributors = ({ realm }: { realm: string }) => {
             toPage={toPage}
           />
         </div>
-        {isLoading && (
+        {debouncedLoading && (
           <div className="text-s text-slate-800 py-2">Loading...</div>
         )}
-        {!isLoading && !contributors?.length && (
+        {!debouncedLoading && !contributors?.length && (
           <div className="text-s text-slate-800 py-2">No contributors</div>
         )}
-        {!isLoading && !!contributors?.length && (
+        {!debouncedLoading && !!contributors?.length && (
           <div className="flex flex-col gap-y-6 py-3">
             {contributors.map((b) => (
               <ContributorRecord

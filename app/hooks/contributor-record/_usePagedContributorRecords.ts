@@ -4,16 +4,25 @@ import { getPagedContributorRecords } from "../../api";
 import { useAsyncFetchMultiple } from "../helper/useAsyncFetchMultiple";
 import { useAnchorContext } from "../useAnchorContext";
 
-export const _usePagedContributorRecords = (contributorRecordPKs: string[]) => {
+export const _usePagedContributorRecords = (
+  contributorRecordPKs: string[] | undefined
+) => {
   const { program } = useAnchorContext();
   const queryClient = useQueryClient();
 
-  const notFetched = contributorRecordPKs.filter(
-    (pk) => !queryClient.getQueryData(["contributor-record", pk])
-  );
+  const notFetched =
+    contributorRecordPKs &&
+    contributorRecordPKs.filter(
+      (pk) => !queryClient.getQueryData(["contributor-record", pk])
+    );
 
   const { isLoading, error } = useAsyncFetchMultiple({
-    queryFn: async () => {
+    queryFn: async (done) => {
+      if (!notFetched) return;
+      if (notFetched?.length === 0) {
+        done();
+        return;
+      }
       console.log(
         "[_usePagedContributors] getPagedContributorRecords run",
         notFetched?.length
@@ -27,7 +36,6 @@ export const _usePagedContributorRecords = (contributorRecordPKs: string[]) => {
       );
     },
     dependencies: [notFetched],
-    enabled: notFetched?.length > 0,
   });
 
   return { isLoading, error };
